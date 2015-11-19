@@ -7,7 +7,7 @@ from shapes import render_shape
 import data
 import pygame, pygame.event
 
-def render(surface, values, shapes, patches):
+def render(surface, values, shapes, patches, date):
 	""" Render onto the given surface """
 	
 	#TODO: This is a workaround for offsets...
@@ -15,12 +15,11 @@ def render(surface, values, shapes, patches):
 	transform = lambda p: ((p[0]-offset[0])*2+500, (p[1]-offset[1])*2+700)
 	
 	#TODO: Get rid of the hard-coded date.
-	DATE='1998-07-18'
 	value_2_colour = lambda v: (int(v) % 255, 0, 0)
 	
 	# Render patches (filled)
 	for patch in patches:
-		value = float(values[DATE].get(patch, 0))
+		value = float(values[date].get(patch, 0))
 		print(value)
 		render_shape(surface, patches[patch]['shape'], transform, value_2_colour(value), 0)
 	# Render shapes (not filled, just for the outlines)
@@ -43,7 +42,7 @@ def main(gis_files, patch_dir, plot_value):
 	screen.fill((255, 255, 255))
 	
 	# Render!
-	render(screen, values, shapes, patches)
+	render(screen, values, shapes, patches, '1998-07-18')
 	pygame.display.update()
 	
 	# Wait for a quit event.
