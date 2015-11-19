@@ -65,6 +65,6 @@ def play(render_frame, autoplay="VLC"):
 if __name__ == "__main__":
 	def render_frame(surface, t):
 		""" Generate a frame """
-		surface.fill((t*10, t*10, t*10))
+		surface.fill((t*10 % 255, t*10 % 255, t*10 % 255))
 
 	play(render_frame)
