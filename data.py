@@ -45,7 +45,7 @@ def find_patch_files(dir):
 	return patches
 	
 	
-def load_patches(files, data_name):
+def load_values(files, data_name):
 	""" Loads the data from the patch files, and turns it into the required
 		format.
 	"""
@@ -73,7 +73,7 @@ def load_patches(files, data_name):
 
 
 def load_shapes(shape_file):
-	""" Load the shapes from the given shape file prefix, and return a dict
+	""" Load the patches from the given shape file prefix, and return a dict
 		in the form of {patch_no: shape}.
 	"""
 	
@@ -92,14 +92,47 @@ def load_shapes(shape_file):
 	for item in items:
 		#TODO: This is hard coded, but we should be able to extract the correct
 		# 	   field number via inspection of sf.fields.
+		#TODO: Check that we don't loose records by accident...
 		patches[item.record[5]] = item.shape
 		
 	return patches
 	
+	
+def load_shapes(shape_file):
+	""" Generate a list of shapes, and a map from patches to information about
+		the patches.
+	"""
+	
+	#TODO: Do I need to/can I close the shape file?
+	sf = shapefile.Reader(shape_file)
+	
+	# Data structures
+	shapes = [] # List of shapes
+	# Map for patches
+	patches = {} # patch: {key: value}
+	
+	# Iterate through the records and fill in the datatypes.
+	for id in range(sf.numRecords):
+		shapes.append(sf.shape(id))
+		record = sf.record(id)
+		if record != None:
+			# Extract the patch number.
+			#TODO: We only record the shape associated with the patch; should
+			#	   we record more? Soil type? Field no? ???
+			#TODO: This is hard coded, but we should be able to extract the correct
+			# 	   field number via inspection of sf.fields.patch = record[5]
+			patch = record[5]
+			if patch in patches:
+				raise ValueError("Patch {} referenced twice!".format(patch))
+			# Add it to the map
+			patches[patch] = {'shape': shapes[-1]}
+	
+	return shapes, patches
+	
 
 if __name__ == "__main__":
 	patch_files = find_patch_files("H:/My Documents/vis/csv")
-	data = load_patches(patch_files, "Soil.SoilWater.Drainage")
-
-	shapes = load_shapes("H:/My Documents/vis/gis/MediumPatches")
+	values = load_values(patch_files, "Soil.SoilWater.Drainage")
+	
+	shapes, patches = load_shapes("H:/My Documents/vis/gis/MediumPatches")
 	

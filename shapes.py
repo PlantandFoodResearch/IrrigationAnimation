@@ -54,8 +54,12 @@ if __name__ == "__main__":
 	#TODO: This is a workaround for offsets...
 	offset = shapes[0].points[0]
 	transform = lambda p: (p[0]-offset[0]+500, p[1]-offset[1]+700)
+	# Render patches (filled)
+	for patch in patches:
+		render_shape(screen, patches[patch]['shape'], transform, (0, 0, 255), 0)
+	# Render shapes (not filled)
 	for shape in shapes:
-		render_shape(screen, shape, transform, (255, 0, 0), 1)
+		render_shape(screen, shape, transform, (255, 0, 255), 1)
 	pygame.display.update()
 	
 	# Wait for a quit event.
