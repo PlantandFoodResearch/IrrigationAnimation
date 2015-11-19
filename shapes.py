@@ -8,7 +8,7 @@
 
 # Import pygame (for drawing and examples)
 import pygame.draw
-# Import 
+# Import shapefile (needed for rendering shapes)
 import shapefile
 
 def render_shape(surface, shape, transform, colour, width=1):
@@ -37,20 +37,20 @@ def render_shape(surface, shape, transform, colour, width=1):
 			[transform(point) for point in shape.points[part:end]], width)
 
 if __name__ == "__main__":
+	# Load up a GIS file and display it.
 
 	# GIS file/s
 	GIS_FILES = "H:/My Documents/vis/gis/MediumPatches"
-	#TODO: Figure out how to close the files...
-	sf = shapefile.Reader(GIS_FILES)
+	import data
+	shapes, patches = data.load_shapes(GIS_FILES)
 
 	# We use pygame for displaying; import and init.
 	import pygame, pygame.event
 	pygame.init()
-	# Run fullscreen.
+	# Run "fullscreen".
 	screen = pygame.display.set_mode()
 	
 	# Render!
-	shapes = sf.shapes()
 	#TODO: This is a workaround for offsets...
 	offset = shapes[0].points[0]
 	transform = lambda p: (p[0]-offset[0]+500, p[1]-offset[1]+700)
