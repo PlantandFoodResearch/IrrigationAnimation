@@ -4,6 +4,7 @@
 """
 
 # Configuration constants.
+MOVIE_SIZE = (40,40)
 MOVIE_FILENAME = "H:/My Documents/vis/movie.mp4"
 FPS = 24
 
@@ -11,7 +12,7 @@ FPS = 24
 from moviepy.editor import VideoClip
 # We use pygame for rendering...
 #TODO: Figure out how to get rid of pygame dependency?
-import pygame
+import pygame, pygame.surfarray
 # We also need to normalize the given paths.
 import os.path # Use os.path.normpath
 
@@ -21,9 +22,15 @@ def play(render_frame, autoplay="VLC"):
 		display it.
 	"""
 	
+	# Wrapper so that the render function gets passed a surface to draw to.
+	def make_frame(t):
+		surface = pygame.Surface(MOVIE_SIZE)
+		render_frame(surface, t)
+		return pygame.surfarray.pixels2d(surface)
+	
 	# Create the animation...
 	#TODO: Remove hardcoded durations, screen size
-	animation = VideoClip(render_frame, duration=100)
+	animation = VideoClip(make_frame, duration=100)
 
 	if autoplay == "iPython":
 		# We don't need to write to a file, just play in iPython!
@@ -56,9 +63,8 @@ def play(render_frame, autoplay="VLC"):
 			raise ValueError("Invalid autoplay value!")
 			
 if __name__ == "__main__":
-	from numpy import array
-	def make_frame(t):
+	def render_frame(surface, t):
 		""" Generate a frame """
-		return array([[(t*10) % 255]*100]*100)
+		surface.fill((t*10, t*10, t*10))
 
-	play(make_frame)
+	play(render_frame)
