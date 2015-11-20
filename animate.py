@@ -2,7 +2,6 @@
 
 	Current todo:
 	- Improve the flexibility of the transformations
-	- Add gradients to the rendering
 
 	Future improvements:
 	- Displaying dates for each datapoint at the top-left or similar
@@ -15,10 +14,10 @@
 
 # Config
 #TODO: Figure out a more flexible way of doing this...
-GIS_FILES="H:/My Documents/vis/gis/SmallPatches"
-CSV_DIR="H:/My Documents/vis/csv"
-FIELD_OF_INTEREST="NO3Total"
-FPS=20
+GIS_FILES = "H:/My Documents/vis/gis/SmallPatches"
+CSV_DIR = "H:/My Documents/vis/csv"
+FIELD_OF_INTEREST = "Soil.SoilWater.Drainage"
+FPS = 20 # Note that 1 does not appear to work?
 
 # Import the other modules...
 import display, render, data
@@ -46,11 +45,12 @@ def gen_colour_transform(values):
 		# Using this: http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855	
 		# Convert to something in the range of 0 to 120 degrees, fed into the
 		# colorsys function (red..green in HSV)
+		#TODO: Would it make more sense to use a single colour?
 		hue = ((value - min) / (max - min)) # 0-1
 		return [int(i*255) for i in colorsys.hsv_to_rgb(hue / 3, 1.0, 1.0)]
 		
 	return value2colour
-
+	
 
 def main(gis, csv, field):
 	""" Generate and display the animation! """
@@ -72,7 +72,7 @@ def main(gis, csv, field):
 	def render_frame(surface, time):
 		# Render the frame
 		surface.fill((255, 255, 255))
-		render.render(surface, values, shapes, patches, int(time*FPS))
+		render.render(surface, values, shapes, patches, time)
 	
 	# Play the animation
 	display.play(render_frame, frames=len(values), fps=FPS)

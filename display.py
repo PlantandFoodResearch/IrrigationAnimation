@@ -21,15 +21,16 @@ def play(render_frame, autoplay="VLC", frames=200, fps=24):
 		display it.
 	"""
 	
-	# Wrapper so that the render function gets passed a surface to draw to.
+	# Wrapper so that the render function gets passed a surface to draw to,
+	# and a frame number.
 	def make_frame(t):
 		surface = pygame.Surface(MOVIE_SIZE)
-		render_frame(surface, t)
+		render_frame(surface, int(t*fps))
 		return pygame.surfarray.pixels3d(surface)
 	
 	# Create the animation...
 	#TODO: Remove hardcoded durations, screen size
-	animation = VideoClip(make_frame, duration=int(frames/fps))
+	animation = VideoClip(make_frame, duration=frames/fps)
 
 	if autoplay == "iPython":
 		# We don't need to write to a file, just play in iPython!
