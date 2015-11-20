@@ -60,7 +60,8 @@ def load_values(files, data_name):
 				# Insert the values into the dict.
 				# The fields need to be stripped to remove excess spaces...
 				# We exploit the fact that the rows are in order...
-				patches[patch_no][index] = row[data_name].strip()
+				# We also assume that the relevant rows are numeric.
+				patches[patch_no][index] = float(row[data_name].strip())
 	
 	# Turn the resulting data into a date[patch[value]] format.
 	result = {} # date: {patch: value}

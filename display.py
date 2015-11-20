@@ -60,6 +60,7 @@ def play(render_frame, autoplay="VLC", frames=200, fps=24):
 		# unknown autoplay type!
 		elif autoplay != "None":
 			raise ValueError("Invalid autoplay value!")
+
 			
 if __name__ == "__main__":
 	# Example rendering...
@@ -68,3 +69,4 @@ if __name__ == "__main__":
 		surface.fill((t*10 % 255, t*10 % 255, t*10 % 255))
 
 	play(render_frame)
+	

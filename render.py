@@ -3,6 +3,8 @@
 	Author: Alastair Hughes
 """
 
+DEFAULT_COLOUR = (255, 255, 255)
+
 from shapes import render_shape
 import data
 import pygame, pygame.event
@@ -13,13 +15,11 @@ def render(surface, values, shapes, patches, date):
 	#TODO: This is a workaround for offsets...
 	offset = shapes[0].points[0]
 	transform = lambda p: ((p[0]-offset[0])*2+100, (p[1]-offset[1])*2+700)
-	
-	value_2_colour = lambda v: (255-(int(v*20) % 255), 255-(int(v*20) % 255), 255)
-	
+
 	# Render patches (filled)
 	for patch in patches:
-		value = float(values[date].get(patch, 0))
-		render_shape(surface, patches[patch]['shape'], transform, value_2_colour(value), 0)
+		value = values[date].get(patch, DEFAULT_COLOUR)
+		render_shape(surface, patches[patch]['shape'], transform, value, 0)
 	# Render shapes (not filled, just for the outlines)
 	for shape in shapes:
 		render_shape(surface, shape, transform, (0, 0, 0), 1)
@@ -40,6 +40,11 @@ def main(gis_files, patch_dir, plot_value):
 	screen.fill((255, 255, 255))
 	
 	# Render!
+	# Convert the values to colours
+	value2colour = lambda v: (255-(int(v*20) % 255), 255-(int(v*20) % 255), 255)
+	for index in values:
+		for patch in values[index]:
+			values[index][patch] = value2colour(values[index][patch])	
 	render(screen, values, shapes, patches, 17)
 	pygame.display.update()
 	
