@@ -3,9 +3,9 @@
 	Current todo:
 	- Improve the flexibility of the transformations
 	- Add gradients to the rendering
-	- Ani
 
 	Future improvements:
+	- Displaying dates for each datapoint at the top-left or similar
 	- More output formats
 	- CLI/GUI interfaces (cli option parsing)
 	- Speed ups
