@@ -19,7 +19,31 @@ GIS_FILES="H:/My Documents/vis/gis/SmallPatches"
 CSV_DIR="H:/My Documents/vis/csv"
 FIELD_OF_INTEREST="Irrigation.IrrigationApplied"
 
+# Import the other modules...
 import display, render, data
+# colorsys is used for the gradients
+import colorsys
+
+def gen_colour_transform(values):
+	""" Generate a transformation function transforming from a given value
+		to a colour on a gradient for the data points.
+	"""
+	
+	# Find the minimum and maximum values
+	min = float("inf")
+	max = -float("inf")
+	for index in values:
+		for patch in values[index]:
+			for value in values[index][patch]:
+				if value < min:
+					min = value
+				if value > max:
+					max = value
+					
+	print("The boundary values are: {}, {}".format(min, max))
+	
+	return lambda x: x
+
 
 def main(gis, csv, field):
 	""" Generate and display the animation! """
@@ -30,6 +54,11 @@ def main(gis, csv, field):
 	shapes, patches = data.load_shapes(gis)
 	
 	# Generate some transformation functions.
+	value2colour = gen_colour_transform(values)
+	
+	# Transform the data as required.
+	
+	# 
 
 	# Create a render_frame function.
 	def render_frame(surface, time):
