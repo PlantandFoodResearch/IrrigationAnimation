@@ -12,15 +12,13 @@ def render(surface, values, shapes, patches, date):
 	
 	#TODO: This is a workaround for offsets...
 	offset = shapes[0].points[0]
-	transform = lambda p: ((p[0]-offset[0])*2+500, (p[1]-offset[1])*2+700)
+	transform = lambda p: ((p[0]-offset[0])*2+100, (p[1]-offset[1])*2+700)
 	
-	#TODO: Get rid of the hard-coded date.
-	value_2_colour = lambda v: (int(v) % 255, 0, 0)
+	value_2_colour = lambda v: (255-(int(v*20) % 255), 255-(int(v*20) % 255), 255)
 	
 	# Render patches (filled)
 	for patch in patches:
 		value = float(values[date].get(patch, 0))
-		print(value)
 		render_shape(surface, patches[patch]['shape'], transform, value_2_colour(value), 0)
 	# Render shapes (not filled, just for the outlines)
 	for shape in shapes:
@@ -42,7 +40,7 @@ def main(gis_files, patch_dir, plot_value):
 	screen.fill((255, 255, 255))
 	
 	# Render!
-	render(screen, values, shapes, patches, '1998-07-18')
+	render(screen, values, shapes, patches, 17)
 	pygame.display.update()
 	
 	# Wait for a quit event.

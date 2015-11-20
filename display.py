@@ -4,9 +4,8 @@
 """
 
 # Configuration constants.
-MOVIE_SIZE = (40,40)
+MOVIE_SIZE = (1024, 1280)
 MOVIE_FILENAME = "H:/My Documents/vis/movie.mp4"
-FPS = 24
 
 # We currently use MoviePy; import that.
 from moviepy.editor import VideoClip
@@ -17,7 +16,7 @@ import pygame, pygame.surfarray
 import os.path # Use os.path.normpath
 
 
-def play(render_frame, autoplay="VLC"):
+def play(render_frame, autoplay="VLC", frames=200, fps=24):
 	""" Create a movie using the given render_frame function, and
 		display it.
 	"""
@@ -26,20 +25,20 @@ def play(render_frame, autoplay="VLC"):
 	def make_frame(t):
 		surface = pygame.Surface(MOVIE_SIZE)
 		render_frame(surface, t)
-		return pygame.surfarray.pixels2d(surface)
+		return pygame.surfarray.pixels3d(surface)
 	
 	# Create the animation...
 	#TODO: Remove hardcoded durations, screen size
-	animation = VideoClip(make_frame, duration=100)
+	animation = VideoClip(make_frame, duration=int(frames/fps))
 
 	if autoplay == "iPython":
 		# We don't need to write to a file, just play in iPython!
 		from moviepy.editor import ipython_display
-		ipython_display(animation, width=300, fps=FPS)
+		ipython_display(animation, width=MOVIE_SIZE[1], fps=fps)
 	else:
 		# Write to the movie file...
 		file = os.path.normpath(MOVIE_FILENAME)
-		animation.write_videofile(file, fps=FPS)
+		animation.write_videofile(file, fps=fps)
 		
 		# Autoplay the animation with VLC.
 		if autoplay == "VLC":
@@ -63,6 +62,7 @@ def play(render_frame, autoplay="VLC"):
 			raise ValueError("Invalid autoplay value!")
 			
 if __name__ == "__main__":
+	# Example rendering...
 	def render_frame(surface, t):
 		""" Generate a frame """
 		surface.fill((t*10 % 255, t*10 % 255, t*10 % 255))

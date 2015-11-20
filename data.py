@@ -56,18 +56,19 @@ def load_values(files, data_name):
 		patches[patch_no] = {}
 		# Parse the patch file.
 		with open(files[patch_no]) as patch:
-			for row in csv.DictReader(patch):
+			for index, row in enumerate(csv.DictReader(patch)):
 				# Insert the values into the dict.
 				# The fields need to be stripped to remove excess spaces...
-				patches[patch_no][row[DATE_NAME].strip()] = row[data_name].strip()
+				# We exploit the fact that the rows are in order...
+				patches[patch_no][index] = row[data_name].strip()
 	
 	# Turn the resulting data into a date[patch[value]] format.
 	result = {} # date: {patch: value}
 	for patch in patches:
-		for date in patches[patch]:
-			if date not in result:
-				result[date] = {}
-			result[date][patch] = patches[patch][date]
+		for index in patches[patch]:
+			if index not in result:
+				result[index] = {}
+			result[index][patch] = patches[patch][index]
 			
 	return result
 
