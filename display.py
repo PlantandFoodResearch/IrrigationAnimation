@@ -4,14 +4,14 @@
 """
 
 # Configuration constants.
-MOVIE_SIZE = (1024, 1280)
+MOVIE_SIZE = (1280, 1024)
 MOVIE_FILENAME = "H:/My Documents/vis/movie.mp4"
 
 # We currently use MoviePy; import that.
 from moviepy.editor import VideoClip
 # We use pygame for rendering...
 #TODO: Figure out how to get rid of pygame dependency?
-import pygame, pygame.surfarray
+import pygame, pygame.surfarray, pygame.transform
 # We also need to normalize the given paths.
 import os.path # Use os.path.normpath
 
@@ -26,10 +26,13 @@ def play(render_frame, autoplay="VLC", frames=200, fps=24):
 	def make_frame(t):
 		surface = pygame.Surface(MOVIE_SIZE)
 		render_frame(surface, int(t*fps))
+		# Flip the surface around it's x/y axis (main diagonal), to account for display
+		# issues with the movie rendering.
+		surface = pygame.transform.rotate(surface, -90)
+		surface = pygame.transform.flip(surface, True, False)
 		return pygame.surfarray.pixels3d(surface)
 	
 	# Create the animation...
-	#TODO: Remove hardcoded durations, screen size
 	animation = VideoClip(make_frame, duration=frames/fps)
 
 	if autoplay == "iPython":
