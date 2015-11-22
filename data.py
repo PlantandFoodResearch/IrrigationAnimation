@@ -46,7 +46,7 @@ def find_patch_files(dir):
 	
 	
 def load_values(files, data_name):
-	""" Loads the data from the patch files, and turns it into the required
+	""" Load the data from the patch files, and turn it into the required
 		format.
 	"""
 	
