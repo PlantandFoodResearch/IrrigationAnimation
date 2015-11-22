@@ -29,7 +29,8 @@ def render(surface, values, shapes, transform, patches, date):
 
 	# Render patches (filled)
 	for patch in patches:
-		value = values[date].get(patch, DEFAULT_COLOUR)
+		#value = values[date].get(patch, DEFAULT_COLOUR)
+		value = values[date][patch]
 		render_shape(surface, patches[patch]['shape'], transform_wrap, value, 0)
 	# Render shapes (not filled, just for the outlines)
 	if RENDER_EDGES:
