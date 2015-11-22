@@ -16,11 +16,54 @@ import pygame, pygame.surfarray, pygame.transform
 import os.path # Use os.path.normpath
 
 
-def play(render_frame, autoplay="VLC", frames=200, fps=24):
+def play(render_frame, autoplay="Pygame", frames=200, fps=24):
 	""" Create a movie using the given render_frame function, and
 		display it.
 	"""
 	
+	if autoplay == "Pygame":
+		# Pygame viewer (the builtin MoviePy one seems broken, and this skips
+		# rendering a video)
+		import pygame.event, pygame.display, pygame.time
+		pygame.init()
+		screen = pygame.display.set_mode(MOVIE_SIZE)
+		pygame.display.set_caption("Video rendering...")
+		# Render an initial frame.
+		frame = 0
+		render_frame(screen, 0)
+
+		# Render all the remaining frames
+		while frame <= frames:
+			frame += 1
+			last_time = pygame.time.get_ticks()
+			pygame.display.update()
+			# Render a frame, then check for events, wait.
+			render_frame(screen, frame)
+			
+			# Get any events...
+			for event in pygame.event.get():
+				if event.type == pygame.QUIT:
+					return
+				elif event.type == pygame.KEYDOWN:
+					if event.key == 275:
+						frame = max(frame - 10, 0)
+					elif event.key == 276:
+						frame += 10
+					elif event.key == 280:
+						frame += 50
+					elif event.key == 281:
+						frame = max(frame - 50, 0)
+			
+			# Wait.
+			elapsed_time = pygame.time.get_ticks() - last_time
+			time_per_frame = 1000 / fps
+			if elapsed_time > time_per_frame:
+				print("WARNING: allowed time per frame exceeded")
+			else:
+				pygame.time.wait(time_per_frame - elapsed_time)
+			
+		return # End early; pygame is different anyhow.
+
 	# Wrapper so that the render function gets passed a surface to draw to,
 	# and a frame number.
 	def make_frame(t):
@@ -39,6 +82,7 @@ def play(render_frame, autoplay="VLC", frames=200, fps=24):
 		# We don't need to write to a file, just play in iPython!
 		from moviepy.editor import ipython_display
 		ipython_display(animation, width=MOVIE_SIZE[1], fps=fps)
+
 	else:
 		# Write to the movie file...
 		file = os.path.normpath(MOVIE_FILENAME)
