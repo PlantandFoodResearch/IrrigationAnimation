@@ -17,9 +17,10 @@
 GIS_FILES = "H:/My Documents/vis/gis/SmallPatches"
 CSV_DIR = "H:/My Documents/vis/csv"
 FIELD_OF_INTEREST = "Soil.SoilWater.Drainage"
+DATE_FIELD = "Clock.Today" # Field name for the date
 FPS = 20 # Note that 1 does not appear to work?
 DEFAULT_COLOUR = (255, 255, 255)
-FONT_HEIGHT = 15 # The height for any fonts.
+FONT_HEIGHT = 30 # The height for any fonts.
 
 # Import the other modules...
 import display, render, data
@@ -39,7 +40,7 @@ def gen_colour_transform(values):
 	max = -float("inf")
 	for index in values:
 		for patch in values[index]:
-			value = values[index][patch]
+			value = float(values[index][patch])
 			if value < min:
 				min = value
 			if value > max:
@@ -51,7 +52,7 @@ def gen_colour_transform(values):
 		# Convert to something in the range of 0 to 120 degrees, fed into the
 		# colorsys function (red..green in HSV)
 		#TODO: Would it make more sense to use a single colour?
-		hue = ((value - min) / (max - min)) # 0-1
+		hue = ((float(value) - min) / (max - min)) # 0-1
 		return [int(i*255) for i in colorsys.hsv_to_rgb(hue / 3, 1.0, 1.0)]
 		
 	return value2colour, min, max
@@ -91,8 +92,12 @@ def main(gis, csv, field):
 	""" Generate and display the animation! """
 	
 	# Load the patches and values...
+	print("Loading data...")
 	patch_files = data.find_patch_files(csv)
+	#TODO: It would be nice if I could extract all the data I wanted without
+	# 	   having to load the same files multiple times...
 	values = data.load_values(patch_files, field)
+	dates = data.load_values(patch_files, DATE_FIELD)
 	shapes, patches = data.load_shapes(gis)
 	
 	# Generate some transformation functions.
@@ -100,20 +105,33 @@ def main(gis, csv, field):
 	value2colour, min, max = gen_colour_transform(values)
 	centering = gen_point_transform(shapes)
 	
-	# Transform the data as required.
+	# Turn the values into colours.
+	print("Converting values to colours...")
 	for index in values:
 		for patch in values[index]:
 			values[index][patch] = value2colour(values[index][patch])
+	# Verify the dates, and compress into a row: date mapping.
+	print("Verifying dates...")
+	times = {}
+	for index in dates:
+		time = None
+		for patch in dates[index]:
+			if time == None:
+				time = dates[index][patch]
+			elif time != dates[index][patch]:
+				raise ValueError("Dates and rows do not line up for some CSV files!")
+		times[index] = time
 
 	# Create a render_frame function.
 	# Init the fonts.
 	pygame.font.init()
 	font = pygame.font.Font(None, FONT_HEIGHT)
-	def render_frame(surface, time):
+	def render_frame(surface, frame):
 		# Render the frame
 		surface.fill(DEFAULT_COLOUR)
-		render.render(surface, values, shapes, centering, patches, time)
+		render.render(surface, values, shapes, centering, patches, frame)
 		render.render_scale(surface, min, max, value2colour, font)
+		render.render_date(surface, times[frame], font)
 	
 	# Play the animation
 	display.play(render_frame, frames=len(values), fps=FPS)

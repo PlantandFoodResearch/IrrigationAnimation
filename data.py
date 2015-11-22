@@ -51,7 +51,7 @@ def load_values(files, data_name):
 	"""
 	
 	# Open and load each patch file.
-	patches = {} # patch_no: {date: value}
+	patches = {} # patch: {index: value}
 	for patch_no in files:
 		patches[patch_no] = {}
 		# Parse the patch file.
@@ -60,11 +60,10 @@ def load_values(files, data_name):
 				# Insert the values into the dict.
 				# The fields need to be stripped to remove excess spaces...
 				# We exploit the fact that the rows are in order...
-				# We also assume that the relevant rows are numeric.
-				patches[patch_no][index] = float(row[data_name].strip())
+				patches[patch_no][index] = row[data_name].strip()
 	
-	# Turn the resulting data into a date[patch[value]] format.
-	result = {} # date: {patch: value}
+	# Turn the resulting data into a index[patch[value]] format.
+	result = {} # index: {patch: value}
 	for patch in patches:
 		for index in patches[patch]:
 			if index not in result:

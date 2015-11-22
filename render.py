@@ -16,7 +16,7 @@ from shapes import render_shape
 import data
 import pygame, pygame.event, pygame.draw
 
-def render(surface, values, shapes, transform, patches, date):
+def render(surface, values, shapes, transform, patches, frame):
 	""" Render onto the given surface.
 		The transformation function is passed a point and the size of the
 		surface.
@@ -33,9 +33,9 @@ def render(surface, values, shapes, transform, patches, date):
 	# Render patches (filled)
 	for patch in patches:
 		try:
-			value = values[date][patch]
+			value = values[frame][patch]
 		except KeyError:
-			print("WARNING: Failed to get data for patch {} for frame {}!".format(patch, date))
+			print("WARNING: Failed to get data for patch {} for frame {}!".format(patch, frame))
 			value = DEFAULT_COLOUR
 		render_shape(surface, patches[patch]['shape'], transform_wrap, value, 0)
 	# Render shapes (not filled, just for the outlines)
@@ -48,10 +48,11 @@ def render(surface, values, shapes, transform, patches, date):
 def render_scale(surface, min, max, value2colour, font):
 	""" Draw a scale in the bottom-left corner """
 	#TODO: Make this more flexible.
-	#TODO: Check that this does not clip with the main animation.
 	#TODO: Can/should this be cached?
 	
 	# Calculate the height, in pixels, of the scale.
+	#TODO: The height calculation needs tweaking so that it doesn't clip with
+	#	   the main animation.
 	height = (surface.get_height()/3) - BORDER
 	base_height = surface.get_height() - BORDER
 	# Calculate the x borders
@@ -97,7 +98,13 @@ def render_scale(surface, min, max, value2colour, font):
 	for mark in range(markers):
 		row = (float(remaining) / markers) * (mark + 1)
 		render_text(row)
+		
 
+def render_date(surface, date, font):
+	""" Draw the date value into the top left hand corner """
+	
+	text = font.render(date, True, TEXT_COLOUR)
+	surface.blit(text, (BORDER, BORDER))
 
 
 def main(gis_files, patch_dir, plot_value):
