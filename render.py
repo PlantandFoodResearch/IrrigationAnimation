@@ -3,7 +3,7 @@
 	Author: Alastair Hughes
 """
 
-DEFAULT_COLOUR = (255, 255, 255)
+DEFAULT_COLOUR = (0, 0, 0)
 BORDER = 20 # Border around the image, in pixels.
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
@@ -29,8 +29,11 @@ def render(surface, values, shapes, transform, patches, date):
 
 	# Render patches (filled)
 	for patch in patches:
-		#value = values[date].get(patch, DEFAULT_COLOUR)
-		value = values[date][patch]
+		try:
+			value = values[date][patch]
+		except KeyError:
+			print("WARNING: Failed to get data for patch {} for frame {}!".format(patch, date))
+			value = DEFAULT_COLOUR
 		render_shape(surface, patches[patch]['shape'], transform_wrap, value, 0)
 	# Render shapes (not filled, just for the outlines)
 	if RENDER_EDGES:
