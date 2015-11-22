@@ -7,11 +7,12 @@ DEFAULT_COLOUR = (0, 0, 0)
 BORDER = 20 # Border around the image, in pixels.
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
-RENDER_EDGES = False # Whether or not to render edges (plot edges, terrain)
+RENDER_EDGES = False # Whether or not to render edges (plot edges, terrain).
+SCALE_WIDTH = 20 # Width of the scale, in pixels.
 
 from shapes import render_shape
 import data
-import pygame, pygame.event
+import pygame, pygame.event, pygame.draw, pygame.Rect
 
 def render(surface, values, shapes, transform, patches, date):
 	""" Render onto the given surface.
@@ -37,8 +38,21 @@ def render(surface, values, shapes, transform, patches, date):
 		render_shape(surface, patches[patch]['shape'], transform_wrap, value, 0)
 	# Render shapes (not filled, just for the outlines)
 	if RENDER_EDGES:
+		#TODO: Can/should this be cached?
 		for shape in shapes:
 			render_shape(surface, shape, transform_wrap, EDGE_COLOUR, EDGE_THICKNESS)
+
+
+def render_scale(surface, min, max, value2colour):
+	""" Draw a scale in the bottom-left corner """
+	#TODO: Make this more flexible.
+	#TODO: Check that this does not clip with the main animation.
+	#TODO: Can/should this be cached?
+	
+	height = (surface.get_height()/3) - BORDER
+	
+	pygame.draw.rect(surface, (0, 0, 0),
+		pygame.Rect(BORDER, (2*surface.get_height())/3, SCALE_WIDTH, height))
 	
 
 def main(gis_files, patch_dir, plot_value):
