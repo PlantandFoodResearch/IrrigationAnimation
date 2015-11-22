@@ -7,14 +7,13 @@ DEFAULT_COLOUR = (0, 0, 0)
 BORDER = 20 # Border around the image, in pixels.
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
-RENDER_EDGES = True # Whether or not to render edges (plot edges, terrain).
+RENDER_EDGES = False # Whether or not to render edges (plot edges, terrain).
 SCALE_WIDTH = 20 # Width of the scale, in pixels.
 TEXT_COLOUR = (0, 0, 0) # The colour of any text.
 SCALE_DECIMAL_PLACES = 2 # Decimal places to display on the scale.
 
 from shapes import render_shape
-import data
-import pygame, pygame.event, pygame.draw
+import pygame.draw
 
 def render(surface, values, shapes, transform, patches, frame):
 	""" Render onto the given surface.
@@ -49,6 +48,8 @@ def render_scale(surface, min, max, value2colour, font):
 	""" Draw a scale in the bottom-left corner """
 	#TODO: Make this more flexible.
 	#TODO: Can/should this be cached?
+	#TODO: Exponential data will not work well with this?
+	#TODO: '0.0' is not rendered; we should probably include that!
 	
 	# Calculate the height, in pixels, of the scale.
 	#TODO: The height calculation needs tweaking so that it doesn't clip with
@@ -105,40 +106,3 @@ def render_date(surface, date, font):
 	
 	text = font.render(date, True, TEXT_COLOUR)
 	surface.blit(text, (BORDER, BORDER))
-
-
-def main(gis_files, patch_dir, plot_value):
-	""" Main loop """
-
-	# Load the data...
-	patch_files = data.find_patch_files(patch_dir)
-	values = data.load_values(patch_files, plot_value)
-	shapes, patches = data.load_shapes(gis_files)
-
-	pygame.init()
-	# Run "fullscreen".
-	screen = pygame.display.set_mode()
-	# White out the display
-	screen.fill((255, 255, 255))
-	
-	# Render!
-	# Convert the values to colours
-	value2colour = lambda v: (255-(int(v*20) % 255), 255-(int(v*20) % 255), 255)
-	for index in values:
-		for patch in values[index]:
-			values[index][patch] = value2colour(values[index][patch])	
-	render(screen, values, shapes, patches, 17)
-	pygame.display.update()
-	
-	# Wait for a quit event.
-	running = True
-	while running:
-		event = pygame.event.wait()
-		if event.type == pygame.QUIT:
-			running = False
-	
-
-if __name__ == "__main__":
-	# Render and display an example GIS file
-	main("H:/My Documents/vis/gis/SmallPatches", "H:/My Documents/vis/csv",
-		"SWTotal")
