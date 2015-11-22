@@ -4,25 +4,37 @@
 """
 
 DEFAULT_COLOUR = (255, 255, 255)
+BORDER = 20 # Border around the image, in pixels.
+EDGE_COLOUR = (0, 0, 0)
+EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
+RENDER_EDGES = False # Whether or not to render edges (plot edges, terrain)
 
 from shapes import render_shape
 import data
 import pygame, pygame.event
 
-def render(surface, values, shapes, patches, date):
-	""" Render onto the given surface """
+def render(surface, values, shapes, transform, patches, date):
+	""" Render onto the given surface.
+		The transformation function is passed a point and the size of the
+		surface.
+	"""
 	
-	#TODO: This is a workaround for offsets...
-	offset = shapes[0].points[0]
-	transform = lambda p: ((p[0]-offset[0])*2+100, (p[1]-offset[1])*2+700)
+	# Transformation function for the point.
+	# This also converts the result into pygame coordinates (from cartesian),
+	# adds a border, and corrects the orientation.
+	def transform_wrap(point):
+		point = transform(point, [i-(2*BORDER) for i in surface.get_size()])
+		return ((surface.get_width()/2)-point[1],
+			point[0]+(surface.get_height()/2))
 
 	# Render patches (filled)
 	for patch in patches:
 		value = values[date].get(patch, DEFAULT_COLOUR)
-		render_shape(surface, patches[patch]['shape'], transform, value, 0)
+		render_shape(surface, patches[patch]['shape'], transform_wrap, value, 0)
 	# Render shapes (not filled, just for the outlines)
-	for shape in shapes:
-		render_shape(surface, shape, transform, (0, 0, 0), 1)
+	if RENDER_EDGES:
+		for shape in shapes:
+			render_shape(surface, shape, transform_wrap, EDGE_COLOUR, EDGE_THICKNESS)
 	
 
 def main(gis_files, patch_dir, plot_value):

@@ -21,6 +21,7 @@ FPS = 20 # Note that 1 does not appear to work?
 
 # Import the other modules...
 import display, render, data
+from shapes import bounding_box
 # colorsys is used for the gradients
 import colorsys
 
@@ -50,6 +51,36 @@ def gen_colour_transform(values):
 		return [int(i*255) for i in colorsys.hsv_to_rgb(hue / 3, 1.0, 1.0)]
 		
 	return value2colour
+
+
+def gen_point_transform(shapes):
+	""" Return a function to transform the points so that they fit nicely
+		in the given size, centered around the origin (0, 0).
+	"""
+	
+	# Find the minimum and maximum values x and y values.
+	min_x, min_y, max_x, max_y = bounding_box(shapes)
+	center_x = (max_x + min_x) / 2
+	center_y = (max_y + min_y) / 2
+	width = max_x - min_x
+	height = max_y - min_y
+
+	def centering(vert, size):
+		""" Transform the given vertex to fit nicely in relation to the
+			given size
+		"""
+		
+		# The scaling factor required to scale the image to fit nicely in
+		# the given size.
+		# This is the minimum of the x and y scaling to avoid clipping.
+		x_scale = size[0]/width
+		y_scale = size[1]/height
+		scale = min(x_scale, y_scale)
+		
+		# Return a scaled and recentered vertex.
+		return ((vert[0] - center_x)*scale, (vert[1] - center_y)*scale)
+	
+	return centering
 	
 
 def main(gis, csv, field):
@@ -62,6 +93,7 @@ def main(gis, csv, field):
 	
 	# Generate some transformation functions.
 	value2colour = gen_colour_transform(values)
+	centering = gen_point_transform(shapes)
 	
 	# Transform the data as required.
 	for index in values:
@@ -72,7 +104,7 @@ def main(gis, csv, field):
 	def render_frame(surface, time):
 		# Render the frame
 		surface.fill((255, 255, 255))
-		render.render(surface, values, shapes, patches, time)
+		render.render(surface, values, shapes, centering, patches, time)
 	
 	# Play the animation
 	display.play(render_frame, frames=len(values), fps=FPS)

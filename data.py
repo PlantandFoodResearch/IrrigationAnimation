@@ -72,32 +72,6 @@ def load_values(files, data_name):
 			result[index][patch] = patches[patch][index]
 			
 	return result
-
-
-def load_shapes(shape_file):
-	""" Load the patches from the given shape file prefix, and return a dict
-		in the form of {patch_no: shape}.
-	"""
-	
-	# Init the patch shapes...
-	#TODO: Should the shapes be anything special??? Easily renderable??
-	patches = {} # patch_no: shape
-	
-	#TODO: Do I need to/can I close the shape file?
-	sf = shapefile.Reader(shape_file)
-	# Load the items.
-	items = sf.shapeRecords()
-	
-	# Extract the information from the records.
-	#TODO: Do we really only need the patch no? What about the soil type?
-	#	   Or field? Or the irrigator? Or the manager?
-	for item in items:
-		#TODO: This is hard coded, but we should be able to extract the correct
-		# 	   field number via inspection of sf.fields.
-		#TODO: Check that we don't loose records by accident...
-		patches[item.record[5]] = item.shape
-		
-	return patches
 	
 	
 def load_shapes(shape_file):

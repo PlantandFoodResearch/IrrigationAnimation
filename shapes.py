@@ -32,9 +32,33 @@ def render_shape(surface, shape, transform, colour, width=1):
 		try:
 			end = shape.parts[num + 1]
 		except IndexError:
-			end = -1
+			end = len(shape.points)
 		pygame.draw.polygon(surface, colour,
 			[transform(point) for point in shape.points[part:end]], width)
+
+			
+def bounding_box(shapes):
+	""" Returns the bounding box for all of the given shapes """
+	
+	min_x = float('inf')
+	min_y = float('inf')
+	max_x = -float('inf')
+	max_y = -float('inf')
+	
+	for shape in shapes:
+		x, y = (min(shape.bbox[i], shape.bbox[i+2]) for i in range(2))
+		if x < min_x:
+			min_x = x
+		if y < min_y:
+			min_y = y
+		x, y = (max(shape.bbox[i], shape.bbox[i+2]) for i in range(2))
+		if x > max_x:
+			max_x = x
+		if y > max_y:
+			max_y = y
+	
+	return [min_x, min_y, max_x, max_y]
+	
 
 if __name__ == "__main__":
 	# Load up a GIS file and display it.
