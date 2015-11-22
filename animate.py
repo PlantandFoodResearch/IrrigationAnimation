@@ -17,6 +17,8 @@
 	- Documentation
 	- Ways of easily specifying custom transformations
 	- Dynamic viewer
+	- Use positionable widgets? (Scale/graphs/date+time/...)
+	- Marker on scale to represent the current values (maybe a textual indicator?)
 
 	Author: Alastair Hughes
 """
