@@ -14,7 +14,7 @@
 
 # Config
 #TODO: Figure out a more flexible way of doing this...
-GIS_FILES = "H:/My Documents/vis/gis/SmallPatches"
+GIS_FILES = "H:/My Documents/vis/gis/MediumPatches"
 CSV_DIR = "H:/My Documents/vis/csv"
 FIELD_OF_INTEREST = "Soil.SoilWater.Drainage"
 DATE_FIELD = "Clock.Today" # Field name for the date
@@ -127,7 +127,7 @@ def main(gis, csv, field):
 	pygame.font.init()
 	font = pygame.font.Font(None, FONT_HEIGHT)
 	def render_frame(surface, frame):
-		# Render the frame
+		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)
 		render.render(surface, values, shapes, centering, patches, frame)
 		render.render_scale(surface, min, max, value2colour, font)
