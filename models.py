@@ -1,4 +1,4 @@
-""" Data wrapper classes.
+""" Data wrapper classes, and processing functions.
 	
 	Author: Alastair Hughes
 """

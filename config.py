@@ -1,4 +1,5 @@
-""" Configuration parameters/constants for various parts of the program.
+""" Configuration parameters/constants for various parts of the program,
+	and the transformation functions.
 
 	Author: Alastair Hughes
 """

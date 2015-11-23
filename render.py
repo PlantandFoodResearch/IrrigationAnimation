@@ -1,4 +1,4 @@
-""" Experimental frame-by-frame renderer, using pygame
+""" Helper render functions.
 
 	Author: Alastair Hughes
 """
@@ -105,25 +105,20 @@ def render_params(surface, values, font):
 	"""
 	
 	#TODO: This should be cached somehow.
-	
-	# Define a helper function.
-	render_text = lambda s: font.render(s, TEXT_AA, TEXT_COLOUR)
-	
-	# Render the fields:
-	header = render_text(HEADER)
-	field = render_text("Field of interest: " + values.field)
-	gis = render_text("GIS: " + values.model.gis)
-	csv = render_text("CSV: " + values.model.csv)
-	transform = render_text("Transformation type: " + values.transform)
-	rows = [header, field, gis, csv, transform]
-	
-	# Find the initial positioning information.
-	x = BORDER
-	y = BORDER
-	
+
+	# Fields to render.
+	rows = [HEADER,
+		"Field of interest: " + values.field,
+		"GIS: " + values.model.gis,
+		"CSV: " + values.model.csv,
+		"Transformation type: " + values.transform,
+	]
+
 	# Render the rows (left aligned)
-	for surf in rows:
-		surface.blit(surf, (x, y))
+	y = BORDER
+	for text in rows:
+		surface.blit(font.render(text, TEXT_AA, TEXT_COLOUR), \
+			(BORDER, y))
 		y += font.get_linesize()
 	
 	
@@ -134,12 +129,15 @@ def render_shape(surface, shape, transform, colour, width=1):
 	"""
 	
 	# This is not the shape you are looking for!
-	#TODO: Supporting at least NULL shapes would probably be a good thing,
-	#		although the generated files don't seem to have other shapes.
-	if shape.shapeType != shapefile.POLYGON:
+	if shape.shapeType != shapefile.POLYGON and \
+		shape.shapeType != shapefile.NULL:
 		raise ValueError("Unknown shape type %s" %shape.shapeType)
 	
-	# We render the polygon!
+	if shape.shapeType == shapefile.NULL:
+		# Nothing to render...
+		return
+	
+	# We have a polygon!
 	# Polygons are made of different "parts", which are ordered sets of points
 	# that are assumed to join up, so we render them part-by-part.
 	

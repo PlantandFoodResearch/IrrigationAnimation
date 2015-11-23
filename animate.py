@@ -13,7 +13,6 @@
 	- Different colouring functions?
 	- More transformation functions/options
 	- Documentation
-		- Existing dependencies
 		- A usage tutorial
 		- Design notes
 	- Work on making specifying custom transformations easier
