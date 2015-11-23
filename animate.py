@@ -23,7 +23,7 @@
 """
 
 # Import the other modules...
-import display, render, data
+import display, render, models
 from config import GIS_FILES, CSV_DIR, FIELD_OF_INTEREST, DATE_FIELD, \
 	FPS, DEFAULT_COLOUR, TEXT_HEIGHT, VALUE2VALUE
 from shapes import bounding_box
@@ -107,39 +107,22 @@ def gen_point_transform(shapes):
 def main(gis, csv, field):
 	""" Generate and display the animation! """
 	
-	# Load the patches and values...
-	print("Loading data...")
-	shapes, patches = data.load_shapes(gis)
-	# Load the CSV files.
-	patch_files = data.find_patch_files(csv)
-	patch_data = data.raw_patches(patch_files)
-	orig_values = data.extract_field(patch_data, field, lambda v: float(v))
-	orig_dates = data.extract_field(patch_data, DATE_FIELD)
+	# Create a Model
+	model = models.Model(gis, csv)
 	
 	# Transform the values with the given transformation function.
 	print("Transforming the data points...")
+	orig_values = model.extract_field(field, lambda v: float(v))
 	values = {}
 	for index in orig_values:
 		values[index] = {}
 		for patch in orig_values[index]:
 			values[index][patch] = transformations[VALUE2VALUE](orig_values, index, patch)
 	
-	# Verify the dates, and compress into a row: date mapping.
-	print("Verifying dates...")
-	dates = {}
-	for index in orig_dates:
-		date = None
-		for patch in orig_dates[index]:
-			if date == None:
-				date = orig_dates[index][patch]
-			elif date != orig_dates[index][patch]:
-				raise ValueError("Dates and rows do not line up for some CSV files!")
-		dates[index] = date
-	
 	# Generate some transformation functions.
 	# Minimum and maximum is required for the scale
 	value2colour, min, max = gen_colour_transform(values)
-	centering = gen_point_transform(shapes)
+	centering = gen_point_transform(model.shapes)
 	
 	# Turn the values into colours.
 	print("Converting values to colours...")
@@ -154,9 +137,9 @@ def main(gis, csv, field):
 	def render_frame(surface, frame):
 		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)
-		render.render(surface, values, shapes, centering, patches, frame)
+		render.render(surface, values, model.shapes, centering, model.patches, frame)
 		render.render_scale(surface, min, max, value2colour, font)
-		render.render_date(surface, dates[frame], font)
+		render.render_date(surface, model.dates[frame], font)
 	
 	# Play the animation
 	display.play(render_frame, frames=len(values), fps=FPS)

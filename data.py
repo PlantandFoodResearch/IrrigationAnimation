@@ -64,19 +64,6 @@ def raw_patches(files):
 			
 	return result
 	
-def extract_field(values, field, process=lambda v: v):
-	""" Extract a specific field from the given values, and optionally
-		apply a function 'process' to each piece of data.
-	"""
-	
-	result = {}
-	for index in values:
-		result[index] = {}
-		for patch in values[index]:
-			result[index][patch] = process(values[index][patch][field].strip())
-	
-	return result
-	
 def load_shapes(shape_file):
 	""" Generate a list of shapes, and a map from patches to information about
 		the patches.
