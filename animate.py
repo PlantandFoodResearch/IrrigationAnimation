@@ -53,6 +53,7 @@ def main():
 		render.render(surface, values, frame)
 		render.render_scale(surface, values, font)
 		render.render_date(surface, model.dates[frame], font)
+		render.render_params(surface, values, font)
 	
 	# Play the animation.
 	play(render_frame, frames=len(values.values))

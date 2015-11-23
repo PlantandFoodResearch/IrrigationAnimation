@@ -6,7 +6,8 @@
 import shapefile
 import pygame.draw
 from config import BROKEN_COLOUR, BORDER, EDGE_COLOUR, EDGE_THICKNESS, \
-	EDGE_RENDER, SCALE_WIDTH, TEXT_COLOUR, TEXT_AA, SCALE_DECIMAL_PLACES
+	EDGE_RENDER, SCALE_WIDTH, TEXT_COLOUR, TEXT_AA, SCALE_DECIMAL_PLACES, \
+	HEADER
 
 def render(surface, values, frame):
 	""" Render the given values class onto a surface """
@@ -92,11 +93,39 @@ def render_scale(surface, values, font):
 
 
 def render_date(surface, date, font):
-	""" Draw the date value into the top left hand corner """
+	""" Draw the date value into the top right hand corner """
 	
 	text = font.render(date, TEXT_AA, TEXT_COLOUR)
-	surface.blit(text, (BORDER, BORDER))
+	surface.blit(text, (surface.get_width() - (BORDER + text.get_width()), BORDER))
 
+
+def render_params(surface, values, font):
+	""" Render the parameters for the given Values into the top left hand
+		corner.
+	"""
+	
+	#TODO: This should be cached somehow.
+	
+	# Define a helper function.
+	render_text = lambda s: font.render(s, TEXT_AA, TEXT_COLOUR)
+	
+	# Render the fields:
+	header = render_text(HEADER)
+	field = render_text("Field of interest: " + values.field)
+	gis = render_text("GIS: " + values.model.gis)
+	csv = render_text("CSV: " + values.model.csv)
+	transform = render_text("Transformation type: " + values.transform)
+	rows = [header, field, gis, csv, transform]
+	
+	# Find the initial positioning information.
+	x = BORDER
+	y = BORDER
+	
+	# Render the rows (left aligned)
+	for surf in rows:
+		surface.blit(surf, (x, y))
+		y += font.get_linesize()
+	
 	
 def render_shape(surface, shape, transform, colour, width=1):
 	""" Render the given shape onto the given surface.

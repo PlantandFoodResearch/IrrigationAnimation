@@ -29,14 +29,16 @@ class Model():
 		print("Loading data...")
 		
 		# Load the GIS data.
-		self.shapes, self.patches = load_shapes(gis)
+		self.gis = gis
+		self.shapes, self.patches = load_shapes(self.gis)
 		# Find the bounding box, center, and size for the gis shapes.
 		self.bbox = bounding_box(self.shapes)
 		self.center = [((self.bbox[i] + self.bbox[i+2]) / 2) for i in range(2)]
 		self.size = [(self.bbox[i+2] - self.bbox[i]) for i in range(2)]
 		
 		# Load the CSV files.
-		patch_files = find_patch_files(csv)
+		self.csv = csv
+		patch_files = find_patch_files(self.csv)
 		self.data = raw_patches(patch_files)
 		dates = self.extract_field(DATE_FIELD)
 		
@@ -186,6 +188,7 @@ class Values():
 		""" Initialise self """
 		
 		self.model = model
+		self.transform = transform
 		
 		if data_type == 'float':
 			process = lambda v: float(v)
@@ -198,7 +201,8 @@ class Values():
 			#	   applicable. The scale code would have to change...
 			raise ValueError("Unknown data type {}".format(data_type))
 			
-		orig_values = self.model.extract_field(field, process)
+		self.field = field
+		orig_values = self.model.extract_field(self.field, process)
 		# Transform the values with the given transformation function.
 		transformation = transformations[transform]
 		new_values = {}

@@ -11,6 +11,7 @@ MOVIE_FILENAME = "H:/My Documents/vis/movie.mp4"
 # Animation options:
 FIELD_OF_INTEREST = "Soil.SoilWater.Drainage"
 VALUE2VALUE = 'basic' # Value transformation function
+HEADER = "Model render" # Header displayed
 
 # Display constants:
 BORDER = 20 # Empty space around the image, in pixels.
