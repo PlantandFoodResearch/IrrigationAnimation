@@ -24,6 +24,7 @@ def play(render_frame, autoplay="Pygame", frames=200, fps=24):
 	if autoplay == "Pygame":
 		# Pygame viewer (the builtin MoviePy one seems broken, and this skips
 		# rendering a video)
+		#TODO: Add widget to allow rapidly switching between frames.
 		import pygame.event, pygame.display, pygame.time
 		pygame.init()
 		screen = pygame.display.set_mode(MOVIE_SIZE)
@@ -32,7 +33,7 @@ def play(render_frame, autoplay="Pygame", frames=200, fps=24):
 		frame = 0
 		render_frame(screen, 0)
 
-		# Render all the remaining frames
+		# Render all the remaining frames.
 		while frame <= frames:
 			frame += 1
 			last_time = pygame.time.get_ticks()
@@ -45,10 +46,10 @@ def play(render_frame, autoplay="Pygame", frames=200, fps=24):
 				if event.type == pygame.QUIT:
 					return
 				elif event.type == pygame.KEYDOWN:
-					if event.key == 275:
-						frame = max(frame - 10, 0)
-					elif event.key == 276:
+					if event.key == 273:
 						frame += 10
+					elif event.key == 274:
+						frame = max(frame - 10, 0)
 					elif event.key == 280:
 						frame += 50
 					elif event.key == 281:
