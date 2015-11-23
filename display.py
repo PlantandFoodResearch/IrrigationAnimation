@@ -11,7 +11,7 @@ import pygame, pygame.surfarray, pygame.transform
 # them.
 import os.path # Use os.path.normpath
 # We also need some constants
-from config import MOVIE_SIZE, MOVIE_FILENAME, FPS
+from config import MAX_FPS, MIN_FPS, MOVIE_SIZE, MOVIE_FILENAME, FPS
 
 
 def play(render_frame, autoplay="Pygame", frames=200, fps=FPS):
@@ -53,9 +53,9 @@ def play(render_frame, autoplay="Pygame", frames=200, fps=FPS):
 					elif event.key == 281:
 						frame = max(frame - 50, 0)
 					elif event.key == 276:
-						fps = min(fps/2.0, 1.0)
+						fps = min(fps/2.0, MIN_FPS)
 					elif event.key == 275:
-						fps = max(fps*2, 48)
+						fps = max(fps*2, MAX_FPS)
 			
 			# Wait.
 			elapsed_time = pygame.time.get_ticks() - last_time

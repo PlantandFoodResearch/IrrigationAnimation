@@ -10,13 +10,12 @@
 	- Packaging
 	- Rendering of multiple plots with different values/transformation functions
 		A more flexible rendering system, generally!
-	- More flexible time handling (days last more than one frame)
-		This could be handy for changing the speed of the simulation to reflect
-		changes (speeding up over boring bits...)
 	- Different colouring functions?
-	- Parameters rendered (field of interest, files)
 	- More transformation functions/options
 	- Documentation
+		- Existing dependencies
+		- A usage tutorial
+		- Design notes
 	- Ways of easily specifying custom transformations
 	- Use positionable widgets? (Scale/graphs/date+time/...)
 	- Marker on scale to represent the current values (maybe a textual indicator?)
@@ -29,7 +28,7 @@
 import render
 from display import play
 from config import DEFAULT_COLOUR, TEXT_HEIGHT, VALUE2VALUE, \
-	GIS_FILES, CSV_DIR, FIELD_OF_INTEREST
+	GIS_FILES, CSV_DIR, FIELD_OF_INTEREST, times, TIMEWARP
 from models import Model, Values
 # We use pygame for font rendering...
 import pygame.font
@@ -46,17 +45,21 @@ def main():
 	pygame.font.init()
 	font = pygame.font.Font(None, TEXT_HEIGHT)
 	
+	# Init the time conversions.
+	frame_map = times[TIMEWARP]([values])
+	
 	# Generate the render_frame function.
 	def render_frame(surface, frame):
+		index = frame_map[frame]
 		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)
-		render.render(surface, values, frame)
+		render.render(surface, values, index)
 		render.render_scale(surface, values, font)
-		render.render_date(surface, model.dates[frame], font)
+		render.render_date(surface, model.dates[index], font)
 		render.render_params(surface, values, font)
 	
 	# Play the animation.
-	play(render_frame, frames=len(values.values))
+	play(render_frame, frames=len(frame_map))
 
 if __name__ == "__main__":
 	main()

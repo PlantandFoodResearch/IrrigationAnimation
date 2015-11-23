@@ -236,8 +236,10 @@ class Values():
 		self.value2colour = value2colour
 		
 		# Convert all of the values into colours.
+		self.values = {}
+		self.actual_values = new_values
 		for index in new_values:
+			self.values[index] = {}
 			for patch in new_values[index]:
-				new_values[index][patch] = value2colour(new_values[index][patch])
-		self.values = new_values
+				self.values[index][patch] = value2colour(new_values[index][patch])
 
