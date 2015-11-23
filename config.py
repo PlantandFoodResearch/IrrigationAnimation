@@ -15,6 +15,7 @@ HEADER = "Model render" # Header displayed
 TIMEWARP = 'delta' # Time warp method used
 
 # Display constants:
+AUTOPLAY = "Pygame"
 BORDER = 20 # Empty space around the image, in pixels.
 BROKEN_COLOUR = (0, 0, 255)
 DEFAULT_COLOUR = (255, 255, 255)

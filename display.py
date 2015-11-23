@@ -11,10 +11,10 @@ import pygame, pygame.surfarray, pygame.transform
 # them.
 import os.path # Use os.path.normpath
 # We also need some constants
-from config import MAX_FPS, MIN_FPS, MOVIE_SIZE, MOVIE_FILENAME, FPS
+from config import MAX_FPS, MIN_FPS, MOVIE_SIZE, MOVIE_FILENAME, FPS, AUTOPLAY
 
 
-def play(render_frame, autoplay="Pygame", frames=200, fps=FPS):
+def play(render_frame, autoplay=AUTOPLAY, frames=200, fps=FPS):
 	""" Create a movie using the given render_frame function, and
 		display it.
 	"""
