@@ -116,9 +116,9 @@ def render_shape(surface, shape, transform, colour, width=1):
 	#TODO: Remove pygame dependency, clean up!
 	
 	for num, part in enumerate(shape.parts):
-		try:
-			end = shape.parts[num + 1]
-		except IndexError:
+		if num + 1 >= len(shape.parts):
 			end = len(shape.points)
+		else:
+			end = shape.parts[num + 1]
 		pygame.draw.polygon(surface, colour,
 			[transform(point) for point in shape.points[part:end]], width)
