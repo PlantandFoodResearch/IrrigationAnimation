@@ -3,17 +3,10 @@
 	Author: Alastair Hughes
 """
 
-DEFAULT_COLOUR = (0, 0, 0)
-BORDER = 20 # Border around the image, in pixels.
-EDGE_COLOUR = (0, 0, 0)
-EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
-RENDER_EDGES = False # Whether or not to render edges (plot edges, terrain).
-SCALE_WIDTH = 20 # Width of the scale, in pixels.
-TEXT_COLOUR = (0, 0, 0) # The colour of any text.
-SCALE_DECIMAL_PLACES = 2 # Decimal places to display on the scale.
-
 from shapes import render_shape
 import pygame.draw
+from config import BROKEN_COLOUR, BORDER, EDGE_COLOUR, EDGE_THICKNESS, \
+	RENDER_EDGES, SCALE_WIDTH, TEXT_COLOUR, SCALE_DECIMAL_PLACES
 
 def render(surface, values, shapes, transform, patches, frame):
 	""" Render onto the given surface.
@@ -35,7 +28,7 @@ def render(surface, values, shapes, transform, patches, frame):
 			value = values[frame][patch]
 		except KeyError:
 			print("WARNING: Failed to get data for patch {} for frame {}!".format(patch, frame))
-			value = DEFAULT_COLOUR
+			value = BROKEN_COLOUR
 		render_shape(surface, patches[patch]['shape'], transform_wrap, value, 0)
 	# Render shapes (not filled, just for the outlines)
 	if RENDER_EDGES:

@@ -7,9 +7,6 @@
 	Author: Alastair Hughes
 """
 
-# We need to know the field name for dates.
-DATE_NAME = "Clock.Today"
-
 # To find and load the CSV model files, we need some functions.
 from os import listdir
 import os.path

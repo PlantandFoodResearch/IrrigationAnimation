@@ -22,6 +22,16 @@
 	Author: Alastair Hughes
 """
 
+# Import the other modules...
+import display, render, data
+from config import GIS_FILES, CSV_DIR, FIELD_OF_INTEREST, DATE_FIELD, \
+	FPS, DEFAULT_COLOUR, TEXT_HEIGHT, VALUE2VALUE
+from shapes import bounding_box
+# colorsys is used for the gradients
+import colorsys
+# We use pygame for font rendering...
+import pygame.font
+
 # Value transformation functions
 basic_value = lambda values, index, patch: float(values[index][patch])
 # change_value
@@ -29,26 +39,9 @@ change_value = lambda values, index, patch: float(values[index][patch]) - \
 	float(values.get(index - 1, {patch: values[index][patch]})[patch])
 #TODO: Other useful functions might be exponential decay based
 #	   (with min as the baseline, max as the max)
-
-# Config
-#TODO: Figure out a more flexible way of doing this...
-GIS_FILES = "H:/My Documents/vis/gis/SmallPatches"
-CSV_DIR = "H:/My Documents/vis/csv"
-FIELD_OF_INTEREST = "Soil.SoilWater.Drainage"
-DATE_FIELD = "Clock.Today" # Field name for the date
-FPS = 2 # Note that 1 does not appear to work?
-DEFAULT_COLOUR = (255, 255, 255)
-FONT_HEIGHT = 30 # The height for any fonts.
-VALUE2VALUE = basic_value # Value transformation function
-
-# Import the other modules...
-import display, render, data
-from shapes import bounding_box
-# colorsys is used for the gradients
-import colorsys
-# We use pygame for font rendering...
-import pygame.font
-
+transformations = {'basic': basic_value,
+	'delta': change_value,
+	}
 
 def gen_colour_transform(values):
 	""" Generate a transformation function transforming from a given value
@@ -129,7 +122,7 @@ def main(gis, csv, field):
 	for index in orig_values:
 		values[index] = {}
 		for patch in orig_values[index]:
-			values[index][patch] = VALUE2VALUE(orig_values, index, patch)
+			values[index][patch] = transformations[VALUE2VALUE](orig_values, index, patch)
 	
 	# Generate some transformation functions.
 	# Minimum and maximum is required for the scale
@@ -157,7 +150,7 @@ def main(gis, csv, field):
 	# Create a render_frame function.
 	# Init the fonts.
 	pygame.font.init()
-	font = pygame.font.Font(None, FONT_HEIGHT)
+	font = pygame.font.Font(None, TEXT_HEIGHT)
 	def render_frame(surface, frame):
 		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)

@@ -3,10 +3,6 @@
 	Author: Alastair Hughes
 """
 
-# Configuration constants.
-MOVIE_SIZE = (1280, 1024)
-MOVIE_FILENAME = "H:/My Documents/vis/movie.mp4"
-
 # We currently use MoviePy; import that.
 from moviepy.editor import VideoClip
 # We use pygame for rendering...
@@ -14,6 +10,8 @@ from moviepy.editor import VideoClip
 import pygame, pygame.surfarray, pygame.transform
 # We also need to normalize the given paths.
 import os.path # Use os.path.normpath
+# We also need some constants
+from config import MOVIE_SIZE, MOVIE_FILENAME
 
 
 def play(render_frame, autoplay="Pygame", frames=200, fps=24):
