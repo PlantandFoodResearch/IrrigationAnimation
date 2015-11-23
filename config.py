@@ -29,3 +29,14 @@ TEXT_AA = False # Whether or not to antialias the text.
 
 # Other:
 DATE_FIELD = "Clock.Today" # Field name for dates.
+
+# Transformations:
+basic_value = lambda values, index, patch: values[index][patch]
+# change_value
+change_value = lambda values, index, patch: values[index][patch] - \
+	values.get(index - 1, {patch: values[index][patch]})[patch]
+#TODO: Other useful functions might be exponential decay based
+#	   (with min as the baseline, max as the max)
+transformations = {'basic': basic_value,
+	'delta': change_value,
+	}

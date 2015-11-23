@@ -37,7 +37,7 @@ def render(surface, values, shapes, transform, patches, frame):
 			render_shape(surface, shape, transform_wrap, EDGE_COLOUR, EDGE_THICKNESS)
 
 
-def render_scale(surface, min, max, value2colour, font):
+def render_scale(surface, values, font):
 	""" Draw a scale in the bottom-left corner """
 	#TODO: Make this more flexible.
 	#TODO: Can/should this be cached?
@@ -55,14 +55,14 @@ def render_scale(surface, min, max, value2colour, font):
 	
 	def row2value(row):
 		""" Convert from a given row to a value """
-		return (float(row) / height) * (max - min) + min
+		return (float(row) / height) * (values.max - values.min) + values.min
 	
 	# Draw the scale.
 	for row in range(height + 1):
 		# Calculate the height to draw the row at.
 		y = base_height - row
 		# Calculate the colour for this row.
-		colour = value2colour(row2value(row))
+		colour = values.value2colour(row2value(row))
 		# Draw the row.
 		pygame.draw.line(surface, colour, (min_x, y), (max_x, y))
 		

@@ -11,10 +11,10 @@ import pygame, pygame.surfarray, pygame.transform
 # We also need to normalize the given paths.
 import os.path # Use os.path.normpath
 # We also need some constants
-from config import MOVIE_SIZE, MOVIE_FILENAME
+from config import MOVIE_SIZE, MOVIE_FILENAME, FPS
 
 
-def play(render_frame, autoplay="Pygame", frames=200, fps=24):
+def play(render_frame, autoplay="Pygame", frames=200, fps=FPS):
 	""" Create a movie using the given render_frame function, and
 		display it.
 	"""
@@ -32,7 +32,7 @@ def play(render_frame, autoplay="Pygame", frames=200, fps=24):
 		render_frame(screen, 0)
 
 		# Render all the remaining frames.
-		while frame <= frames:
+		while frame < (frames - 1):
 			frame += 1
 			last_time = pygame.time.get_ticks()
 			pygame.display.update()
@@ -52,6 +52,10 @@ def play(render_frame, autoplay="Pygame", frames=200, fps=24):
 						frame += 50
 					elif event.key == 281:
 						frame = max(frame - 50, 0)
+					elif event.key == 276:
+						fps = min(fps/2.0, 1.0)
+					elif event.key == 275:
+						fps = max(fps*2, 48)
 			
 			# Wait.
 			elapsed_time = pygame.time.get_ticks() - last_time
@@ -59,7 +63,7 @@ def play(render_frame, autoplay="Pygame", frames=200, fps=24):
 			if elapsed_time > time_per_frame:
 				print("WARNING: allowed time per frame exceeded")
 			else:
-				pygame.time.wait(time_per_frame - elapsed_time)
+				pygame.time.wait(int(time_per_frame - elapsed_time))
 			
 		return # End early; pygame is different anyhow.
 

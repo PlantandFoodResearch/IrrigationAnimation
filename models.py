@@ -3,8 +3,12 @@
 	Author: Alastair Hughes
 """
 
+# We currently use data functions for loading data into a model.
+#TODO: Move those functions from data into the model code.
 import data, shapes
-from config import DATE_FIELD
+from config import DATE_FIELD, transformations
+# colorsys is used for the gradients
+import colorsys
 
 class Model():
 	""" Wrapper class to contain raw data about the models """
@@ -75,4 +79,66 @@ class Model():
 			return [(vert[i] - self.center[i])*scale for i in range(2)]
 		
 		return centering
+
+
+class Values():
+	""" Wrapper class to contain transformed data from a specific model """
+	
+	def __init__(self, model, field, data_type='float', transform='basic'):
+		""" Initialise self """
+		
+		self.model = model
+		
+		if data_type == 'float':
+			process = lambda v: float(v)
+		else:
+			#TODO: Implement more data types... string is one obvious one.
+			# 	   Even better, get to a point where we don't have to care
+			#	   about it here...
+			# 	   A different colour mapping function will be required, and
+			#	   maximums and minimums are different and not really
+			#	   applicable. The scale code would have to change...
+			raise ValueError("Unknown data type {}".format(data_type))
 			
+		orig_values = self.model.extract_field(field, process)
+		# Transform the values with the given transformation function.
+		transformation = transformations[transform]
+		new_values = {}
+		for index in orig_values:
+			new_values[index] = {}
+			for patch in orig_values[index]:
+				new_values[index][patch] = transformation(orig_values, index, patch)
+			
+		# Find the minimum and maximum values.
+		self.min = float("inf")
+		self.max = -float("inf")
+		for index in new_values:
+			for patch in new_values[index]:
+				value = new_values[index][patch]
+				if value < self.min:
+					self.min = value
+				if value > self.max:
+					self.max = value
+		
+		# Create the colour mapping function.
+		def value2colour(value):
+			""" Convert from a given value to a colour """
+			# Using this: http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855	
+			# Convert to something in the range of 0 to 120 degrees, fed into
+			# the colorsys function (red..green in HSV)
+			#TODO: Would it make more sense to use a single colour?
+			#TODO: Data with large jumps does not work well with this :(
+			hue = ((value - self.min) / (self.max - self.min)) # 0-1
+			return [int(i*255) for i in colorsys.hsv_to_rgb(hue / 3, 1.0, 1.0)]
+		
+		self.value2colour = value2colour
+		
+		# Convert all of the values into colours.
+		for index in new_values:
+			for patch in new_values[index]:
+				new_values[index][patch] = value2colour(new_values[index][patch])
+		self.values = new_values
+
+		
+
+		
