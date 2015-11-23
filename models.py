@@ -3,8 +3,6 @@
 	Author: Alastair Hughes
 """
 
-# We currently use data functions for loading data into a model.
-import shapes
 from config import DATE_FIELD, transformations
 # colorsys is used for the gradients
 import colorsys
@@ -33,7 +31,7 @@ class Model():
 		# Load the GIS data.
 		self.shapes, self.patches = load_shapes(gis)
 		# Find the bounding box, center, and size for the gis shapes.
-		self.bbox = shapes.bounding_box(self.shapes)
+		self.bbox = bounding_box(self.shapes)
 		self.center = [((self.bbox[i] + self.bbox[i+2]) / 2) for i in range(2)]
 		self.size = [(self.bbox[i+2] - self.bbox[i]) for i in range(2)]
 		
@@ -162,7 +160,24 @@ def load_shapes(shape_file):
 			patches[patch] = {'shape': shapes[-1]}
 	
 	return shapes, patches
+
+def bounding_box(shapes):
+	""" Returns the bounding box for all of the given shapes """
 	
+	mins = [float('inf'), float('inf')]
+	maxs = [-float('inf'), -float('inf')]
+	
+	for shape in shapes:
+		min_pos = [min(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
+		max_pos = [max(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
+		for i in range(2):
+			if min_pos[i] < mins[i]:
+				mins[i] = min_pos[i]
+			if max_pos[i] > maxs[i]:
+				maxs[i] = max_pos[i]
+	
+	return [mins[0], mins[1], maxs[0], maxs[1]]
+		
 
 class Values():
 	""" Wrapper class to contain transformed data from a specific model """
@@ -222,6 +237,3 @@ class Values():
 				new_values[index][patch] = value2colour(new_values[index][patch])
 		self.values = new_values
 
-		
-
-		

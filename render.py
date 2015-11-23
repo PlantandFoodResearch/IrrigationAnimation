@@ -3,7 +3,7 @@
 	Author: Alastair Hughes
 """
 
-from shapes import render_shape
+import shapefile
 import pygame.draw
 from config import BROKEN_COLOUR, BORDER, EDGE_COLOUR, EDGE_THICKNESS, \
 	EDGE_RENDER, SCALE_WIDTH, TEXT_COLOUR, TEXT_AA, SCALE_DECIMAL_PLACES
@@ -96,3 +96,29 @@ def render_date(surface, date, font):
 	
 	text = font.render(date, TEXT_AA, TEXT_COLOUR)
 	surface.blit(text, (BORDER, BORDER))
+
+	
+def render_shape(surface, shape, transform, colour, width=1):
+	""" Render the given shape onto the given surface.
+		If width == 0, then the shape will be filled.
+		transform is applied to all of the points in the shape.
+	"""
+	
+	# This is not the shape you are looking for!
+	#TODO: Supporting at least NULL shapes would probably be a good thing,
+	#		although the generated files don't seem to have other shapes.
+	if shape.shapeType != shapefile.POLYGON:
+		raise ValueError("Unknown shape type %s" %shape.shapeType)
+	
+	# We render the polygon!
+	# Polygons are made of different "parts", which are ordered sets of points
+	# that are assumed to join up, so we render them part-by-part.
+	#TODO: Remove pygame dependency, clean up!
+	
+	for num, part in enumerate(shape.parts):
+		try:
+			end = shape.parts[num + 1]
+		except IndexError:
+			end = len(shape.points)
+		pygame.draw.polygon(surface, colour,
+			[transform(point) for point in shape.points[part:end]], width)
