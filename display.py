@@ -95,7 +95,6 @@ def play(render_frame, autoplay=AUTOPLAY, frames=200, fps=FPS):
 		if autoplay == "VLC":
 			print("Playing with VLC...")
 			import subprocess
-			#TODO: A stripped down viewer might be better.
 			subprocess.call(["C:/Program Files/VideoLAN/VLC/VLC.exe",
 				"--play-and-exit", file])
 		

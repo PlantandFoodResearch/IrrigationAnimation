@@ -98,7 +98,6 @@ def find_patch_files(dir):
 		# Check that the file name is in a sane format (ie looks like a CSV patch file).
 		#TODO: We make some assumptions here about the format of the file names
 		#	   which may or may not be accurate.
-		#TODO: Create some tests to check that this is working properly...
 		match = re.search(r"(Report)([1-9][0-9]*)(\.csv)$", file)
 		
 		if match:
@@ -137,7 +136,6 @@ def load_shapes(shape_file):
 		the patches.
 	"""
 	
-	#TODO: Do I need to/can I close the shape file?
 	sf = shapefile.Reader(shape_file)
 	
 	# Data structures
@@ -160,6 +158,11 @@ def load_shapes(shape_file):
 				raise ValueError("Patch {} referenced twice!".format(patch))
 			# Add it to the map
 			patches[patch] = {'shape': shapes[-1]}
+	
+	# Close the reader; there is no function for doing so, we just close the
+	# files.
+	for file in sf.shp, sf.shx:
+		file.close()
 	
 	return shapes, patches
 
@@ -229,7 +232,6 @@ class Values():
 			# Convert to something in the range of 0 to 120 degrees, fed into
 			# the colorsys function (red..green in HSV)
 			#TODO: Would it make more sense to use a single colour?
-			#TODO: Data with large jumps does not work well with this :(
 			hue = ((value - self.min) / (self.max - self.min)) # 0-1
 			return [int(i*255) for i in colorsys.hsv_to_rgb(hue / 3, 1.0, 1.0)]
 		
