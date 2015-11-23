@@ -25,6 +25,7 @@ SCALE_WIDTH = 20 # Width of the scale, in pixels.
 SCALE_DECIMAL_PLACES = 2 # Decimal places to display on the scale.
 TEXT_COLOUR = (0, 0, 0) # The colour of any text.
 TEXT_HEIGHT = 30 # The height for any fonts.
+TEXT_AA = False # Whether or not to antialias the text.
 
 # Other:
 DATE_FIELD = "Clock.Today" # Field name for dates.

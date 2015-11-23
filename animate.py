@@ -73,37 +73,6 @@ def gen_colour_transform(values):
 		
 	return value2colour, min, max
 
-
-def gen_point_transform(shapes):
-	""" Return a function to transform the points so that they fit nicely
-		in the given size, centered around the origin (0, 0).
-	"""
-	
-	# Find the minimum and maximum values x and y values.
-	min_x, min_y, max_x, max_y = bounding_box(shapes)
-	center_x = (max_x + min_x) / 2
-	center_y = (max_y + min_y) / 2
-	width = max_x - min_x
-	height = max_y - min_y
-
-	def centering(vert, size):
-		""" Transform the given vertex to fit nicely in relation to the
-			given size
-		"""
-		
-		# The scaling factor required to scale the image to fit nicely in
-		# the given size.
-		# This is the minimum of the x and y scaling to avoid clipping.
-		x_scale = size[0]/width
-		y_scale = size[1]/height
-		scale = min(x_scale, y_scale)
-		
-		# Return a scaled and recentered vertex.
-		return ((vert[0] - center_x)*scale, (vert[1] - center_y)*scale)
-	
-	return centering
-	
-
 def main(gis, csv, field):
 	""" Generate and display the animation! """
 	
@@ -122,7 +91,7 @@ def main(gis, csv, field):
 	# Generate some transformation functions.
 	# Minimum and maximum is required for the scale
 	value2colour, min, max = gen_colour_transform(values)
-	centering = gen_point_transform(model.shapes)
+	centering = model.gen_fit()
 	
 	# Turn the values into colours.
 	print("Converting values to colours...")

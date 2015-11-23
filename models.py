@@ -3,7 +3,7 @@
 	Author: Alastair Hughes
 """
 
-import data
+import data, shapes
 from config import DATE_FIELD
 
 class Model():
@@ -16,8 +16,14 @@ class Model():
 		
 		# Load the data.
 		print("Loading data...")
+		
 		# Load the GIS data.
 		self.shapes, self.patches = data.load_shapes(gis)
+		# Find the bounding box, center, and size for the gis shapes.
+		self.bbox = shapes.bounding_box(self.shapes)
+		self.center = [((self.bbox[i] + self.bbox[i+2]) / 2) for i in range(2)]
+		self.size = [(self.bbox[i+2] - self.bbox[i]) for i in range(2)]
+		
 		# Load the CSV files.
 		patch_files = data.find_patch_files(csv)
 		self.data = data.raw_patches(patch_files)
@@ -49,4 +55,24 @@ class Model():
 				result[index][patch] = process(self.data[index][patch][field].strip())
 	
 		return result
+		
+	def gen_fit(self):
+		""" Generate a function for fitting vertices from the shapes into a
+			given area, centered around the origin.
+		"""
+
+		def centering(vert, size):
+			""" Transform the given vertex to fit nicely in relation to the
+				given size, center it around the origin, and scale it.
+			"""
+			
+			# The scaling factor required to scale the image to fit nicely in
+			# the given size.
+			# This is the minimum of the x and y scaling to avoid clipping.
+			scale = min([float(size[i])/self.size[i] for i in range(2)])
+			
+			# Return a scaled and recentered vertex.
+			return [(vert[i] - self.center[i])*scale for i in range(2)]
+		
+		return centering
 			

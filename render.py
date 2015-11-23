@@ -6,7 +6,7 @@
 from shapes import render_shape
 import pygame.draw
 from config import BROKEN_COLOUR, BORDER, EDGE_COLOUR, EDGE_THICKNESS, \
-	RENDER_EDGES, SCALE_WIDTH, TEXT_COLOUR, SCALE_DECIMAL_PLACES
+	RENDER_EDGES, SCALE_WIDTH, TEXT_COLOUR, TEXT_AA, SCALE_DECIMAL_PLACES
 
 def render(surface, values, shapes, transform, patches, frame):
 	""" Render onto the given surface.
@@ -73,14 +73,14 @@ def render_scale(surface, min, max, value2colour, font):
 		""" Render a value label next to the scale at the given row """
 		# Render the text.
 		value = str(round(row2value(row), SCALE_DECIMAL_PLACES))
-		text = font.render(value, True, TEXT_COLOUR)
+		text = font.render(value, TEXT_AA, TEXT_COLOUR)
 		# Calculate the y offset.
 		y = base_height - row
 		# Blit the text onto the surface.
 		#TODO: Figure out how to remove the hardcoded offset..
 		surface.blit(text, (max_x + 5, y - (text.get_height() / 2)))
 		# Draw a marker.
-		pygame.draw.line(surface, TEXT_COLOUR, (max_x + 1, y), (max_x + 2, y))
+		pygame.draw.line(surface, TEXT_COLOUR, (min_x, y), (max_x + 2, y))
 	
 	# Render the min and max values.
 	render_text(0)
@@ -97,5 +97,5 @@ def render_scale(surface, min, max, value2colour, font):
 def render_date(surface, date, font):
 	""" Draw the date value into the top left hand corner """
 	
-	text = font.render(date, True, TEXT_COLOUR)
+	text = font.render(date, TEXT_AA, TEXT_COLOUR)
 	surface.blit(text, (BORDER, BORDER))
