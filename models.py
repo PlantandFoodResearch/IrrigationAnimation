@@ -3,7 +3,7 @@
 	Author: Alastair Hughes
 """
 
-from config import DATE_FIELD, transformations
+from config import DATE_FIELD, transformations, PATCH_NUMBER_FIELD
 # colorsys is used for the gradients
 import colorsys
 
@@ -143,21 +143,28 @@ def load_shapes(shape_file):
 	# Map for patches
 	patches = {} # patch: {key: value}
 	
+	# Create a map from field numbers to field names.
+	fields = {}
+	for index, field in enumerate(sf.fields[1:]):
+		# field[0] is the name of the field ('Area', 'Zone', etc).
+		# We offset by one because the first entry in fields is 'DeletionFlag'
+		# which is not in the record for a given patch.
+		fields[field[0]] = index
+	
 	# Iterate through the records and fill in the datatypes.
 	for id in range(sf.numRecords):
 		shapes.append(sf.shape(id))
 		record = sf.record(id)
 		if record != None:
 			# Extract the patch number.
-			#TODO: We only record the shape associated with the patch; should
-			#	   we record more? Soil type? Field no? ???
-			#TODO: This is hard coded, but we should be able to extract the correct
-			# 	   field number via inspection of sf.fields.patch = record[5]
-			patch = record[5]
+			patch = record[fields[PATCH_NUMBER_FIELD]]
 			if patch in patches:
 				raise ValueError("Patch {} referenced twice!".format(patch))
-			# Add it to the map
+			# Add the patch to the map.
 			patches[patch] = {'shape': shapes[-1]}
+			# Add the remaining data.
+			for field in fields:
+				patches[patch][field] = record[fields[field]]
 	
 	# Close the reader; there is no function for doing so, we just close the
 	# files.

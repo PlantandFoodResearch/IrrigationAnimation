@@ -37,6 +37,7 @@ TEXT_AA = False # Whether or not to antialias the text.
 
 # Other:
 DATE_FIELD = "Clock.Today" # Field name for dates.
+PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
 
 # Transformation functions:
 # These are applied to the data as preprocessing. For instance, change_value
