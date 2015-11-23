@@ -40,24 +40,19 @@ def render_shape(surface, shape, transform, colour, width=1):
 def bounding_box(shapes):
 	""" Returns the bounding box for all of the given shapes """
 	
-	min_x = float('inf')
-	min_y = float('inf')
-	max_x = -float('inf')
-	max_y = -float('inf')
+	mins = [float('inf'), float('inf')]
+	maxs = [-float('inf'), -float('inf')]
 	
 	for shape in shapes:
-		x, y = (min(shape.bbox[i], shape.bbox[i+2]) for i in range(2))
-		if x < min_x:
-			min_x = x
-		if y < min_y:
-			min_y = y
-		x, y = (max(shape.bbox[i], shape.bbox[i+2]) for i in range(2))
-		if x > max_x:
-			max_x = x
-		if y > max_y:
-			max_y = y
+		min_pos = [min(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
+		max_pos = [max(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
+		for i in range(2):
+			if min_pos[i] < mins[i]:
+				mins[i] = min_pos[i]
+			if max_pos[i] > maxs[i]:
+				maxs[i] = max_pos[i]
 	
-	return [min_x, min_y, max_x, max_y]
+	return [mins[0], mins[1], maxs[0], maxs[1]]
 	
 
 if __name__ == "__main__":

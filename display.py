@@ -5,10 +5,10 @@
 
 # We currently use MoviePy; import that.
 from moviepy.editor import VideoClip
-# We use pygame for rendering...
-#TODO: Figure out how to get rid of pygame dependency?
+# We use pygame for rendering... and lots of other things.
 import pygame, pygame.surfarray, pygame.transform
-# We also need to normalize the given paths.
+# We also need to normalize the given paths, otherwise VLC/WMP will not like
+# them.
 import os.path # Use os.path.normpath
 # We also need some constants
 from config import MOVIE_SIZE, MOVIE_FILENAME, FPS

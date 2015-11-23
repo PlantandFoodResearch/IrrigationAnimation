@@ -30,7 +30,7 @@ TEXT_AA = False # Whether or not to antialias the text.
 # Other:
 DATE_FIELD = "Clock.Today" # Field name for dates.
 
-# Transformations:
+# Transformation functions:
 basic_value = lambda values, index, patch: values[index][patch]
 # change_value
 change_value = lambda values, index, patch: values[index][patch] - \
