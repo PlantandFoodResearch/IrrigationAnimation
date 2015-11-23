@@ -16,10 +16,12 @@
 		- Existing dependencies
 		- A usage tutorial
 		- Design notes
-	- Ways of easily specifying custom transformations
+	- Work on making specifying custom transformations easier
 	- Use positionable widgets? (Scale/graphs/date+time/...)
 	- Marker on scale to represent the current values (maybe a textual indicator?)
+	- Some kind of relative time indicator, with monthly markers?
 	- Remove pygame dependency?
+	- String value support (eg plant stage)
 
 	Author: Alastair Hughes
 """
