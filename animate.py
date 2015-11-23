@@ -33,10 +33,10 @@ import colorsys
 import pygame.font
 
 # Value transformation functions
-basic_value = lambda values, index, patch: float(values[index][patch])
+basic_value = lambda values, index, patch: values[index][patch]
 # change_value
-change_value = lambda values, index, patch: float(values[index][patch]) - \
-	float(values.get(index - 1, {patch: values[index][patch]})[patch])
+change_value = lambda values, index, patch: values[index][patch] - \
+	values.get(index - 1, {patch: values[index][patch]})[patch]
 #TODO: Other useful functions might be exponential decay based
 #	   (with min as the baseline, max as the max)
 transformations = {'basic': basic_value,
@@ -109,12 +109,12 @@ def main(gis, csv, field):
 	
 	# Load the patches and values...
 	print("Loading data...")
-	patch_files = data.find_patch_files(csv)
-	#TODO: It would be nice if I could extract all the data I wanted without
-	# 	   having to load the same files multiple times...
-	orig_values = data.load_values(patch_files, field)
-	orig_dates = data.load_values(patch_files, DATE_FIELD)
 	shapes, patches = data.load_shapes(gis)
+	# Load the CSV files.
+	patch_files = data.find_patch_files(csv)
+	patch_data = data.raw_patches(patch_files)
+	orig_values = data.extract_field(patch_data, field, lambda v: float(v))
+	orig_dates = data.extract_field(patch_data, DATE_FIELD)
 	
 	# Transform the values with the given transformation function.
 	print("Transforming the data points...")
@@ -124,17 +124,6 @@ def main(gis, csv, field):
 		for patch in orig_values[index]:
 			values[index][patch] = transformations[VALUE2VALUE](orig_values, index, patch)
 	
-	# Generate some transformation functions.
-	# Minimum and maximum is required for the scale
-	value2colour, min, max = gen_colour_transform(values)
-	centering = gen_point_transform(shapes)
-	
-	# Turn the values into colours.
-	print("Converting values to colours...")
-	for index in values:
-		for patch in values[index]:
-			values[index][patch] = value2colour(values[index][patch])
-			
 	# Verify the dates, and compress into a row: date mapping.
 	print("Verifying dates...")
 	dates = {}
@@ -146,6 +135,17 @@ def main(gis, csv, field):
 			elif date != orig_dates[index][patch]:
 				raise ValueError("Dates and rows do not line up for some CSV files!")
 		dates[index] = date
+	
+	# Generate some transformation functions.
+	# Minimum and maximum is required for the scale
+	value2colour, min, max = gen_colour_transform(values)
+	centering = gen_point_transform(shapes)
+	
+	# Turn the values into colours.
+	print("Converting values to colours...")
+	for index in values:
+		for patch in values[index]:
+			values[index][patch] = value2colour(values[index][patch])
 
 	# Create a render_frame function.
 	# Init the fonts.

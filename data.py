@@ -41,11 +41,8 @@ def find_patch_files(dir):
 	
 	return patches
 	
-	
-def load_values(files, data_name):
-	""" Load the data from the patch files, and turn it into the required
-		format.
-	"""
+def raw_patches(files):
+	""" Open the given patch files and extract all of the data """
 	
 	# Open and load each patch file.
 	patches = {} # patch: {index: value}
@@ -55,12 +52,10 @@ def load_values(files, data_name):
 		with open(files[patch_no]) as patch:
 			for index, row in enumerate(csv.DictReader(patch)):
 				# Insert the values into the dict.
-				# The fields need to be stripped to remove excess spaces...
-				# We exploit the fact that the rows are in order...
-				patches[patch_no][index] = row[data_name].strip()
+				patches[patch_no][index] = row
 	
 	# Turn the resulting data into a index[patch[value]] format.
-	result = {} # index: {patch: value}
+	result = {} # index: {patch: values}
 	for patch in patches:
 		for index in patches[patch]:
 			if index not in result:
@@ -69,6 +64,18 @@ def load_values(files, data_name):
 			
 	return result
 	
+def extract_field(values, field, process=lambda v: v):
+	""" Extract a specific field from the given values, and optionally
+		apply a function 'process' to each piece of data.
+	"""
+	
+	result = {}
+	for index in values:
+		result[index] = {}
+		for patch in values[index]:
+			result[index][patch] = process(values[index][patch][field].strip())
+	
+	return result
 	
 def load_shapes(shape_file):
 	""" Generate a list of shapes, and a map from patches to information about
