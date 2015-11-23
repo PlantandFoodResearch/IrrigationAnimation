@@ -89,7 +89,7 @@ def render_scale(surface, values, font):
 	for mark in range(markers):
 		row = (float(remaining) / markers) * (mark + 1)
 		render_text(row)
-		
+
 
 def render_date(surface, date, font):
 	""" Draw the date value into the top left hand corner """
@@ -113,7 +113,6 @@ def render_shape(surface, shape, transform, colour, width=1):
 	# We render the polygon!
 	# Polygons are made of different "parts", which are ordered sets of points
 	# that are assumed to join up, so we render them part-by-part.
-	#TODO: Remove pygame dependency, clean up!
 	
 	for num, part in enumerate(shape.parts):
 		if num + 1 >= len(shape.parts):

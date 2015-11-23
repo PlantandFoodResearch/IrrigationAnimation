@@ -3,16 +3,17 @@
 
 	Future improvements:
 	- Removing all of the TODO's...
-	- More output formats
+	- More output formats?
 	- CLI/GUI interfaces (cli option parsing)
 	- Speed ups
 	- Code cleanups
 	- Packaging
 	- Rendering of multiple plots with different values/transformation functions
+		A more flexible rendering system, generally!
 	- More flexible time handling (days last more than one frame)
 		This could be handy for changing the speed of the simulation to reflect
 		changes (speeding up over boring bits...)
-	- Different colourings?
+	- Different colouring functions?
 	- Parameters rendered (field of interest, files)
 	- More transformation functions/options
 	- Documentation
