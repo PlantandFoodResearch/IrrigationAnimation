@@ -6,8 +6,7 @@
 import shapefile
 import pygame.draw
 from config import BROKEN_COLOUR, BORDER, EDGE_COLOUR, EDGE_THICKNESS, \
-	EDGE_RENDER, SCALE_WIDTH, TEXT_COLOUR, TEXT_AA, SCALE_DECIMAL_PLACES, \
-	HEADER
+	EDGE_RENDER, SCALE_WIDTH, TEXT_COLOUR, TEXT_AA, SCALE_DECIMAL_PLACES
 
 def render(surface, values, frame):
 	""" Render the given values class onto a surface """
@@ -98,29 +97,6 @@ def render_date(surface, date, font):
 	text = font.render(date, TEXT_AA, TEXT_COLOUR)
 	surface.blit(text, (surface.get_width() - (BORDER + text.get_width()), BORDER))
 
-
-def render_params(surface, values, font):
-	""" Render the parameters for the given Values into the top left hand
-		corner.
-	"""
-	
-	#TODO: This should be cached somehow.
-
-	# Fields to render.
-	rows = [HEADER,
-		"Field of interest: " + values.field,
-		"GIS: " + values.model.gis,
-		"CSV: " + values.model.csv,
-		"Transformation type: " + values.transform,
-	]
-
-	# Render the rows (left aligned)
-	y = BORDER
-	for text in rows:
-		surface.blit(font.render(text, TEXT_AA, TEXT_COLOUR), \
-			(BORDER, y))
-		y += font.get_linesize()
-	
 	
 def render_shape(surface, shape, transform, colour, width=1):
 	""" Render the given shape onto the given surface.
@@ -131,6 +107,12 @@ def render_shape(surface, shape, transform, colour, width=1):
 	# This is not the shape you are looking for!
 	if shape.shapeType != shapefile.POLYGON and \
 		shape.shapeType != shapefile.NULL:
+		# If this happens, you will probably need to go and investigate the
+		# spec:
+		# http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf
+		# The library that we are using doesn't have much documentation, so
+		# dir() and help() are your friends, or the source, which is online
+		# at https://github.com/GeospatialPython/pyshp.
 		raise ValueError("Unknown shape type %s" %shape.shapeType)
 	
 	if shape.shapeType == shapefile.NULL:

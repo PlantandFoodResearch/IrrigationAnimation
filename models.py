@@ -252,3 +252,12 @@ class Values():
 			for patch in new_values[index]:
 				self.values[index][patch] = value2colour(new_values[index][patch])
 
+	def description(self):
+		""" Return a string description of self """
+		
+		return "Field of interest: " + self.field + '\n' + \
+			"GIS: " + self.model.gis + '\n' + \
+			"CSV: " + self.model.csv + '\n' + \
+			"Transformation type: " + self.transform
+		
+				

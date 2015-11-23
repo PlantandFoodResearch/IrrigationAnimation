@@ -28,9 +28,10 @@
 # Import the other modules...
 import render
 from display import play
-from config import DEFAULT_COLOUR, TEXT_HEIGHT, VALUE2VALUE, \
-	GIS_FILES, CSV_DIR, FIELD_OF_INTEREST, times, TIMEWARP
+from config import DEFAULT_COLOUR, TEXT_HEIGHT, VALUE2VALUE, GIS_FILES, \
+	CSV_DIR, FIELD_OF_INTEREST, times, TIMEWARP, BORDER, HEADER
 from models import Model, Values
+from widgets import TextWidget
 # We use pygame for font rendering...
 import pygame.font
 
@@ -46,6 +47,9 @@ def main():
 	pygame.font.init()
 	font = pygame.font.Font(None, TEXT_HEIGHT)
 	
+	# Init the widgets.
+	params = TextWidget(HEADER + '\n' + values.description(), font)
+	
 	# Init the time conversions.
 	frame_map = times[TIMEWARP]([values])
 	
@@ -57,7 +61,7 @@ def main():
 		render.render(surface, values, index)
 		render.render_scale(surface, values, font)
 		render.render_date(surface, model.dates[index], font)
-		render.render_params(surface, values, font)
+		params.render(surface, lambda size, surface: (BORDER, BORDER))
 	
 	# Play the animation.
 	play(render_frame, frames=len(frame_map))
