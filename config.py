@@ -10,7 +10,7 @@ MOVIE_FILENAME = "H:/My Documents/vis/movie.mp4"
 
 # Animation options:
 FIELD_OF_INTEREST = "Soil.SoilWater.Drainage"
-VALUE2VALUE = 'basic' # Value transformation function
+VALUE2VALUE = 'field_delta' # Value transformation function
 HEADER = "Model render" # Header displayed
 TIMEWARP = 'delta' # Time warp method used
 
@@ -21,7 +21,7 @@ DEFAULT_COLOUR = (255, 255, 255)
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
 EDGE_RENDER = True # Whether or not to render edges (plot edges, terrain).
-FPS = 2 # 1 does not appear to work for MoviePy?
+FPS = 4 # 1 does not appear to work for MoviePy?
 MAX_FPS = 24 # Maximum allowed FPS
 MIN_FPS = 1 # Minimum allowed FPS
 MAX_FRAMES_PER_DAY = 5 # Maximum number of frames per day
@@ -41,13 +41,24 @@ DATE_FIELD = "Clock.Today" # Field name for dates.
 # returns the delta between the current and previous value. Other useful
 # functions might scale the data, or remove anomalies.
 basic_value = lambda values, index, patch: values[index][patch]
-# change_value
-change_value = lambda values, index, patch: values[index][patch] - \
+# Time delta uses the delta between a value and the previous day's result.
+time_delta_value = lambda values, index, patch: values[index][patch] - \
 	values.get(index - 1, {patch: values[index][patch]})[patch]
+# Field delta uses the relative delta between a value and the maximum and
+# minimums on one specific day.
+#TODO: This is quite inefficient...
+def field_delta_value(values, index, patch):
+	min_day, max_day = min(values[index].values()), max(values[index].values())
+	try:
+		return ((values[index][patch] - min_day) / (max_day - min_day))
+	except ZeroDivisionError:
+		return 0
+
 #TODO: Other useful functions might be exponential decay based
 #	   (with min as the baseline, max as the max)
 transformations = {'basic': basic_value,
-	'delta': change_value,
+	'time_delta': time_delta_value,
+	'field_delta': field_delta_value,
 	}
 
 # Time mapping functions:
