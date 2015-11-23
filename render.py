@@ -6,34 +6,31 @@
 from shapes import render_shape
 import pygame.draw
 from config import BROKEN_COLOUR, BORDER, EDGE_COLOUR, EDGE_THICKNESS, \
-	RENDER_EDGES, SCALE_WIDTH, TEXT_COLOUR, TEXT_AA, SCALE_DECIMAL_PLACES
+	EDGE_RENDER, SCALE_WIDTH, TEXT_COLOUR, TEXT_AA, SCALE_DECIMAL_PLACES
 
-def render(surface, values, shapes, transform, patches, frame):
-	""" Render onto the given surface.
-		The transformation function is passed a point and the size of the
-		surface.
-	"""
+def render(surface, values, frame):
+	""" Render the given values class onto a surface """
 	
 	# Transformation function for the point.
 	# This also converts the result into pygame coordinates (from cartesian),
-	# adds a border, and corrects the orientation.
+	# and adds a border.
 	def transform_wrap(point):
-		point = transform(point, [i-(2*BORDER) for i in surface.get_size()])
-		return ((surface.get_width()/2)+point[0],
-			(surface.get_height()/2)-point[1])
+		size = surface.get_size()
+		point = values.model.centering(point, [i - (2*BORDER) for i in size])
+		return ((size[0]/2) + point[0], (size[1]/2) - point[1])
 
 	# Render patches (filled)
-	for patch in patches:
+	for patch in values.model.patches:
 		try:
-			value = values[frame][patch]
+			value = values.values[frame][patch]
 		except KeyError:
 			print("WARNING: Failed to get data for patch {} for frame {}!".format(patch, frame))
 			value = BROKEN_COLOUR
-		render_shape(surface, patches[patch]['shape'], transform_wrap, value, 0)
+		render_shape(surface, values.model.patches[patch]['shape'], transform_wrap, value, 0)
 	# Render shapes (not filled, just for the outlines)
-	if RENDER_EDGES:
+	if EDGE_RENDER:
 		#TODO: Can/should this be cached?
-		for shape in shapes:
+		for shape in values.model.shapes:
 			render_shape(surface, shape, transform_wrap, EDGE_COLOUR, EDGE_THICKNESS)
 
 

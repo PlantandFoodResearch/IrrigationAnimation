@@ -45,26 +45,8 @@ class Model():
 					#TODO: Try to clarify the error message...
 					raise ValueError("Dates and rows do not line up for some CSV files!")
 			self.dates[index] = date
-			
-			
-	def extract_field(self, field, process=lambda v: v):
-		""" Extract a single field from the loaded data, and optionally
-			apply a function 'process' to each piece of data.
-		"""
-	
-		result = {}
-		for index in self.data:
-			result[index] = {}
-			for patch in self.data[index]:
-				result[index][patch] = process(self.data[index][patch][field].strip())
-	
-		return result
 		
-	def gen_fit(self):
-		""" Generate a function for fitting vertices from the shapes into a
-			given area, centered around the origin.
-		"""
-
+		# Generate a centering function.
 		def centering(vert, size):
 			""" Transform the given vertex to fit nicely in relation to the
 				given size, center it around the origin, and scale it.
@@ -78,7 +60,20 @@ class Model():
 			# Return a scaled and recentered vertex.
 			return [(vert[i] - self.center[i])*scale for i in range(2)]
 		
-		return centering
+		self.centering = centering
+			
+	def extract_field(self, field, process=lambda v: v):
+		""" Extract a single field from the loaded data, and optionally
+			apply a function 'process' to each piece of data.
+		"""
+	
+		result = {}
+		for index in self.data:
+			result[index] = {}
+			for patch in self.data[index]:
+				result[index][patch] = process(self.data[index][patch][field].strip())
+	
+		return result
 
 
 class Values():

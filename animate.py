@@ -41,14 +41,11 @@ def main():
 	pygame.font.init()
 	font = pygame.font.Font(None, TEXT_HEIGHT)
 	
-	# Generate a centering function.
-	centering = model.gen_fit()
-	
 	# Generate the render_frame function.
 	def render_frame(surface, frame):
 		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)
-		render.render(surface, values.values, model.shapes, centering, model.patches, frame)
+		render.render(surface, values, frame)
 		render.render_scale(surface, values, font)
 		render.render_date(surface, model.dates[frame], font)
 	
