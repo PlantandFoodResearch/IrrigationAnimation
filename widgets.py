@@ -35,9 +35,7 @@ class TextWidget():
 		self.linesize = font.get_linesize()
 			
 		# Calculate self's size
-		width = max((line.get_width() for line in self.lines))
-		height = self.linesize * len(self.lines)
-		self.size = (width, height)
+		self.size = self.gen_size()
 		
 	def render(self, surface, time, pos_func):
 		""" Render self """
@@ -46,30 +44,46 @@ class TextWidget():
 		for line in self.lines:
 			surface.blit(line, (x, y))
 			y += self.linesize
+			
+	def gen_size(self):
+		""" Return self's size """
+		width = max((line.get_width() for line in self.lines))
+		height = self.linesize * len(self.lines)
+		return width, height
 		
-		
-class DynamicTextWidget():
-	""" A dynamic, right aligned text widget """
+class DynamicTextWidget(TextWidget):
+	""" A dynamic, left aligned text widget """
 	
 	def __init__(self, text_func, font):
 		""" Initialise self """
 		
-		self.size = None
 		self.font = font
+		self.linesize = font.get_linesize()
 		self.text_func = text_func
+		self.time = None # Time for the cached text.
+		self.update_text(0)
+		self.size = self.gen_size()
+		
+	def update_text(self, time):
+		""" Generate the text for self at the given time, if required """
+		
+		if time != self.time:
+			# Generate the text.
+			self.lines = [self.font.render(line, TEXT_AA, TEXT_COLOUR) \
+				for line in self.text_func(time).split('\n')]
+			# Update self's size, and save it.
+			self.size = self.gen_size()
+			# Update the last rendered time.
+			self.time = time
 		
 	def render(self, surface, time, pos_func):
 		""" Render self """
-		
-		# Generate the text.
-		lines = [self.font.render(line, TEXT_AA, TEXT_COLOUR) \
-			for line in self.text_func(time).split('\n')]
-		# Figure out self's size.
-		width = max((line.get_width() for line in lines))
-		height = self.font.get_linesize() * len(lines)
-		# Find the offset and render.
-		x, y = pos_func((width, height))
-		for line in lines:
-			surface.blit(line, (x, y))
-			y += self.font.get_linesize()
-			
+		self.update_text(time)
+		TextWidget.render(self, surface, time, pos_func)
+	
+
+class ScaleWidget():
+	""" A widget representing a scale """
+	
+	def __init__(self):
+		pass

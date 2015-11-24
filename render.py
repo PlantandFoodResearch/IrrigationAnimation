@@ -106,6 +106,7 @@ def render_shape(surface, shape, transform, colour, width=1):
 		# The library that we are using doesn't have much documentation, so
 		# dir() and help() are your friends, or the source, which is online
 		# at https://github.com/GeospatialPython/pyshp.
+		# Hopefully this never stops working!
 		raise ValueError("Unknown shape type %s" %shape.shapeType)
 	
 	if shape.shapeType == shapefile.NULL:
