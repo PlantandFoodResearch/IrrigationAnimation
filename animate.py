@@ -39,34 +39,54 @@ def main():
 	
 	# Create a Model.
 	model = Model(GIS_FILES, CSV_DIR)
-	# Create a Values object.
-	values = Values(model, FIELD_OF_INTEREST, transform=VALUE2VALUE)
+	# Create the values.
+	values = [Values(model, FIELD_OF_INTEREST, transform=VALUE2VALUE)]
 	
 	# Init the fonts.
 	pygame.font.init()
 	font = pygame.font.Font(None, TEXT_HEIGHT)
 	
 	# Init the widgets.
-	map = ValuesWidget(values)
-	scale = ScaleWidget(values, font)
-	params = TextWidget(HEADER + '\n' + values.description(), font)
+	maps = []
+	scales = []
+	for i in values:
+		maps.append(ValuesWidget(i))
+		scales.append(ScaleWidget(i, font))
+	params = TextWidget(HEADER + '\n' + values[0].description(), font)
 	date = DynamicTextWidget(lambda time: model.dates[time], font)
 	
 	# Generate the render_frame function.
-	frame_map = times[TIMEWARP]([values])
+	frame_map = times[TIMEWARP](values)
 	def render_frame(surface, frame):
+		""" Render a frame """
+		
 		index = frame_map[frame]
-		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)
-		map.render(surface, index, \
-			lambda size: (surface.get_width() - (BORDER + size[0]), \
-				(surface.get_height() / 2) - (size[1]/2)), \
-			[i - (2 * BORDER) for i in surface.get_size()])
-		scale.render(surface, index, \
-			lambda size: (BORDER, surface.get_height() - (BORDER + size[1])), \
-			(-1, surface.get_height() / 3))
+		surf_w = surface.get_width()
+		surf_h = surface.get_height()
+		
+		# Render the maps and scales.
+		map_size = [i - (2 * BORDER) for i in (surf_w / len(maps), surf_h)]
+		for index in range(len(maps)):
+			map = maps[index]
+			scale = scales[index]
+			
+			x_offset = (surf_w / len(maps)) * index
+		
+			# Render the map.
+			map.render(surface, index, \
+				lambda size: (x_offset + (surf_w/2) - (size[0] / 2), \
+					(surf_h / 2) - (size[1] / 2)), \
+				map_size)
+			
+			# Render the scale.
+			scale.render(surface, index, \
+				lambda size: (x_offset + BORDER, surf_h - (BORDER + size[1])), \
+				(-1, surf_h / 3))
+		
+		# Render the date and parameters.
 		date.render(surface, index, \
-			lambda size: (surface.get_width()-(BORDER+size[0]), BORDER))
+			lambda size: (surf_w -(BORDER + size[0]), BORDER))
 		params.render(surface, index, lambda size: (BORDER, BORDER))
 	
 	# Play the animation.
