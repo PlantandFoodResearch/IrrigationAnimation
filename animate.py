@@ -31,7 +31,7 @@ from display import play
 from config import DEFAULT_COLOUR, TEXT_HEIGHT, VALUE2VALUE, GIS_FILES, \
 	CSV_DIR, FIELD_OF_INTEREST, times, TIMEWARP, BORDER, HEADER
 from models import Model, Values
-from widgets import TextWidget
+from widgets import TextWidget, DynamicTextWidget
 # We use pygame for font rendering...
 import pygame.font
 
@@ -49,19 +49,19 @@ def main():
 	
 	# Init the widgets.
 	params = TextWidget(HEADER + '\n' + values.description(), font)
-	
-	# Init the time conversions.
-	frame_map = times[TIMEWARP]([values])
+	date = DynamicTextWidget(lambda time: model.dates[time], font)
 	
 	# Generate the render_frame function.
+	frame_map = times[TIMEWARP]([values])
 	def render_frame(surface, frame):
 		index = frame_map[frame]
 		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)
 		render.render(surface, values, index)
 		render.render_scale(surface, values, font)
-		render.render_date(surface, model.dates[index], font)
-		params.render(surface, lambda size, surface: (BORDER, BORDER))
+		date.render(surface, index, \
+			lambda size: (surface.get_width()-(BORDER+size[0]), BORDER))
+		params.render(surface, index, lambda size: (BORDER, BORDER))
 	
 	# Play the animation.
 	play(render_frame, frames=len(frame_map))

@@ -89,14 +89,7 @@ def render_scale(surface, values, font):
 	for mark in range(markers):
 		row = (float(remaining) / markers) * (mark + 1)
 		render_text(row)
-
-
-def render_date(surface, date, font):
-	""" Draw the date value into the top right hand corner """
-	
-	text = font.render(date, TEXT_AA, TEXT_COLOUR)
-	surface.blit(text, (surface.get_width() - (BORDER + text.get_width()), BORDER))
-
+		
 	
 def render_shape(surface, shape, transform, colour, width=1):
 	""" Render the given shape onto the given surface.
