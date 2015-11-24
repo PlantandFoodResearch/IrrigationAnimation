@@ -33,11 +33,8 @@ def play(render_frame, autoplay=AUTOPLAY, frames=200, fps=FPS):
 
 		# Render all the remaining frames.
 		while frame < (frames - 1):
-			frame += 1
 			last_time = pygame.time.get_ticks()
 			pygame.display.update()
-			# Render a frame, then check for events, wait.
-			render_frame(screen, frame)
 			
 			# Get any events...
 			for event in pygame.event.get():
@@ -62,7 +59,11 @@ def play(render_frame, autoplay=AUTOPLAY, frames=200, fps=FPS):
 						pygame.RESIZABLE)
 					# Rerender...
 					render_frame(screen, frame)
+					pygame.display.update()
 			
+			# Render the current frame.
+			frame += 1
+			render_frame(screen, frame)
 			# Wait.
 			elapsed_time = pygame.time.get_ticks() - last_time
 			time_per_frame = 1000 / fps
