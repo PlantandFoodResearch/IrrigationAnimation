@@ -161,6 +161,9 @@ class ModelWidget():
 	def __init__(self, model):
 		""" Initialise self """
 		
+		# TODO: This partially crosses over with models.Model; it would be nice
+		# 		to clarify what belonged where.
+		
 		self.model = model
 		self.size = None
 		

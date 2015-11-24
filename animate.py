@@ -8,15 +8,13 @@
 	- Speed ups
 	- Code cleanups
 	- Packaging
-	- Rendering of multiple plots with different values/transformation functions
-		A more flexible rendering system, generally!
+	- Some way to work around 'clipping' in the various widgets
 	- Different colouring functions?
 	- More transformation functions/options
 	- Documentation
 		- A usage tutorial
 		- Design notes
 	- Work on making specifying custom transformations easier
-	- Use positionable widgets? (Scale/graphs/date+time/...)
 	- Marker on scale to represent the current values (maybe a textual indicator?)
 	- Some kind of relative time indicator, with monthly markers?
 	- Remove pygame dependency?
@@ -40,7 +38,8 @@ def main():
 	# Create a Model.
 	model = Model(GIS_FILES, CSV_DIR)
 	# Create the values.
-	values = [Values(model, FIELD_OF_INTEREST, transform=VALUE2VALUE)]
+	values = [Values(model, FIELD_OF_INTEREST, transform=VALUE2VALUE),
+		Values(model, FIELD_OF_INTEREST)]
 	
 	# Init the fonts.
 	pygame.font.init()
@@ -49,10 +48,12 @@ def main():
 	# Init the widgets.
 	maps = []
 	scales = []
+	descriptions = []
 	for i in values:
 		maps.append(ValuesWidget(i))
 		scales.append(ScaleWidget(i, font))
-	params = TextWidget(HEADER + '\n' + values[0].description(), font)
+		descriptions.append(TextWidget(i.description(), font))
+	params = TextWidget(HEADER, font)
 	date = DynamicTextWidget(lambda time: model.dates[time], font)
 	
 	# Generate the render_frame function.
@@ -67,22 +68,26 @@ def main():
 		
 		# Render the maps and scales.
 		map_size = [i - (2 * BORDER) for i in (surf_w / len(maps), surf_h)]
-		for index in range(len(maps)):
-			map = maps[index]
-			scale = scales[index]
+		for i in range(len(values)):
+			map, scale, desc = maps[i], scales[i], descriptions[i]
 			
-			x_offset = (surf_w / len(maps)) * index
+			x_offset = (surf_w / len(maps)) * i + BORDER
 		
 			# Render the map.
 			map.render(surface, index, \
-				lambda size: (x_offset + (surf_w/2) - (size[0] / 2), \
+				lambda size: (x_offset + (map_size[0] / 2) - (size[0] / 2), \
 					(surf_h / 2) - (size[1] / 2)), \
 				map_size)
 			
 			# Render the scale.
 			scale.render(surface, index, \
-				lambda size: (x_offset + BORDER, surf_h - (BORDER + size[1])), \
+				lambda size: (x_offset, surf_h - (BORDER + size[1])), \
 				(-1, surf_h / 3))
+				
+			# Render the description.
+			desc.render(surface, index, \
+				lambda size: (x_offset + (map_size[0] / 2) - (size[0] / 2), \
+					BORDER))
 		
 		# Render the date and parameters.
 		date.render(surface, index, \
