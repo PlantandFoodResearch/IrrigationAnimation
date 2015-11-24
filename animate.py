@@ -19,6 +19,8 @@
 	- Some kind of relative time indicator, with monthly markers?
 	- Remove pygame dependency?
 	- String value support (eg plant stage)
+	- Pausing support for the dynamic viewer
+	- Avoiding lag with the dynamic viewer
 
 	Author: Alastair Hughes
 """
