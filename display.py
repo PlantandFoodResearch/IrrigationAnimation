@@ -25,7 +25,7 @@ def play(render_frame, autoplay=AUTOPLAY, frames=200, fps=FPS):
 		#TODO: Add widget to allow rapidly switching between frames.
 		import pygame.event, pygame.display, pygame.time
 		pygame.init()
-		screen = pygame.display.set_mode(MOVIE_SIZE)
+		screen = pygame.display.set_mode(MOVIE_SIZE, pygame.RESIZABLE)
 		pygame.display.set_caption("Video rendering...")
 		# Render an initial frame.
 		frame = 0
@@ -56,6 +56,12 @@ def play(render_frame, autoplay=AUTOPLAY, frames=200, fps=FPS):
 						fps = min(fps/2.0, MIN_FPS)
 					elif event.key == 275:
 						fps = max(fps*2, MAX_FPS)
+				elif event.type == pygame.VIDEORESIZE:
+					# Window has been resized!
+					screen = pygame.display.set_mode(event.dict['size'], \
+						pygame.RESIZABLE)
+					# Rerender...
+					render_frame(screen, frame)
 			
 			# Wait.
 			elapsed_time = pygame.time.get_ticks() - last_time

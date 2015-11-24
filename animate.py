@@ -59,7 +59,8 @@ def main():
 		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)
 		map.render(surface, index, \
-			lambda size: (surface.get_width() - (BORDER + size[0]), BORDER), \
+			lambda size: (surface.get_width() - (BORDER + size[0]), \
+				(surface.get_height() / 2) - (size[1]/2)), \
 			[i - (2 * BORDER) for i in surface.get_size()])
 		scale.render(surface, index, \
 			lambda size: (BORDER, surface.get_height() - (BORDER + size[1])), \
