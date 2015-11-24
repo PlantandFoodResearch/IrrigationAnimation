@@ -26,12 +26,11 @@
 """
 
 # Import the other modules...
-import render
 from display import play
 from config import DEFAULT_COLOUR, TEXT_HEIGHT, VALUE2VALUE, GIS_FILES, \
 	CSV_DIR, FIELD_OF_INTEREST, times, TIMEWARP, BORDER, HEADER
 from models import Model, Values
-from widgets import TextWidget, DynamicTextWidget, ScaleWidget
+from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget
 # We use pygame for font rendering...
 import pygame.font
 
@@ -48,6 +47,7 @@ def main():
 	font = pygame.font.Font(None, TEXT_HEIGHT)
 	
 	# Init the widgets.
+	map = ValuesWidget(values)
 	scale = ScaleWidget(values, font)
 	params = TextWidget(HEADER + '\n' + values.description(), font)
 	date = DynamicTextWidget(lambda time: model.dates[time], font)
@@ -58,7 +58,9 @@ def main():
 		index = frame_map[frame]
 		# Render the frame.
 		surface.fill(DEFAULT_COLOUR)
-		render.render(surface, values, index)
+		map.render(surface, index, \
+			lambda size: (surface.get_width() - (BORDER + size[0]), BORDER), \
+			[i - (2 * BORDER) for i in surface.get_size()])
 		scale.render(surface, index, \
 			lambda size: (BORDER, surface.get_height() - (BORDER + size[1])), \
 			(-1, surface.get_height() / 3))

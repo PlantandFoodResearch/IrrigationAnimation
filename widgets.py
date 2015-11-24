@@ -16,9 +16,11 @@
 	Author: Alastair Hughes
 """
 
-from config import TEXT_AA, TEXT_COLOUR, SCALE_WIDTH, SCALE_DECIMAL_PLACES
+from config import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
+	EDGE_RENDER, SCALE_WIDTH, SCALE_DECIMAL_PLACES, TEXT_AA, TEXT_COLOUR
 
-import pygame.draw
+import pygame.draw # We currently render using pygame...
+import shapefile # For the shape constants
 
 class TextWidget():
 	""" A static, left aligned text widget """
@@ -91,7 +93,7 @@ class ScaleWidget():
 		
 		self.font = font
 		self.values = values
-		self.size = None
+		self.size = None # The scale is *mostly* dynamically sized.
 
 	def render(self, surface, time, pos_func, size):
 		""" Render self """
@@ -153,3 +155,100 @@ class ScaleWidget():
 			render_text(row)
 
 	
+class ModelWidget():
+	""" A model widget, representing a specific model """
+	
+	def __init__(self, model):
+		""" Initialise self """
+		
+		self.model = model
+		self.size = None
+		
+	def gen_transform(self, pos_func, size):
+		""" Generate a transformation function to adjust the points in the model """
+		
+		# The scaling factor required to scale the image to fit nicely in
+		# the given size.
+		# This is the minimum of the x and y scaling to avoid clipping.
+		scale = min([float(size[i])/self.model.size[i] for i in range(2)])
+		
+		# Calculate the offset with the *real* size.
+		real_size = [self.model.size[i]*scale for i in range(2)]
+		offset = pos_func(real_size)
+		
+		def transform(vert):
+			# Calculate a scaled and recentered vertex.
+			point = [(vert[i] - self.model.center[i])*scale for i in range(2)]
+			
+			# Transform the recentered vertex into offset pygame coordinates.
+			return ((real_size[0]/2) + point[0] + offset[0], \
+				(real_size[1]/2) - point[1] + offset[1])
+			
+		return transform
+		
+	def render(self, surface, time, pos_func, size):
+		""" Render self """
+		
+		#TODO: Should this be cached? It should not really change...
+		for shape in self.model.shapes:
+			self.render_shape(surface, self.gen_transform(pos_func, size), \
+				shape, EDGE_COLOUR, EDGE_THICKNESS)
+			
+	def render_shape(self, surface, transform, shape, colour, width):
+		""" Render the given shape onto the given surface, applying the given
+			transformation. If width == 0, then the shape will be filled.
+		"""
+		
+		# This is not the shape you are looking for!
+		if shape.shapeType != shapefile.POLYGON and \
+			shape.shapeType != shapefile.NULL:
+			# If this happens, you will probably need to go and investigate the
+			# spec:
+			# http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf
+			# The library that we are using doesn't have much documentation, so
+			# dir() and help() are your friends, or the source, which is online
+			# at https://github.com/GeospatialPython/pyshp.
+			# Hopefully this never stops working!
+			raise ValueError("Unknown shape type %s" %shape.shapeType)
+			
+		if shape.shapeType == shapefile.NULL:
+			# Nothing to render...
+			return
+		
+		# We have a polygon!
+		# Polygons are made of different "parts", which are ordered sets of points
+		# that are assumed to join up, so we render them part-by-part.
+		for num, part in enumerate(shape.parts):
+			if num + 1 >= len(shape.parts):
+				end = len(shape.points)
+			else:
+				end = shape.parts[num + 1]
+			pygame.draw.polygon(surface, colour,
+				[transform(point) for point in shape.points[part:end]], width)
+				
+
+class ValuesWidget(ModelWidget):
+	""" Widget for a specific Values """
+	
+	def __init__(self, values):
+		""" Initialise self """
+		
+		ModelWidget.__init__(self, values.model)
+		self.values = values
+		
+	def render(self, surface, time, pos_func, size):
+		""" Render the given values class onto a surface """
+	
+		# Render patches (filled)
+		for patch in self.model.patches:
+			try:
+				value = self.values.values[time][patch]
+			except KeyError:
+				print("WARNING: Failed to get data for patch {} for time {}!".format(patch, time))
+				value = BROKEN_COLOUR
+			self.render_shape(surface, self.gen_transform(pos_func, size), \
+				self.model.patches[patch]['shape'], value, 0)
+		# Render shapes (not filled, just for the outlines)
+		if EDGE_RENDER:
+			ModelWidget.render(self, surface, time, pos_func, size)
+

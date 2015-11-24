@@ -54,22 +54,6 @@ class Model():
 					#TODO: Try to clarify the error message...
 					raise ValueError("Dates and rows do not line up for some CSV files!")
 			self.dates[index] = date
-		
-		# Generate a centering function.
-		def centering(vert, size):
-			""" Transform the given vertex to fit nicely in relation to the
-				given size, center it around the origin, and scale it.
-			"""
-			
-			# The scaling factor required to scale the image to fit nicely in
-			# the given size.
-			# This is the minimum of the x and y scaling to avoid clipping.
-			scale = min([float(size[i])/self.size[i] for i in range(2)])
-			
-			# Return a scaled and recentered vertex.
-			return [(vert[i] - self.center[i])*scale for i in range(2)]
-		
-		self.centering = centering
 			
 	def extract_field(self, field, process=lambda v: v):
 		""" Extract a single field from the loaded data, and optionally
