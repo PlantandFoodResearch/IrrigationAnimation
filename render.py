@@ -32,64 +32,7 @@ def render(surface, values, frame):
 		#TODO: Can/should this be cached?
 		for shape in values.model.shapes:
 			render_shape(surface, shape, transform_wrap, EDGE_COLOUR, EDGE_THICKNESS)
-
-
-def render_scale(surface, values, font):
-	""" Draw a scale in the bottom-left corner """
-	#TODO: Make this more flexible.
-	#TODO: Can/should this be cached?
-	#TODO: Exponential data will not work well with this?
-	#TODO: '0.0' is not rendered; we should probably include that!
-	
-	# Calculate the height, in pixels, of the scale.
-	#TODO: The height calculation needs tweaking so that it doesn't clip with
-	#	   the main animation.
-	height = (surface.get_height()/3) - BORDER
-	base_height = surface.get_height() - BORDER
-	# Calculate the x borders
-	min_x = BORDER
-	max_x = BORDER + SCALE_WIDTH
-	
-	def row2value(row):
-		""" Convert from a given row to a value """
-		return (float(row) / height) * (values.max - values.min) + values.min
-	
-	# Draw the scale.
-	for row in range(height + 1):
-		# Calculate the height to draw the row at.
-		y = base_height - row
-		# Calculate the colour for this row.
-		colour = values.value2colour(row2value(row))
-		# Draw the row.
-		pygame.draw.line(surface, colour, (min_x, y), (max_x, y))
-		
-	# Render the text on the scale.
-	# We use the font linespace as the minimum gap between reference points
-	
-	def render_text(row):
-		""" Render a value label next to the scale at the given row """
-		# Render the text.
-		value = str(round(row2value(row), SCALE_DECIMAL_PLACES))
-		text = font.render(value, TEXT_AA, TEXT_COLOUR)
-		# Calculate the y offset.
-		y = base_height - row
-		# Blit the text onto the surface.
-		#TODO: Figure out how to remove the hardcoded offset..
-		surface.blit(text, (max_x + 5, y - (text.get_height() / 2)))
-		# Draw a marker.
-		pygame.draw.line(surface, TEXT_COLOUR, (min_x, y), (max_x + 2, y))
-	
-	# Render the min and max values.
-	render_text(0)
-	render_text(height)
-	
-	# Render the remaining values that we have space for.
-	remaining = height - (2 * font.get_linesize())
-	markers = int(remaining / (2 * font.get_linesize()))
-	for mark in range(markers):
-		row = (float(remaining) / markers) * (mark + 1)
-		render_text(row)
-		
+			
 	
 def render_shape(surface, shape, transform, colour, width=1):
 	""" Render the given shape onto the given surface.

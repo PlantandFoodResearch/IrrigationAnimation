@@ -16,7 +16,7 @@
 	Author: Alastair Hughes
 """
 
-from config import TEXT_AA, TEXT_COLOUR
+from config import TEXT_AA, TEXT_COLOUR, SCALE_WIDTH, SCALE_DECIMAL_PLACES
 
 import pygame.draw
 
@@ -50,6 +50,7 @@ class TextWidget():
 		width = max((line.get_width() for line in self.lines))
 		height = self.linesize * len(self.lines)
 		return width, height
+
 		
 class DynamicTextWidget(TextWidget):
 	""" A dynamic, left aligned text widget """
@@ -83,7 +84,72 @@ class DynamicTextWidget(TextWidget):
 	
 
 class ScaleWidget():
-	""" A widget representing a scale """
+	""" A dynamically sized widget representing a scale """
 	
-	def __init__(self):
-		pass
+	def __init__(self, values, font):
+		""" Initialise self """
+		
+		self.font = font
+		self.values = values
+		self.size = None
+
+	def render(self, surface, time, pos_func, size):
+		""" Render self """
+		# TODO: Can/should this be cached?
+		# TODO: Custom scale spacing (for exponential data) and custom mapping
+		# 		of labels would be nice.
+		# TODO: '0.0' is not always rendered; that should probably be included!
+		# TODO: We currently ignore the x dimension of the given size; we
+		#		should probably do something about it.
+		
+		# Find the initial offsets.
+		min_x, y_offset = pos_func(size)
+		# Calculate the height, in pixels, of the scale.
+		height = size[1] - self.font.get_linesize()
+		# Calculate the base height.
+		base_height = y_offset + size[1] - (self.font.get_linesize() / 2)
+		# Calculate the x borders of the scale.
+		max_x = min_x + SCALE_WIDTH
+
+		def row2value(row):
+			""" Convert from a given row to a value """
+			return (float(row) / height) * (self.values.max - self.values.min) \
+				+ self.values.min
+
+		# Draw the scale.
+		for row in range(height + 1):
+			# Calculate the height to draw the row at.
+			y = base_height - row
+			# Calculate the colour for this row.
+			colour = self.values.value2colour(row2value(row))
+			# Draw the row.
+			pygame.draw.line(surface, colour, (min_x, y), (max_x, y))
+
+		# Render the text on the scale.
+		# We use the font linespace as the minimum gap between reference points
+
+		def render_text(row):
+			""" Render a value label next to the scale at the given row """
+			# Render the text.
+			value = str(round(row2value(row), SCALE_DECIMAL_PLACES))
+			text = self.font.render(value, TEXT_AA, TEXT_COLOUR)
+			# Calculate the y offset.
+			y = base_height - row
+			# Blit the text onto the surface.
+			#TODO: Figure out how to remove the hardcoded offset..
+			surface.blit(text, (max_x + 5, y - (text.get_height() / 2)))
+			# Draw a marker.
+			pygame.draw.line(surface, TEXT_COLOUR, (min_x, y), (max_x + 2, y))
+
+		# Render the min and max values.
+		render_text(0)
+		render_text(height)
+
+		# Render the remaining values that we have space for.
+		remaining = height - (2 * self.font.get_linesize())
+		markers = int(remaining / (2 * self.font.get_linesize()))
+		for mark in range(markers):
+			row = (float(remaining) / markers) * (mark + 1)
+			render_text(row)
+
+	
