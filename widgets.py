@@ -192,7 +192,6 @@ class ModelWidget():
 	def render(self, surface, time, pos_func, size):
 		""" Render self """
 		
-		#TODO: Should this be cached? It should not really change...
 		for shape in self.model.shapes:
 			self.render_shape(surface, self.gen_transform(pos_func, size), \
 				shape, EDGE_COLOUR, EDGE_THICKNESS)
