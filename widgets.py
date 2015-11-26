@@ -195,9 +195,10 @@ class ModelWidget():
 	def __init__(self, model):
 		""" Initialise self """
 		
-		# TODO: This partially crosses over with models.Model; it would be nice
-		# 		to clarify what belonged where.
-		
+		# NOTE: We only have things related to rendering here.
+		#		models.Model contains lots of bits and pieces, including the
+		#		bounding box code; because one model might be shared across
+		#		multiple widgets, we leave the bounding box code where it is.
 		self.model = model
 		self.size = None
 		
