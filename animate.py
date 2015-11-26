@@ -55,7 +55,7 @@ def main():
 		maps.append(ValuesWidget(i))
 		scales.append(ScaleWidget(i, font))
 		descriptions.append(TextWidget(i.description(), font))
-	params = TextWidget(HEADER, font)
+	label = TextWidget(HEADER, font)
 	date = DynamicTextWidget(lambda time: model.dates[time], font)
 	
 	# Generate the render_frame function.
@@ -91,10 +91,10 @@ def main():
 				lambda size: (x_offset + (map_size[0] / 2) - (size[0] / 2), \
 					BORDER))
 		
-		# Render the date and parameters.
+		# Render the date and label.
 		date.render(surface, index, \
 			lambda size: (surf_w -(BORDER + size[0]), BORDER))
-		params.render(surface, index, lambda size: (BORDER, BORDER))
+		label.render(surface, index, lambda size: (BORDER, BORDER))
 	
 	# Play the animation.
 	play(render_frame, frames=len(frame_map))
