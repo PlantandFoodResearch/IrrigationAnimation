@@ -191,7 +191,7 @@ class Values():
 			#	   about it here...
 			# 	   A different colour mapping function will be required, and
 			#	   maximums and minimums are different and not really
-			#	   applicable. The scale code would have to change...
+			#	   applicable.
 			raise ValueError("Unknown data type {}".format(data_type))
 			
 		self.field = field

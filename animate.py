@@ -10,7 +10,7 @@
 	- Packaging
 	- Some way to work around 'clipping' in the various widgets
 	- Different colouring functions?
-	- More transformation functions/options
+	- More transformation functions/options + combining transformations
 	- Documentation
 		- A usage tutorial
 		- Design notes
