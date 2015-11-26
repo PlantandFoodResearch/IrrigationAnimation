@@ -89,11 +89,46 @@ class DynamicTextWidget(TextWidget):
 class ScaleWidget():
 	""" A dynamically sized widget representing a scale """
 	
-	def __init__(self, values, font):
-		""" Initialise self """
+	def __init__(self, values, font, labelling=None, row2value=None):
+		""" Initialise self.
+		
+			The given scale labelling function is assumed to take a height, and
+			return a map from rows to string values.
+			
+			The given row2value function is assumed to take a row and height,
+			and return the value at that row.
+			
+			If None is passed for either functions, the default will be used.
+		"""
+		
+		if row2value == None:
+			row2value = lambda row, height: (float(row) / height) * \
+				(self.values.max - self.values.min) + self.values.min
+		if labelling == None:
+			# We use the font linespace as the minimum gap between markers.
+			def labelling(height):
+				# Labels to be added.
+				labels = {}
+
+				# Calculate the number of markers required.
+				# We always render at least two markers.
+				markers = max(int(height / (2 * font.get_linesize())) + 1, 2)
+				
+				for mark in range(markers):
+					# Calculate the row to render the marker on.
+					row = (float(height) / (markers - 1)) * mark
+					# Calculate the value for that row.
+					value = str(round(self.row2value(row, height), \
+						SCALE_DECIMAL_PLACES))
+					# Add it to the map.
+					labels[row] = value
+				
+				return labels
 		
 		self.font = font
 		self.values = values
+		self.labelling = labelling # Scale labelling function.
+		self.row2value = row2value # Row to value conversion function.
 		self.size = None # The scale is *mostly* dynamically sized.
 
 	def render(self, surface, time, pos_func, size):
@@ -110,22 +145,11 @@ class ScaleWidget():
 		height = size[1] - self.font.get_linesize()
 		# Calculate the base height.
 		base_height = y_offset + size[1] - (self.font.get_linesize() / 2)
-
-		def row2value(row):
-			""" Convert from a given row to a value """
-			return (float(row) / height) * (self.values.max - self.values.min) \
-				+ self.values.min
-				
-		# Render the values that we have space for, and save them.
-		# We use the font linespace as the minimum gap between reference points
+		
+		# Render the values, and save them.
 		rows = {} # row: text
-		max_text_width = 0 # Record the maximum text width.
-		markers = int(height / (2 * self.font.get_linesize()))
-		for mark in range(markers + 1): # +1 so that the top value is rendered.'
-			# Calculate the row to render the marker on.
-			row = (float(height) / markers) * mark
-			# Calculate the value for that row.
-			value = str(round(row2value(row), SCALE_DECIMAL_PLACES))
+		max_text_width = 0 # Record the maximum text width for future reference.
+		for row, value in self.labelling(height).items():
 			# Render and save.
 			rows[row] = self.font.render(value, TEXT_AA, TEXT_COLOUR)
 			# Update the maximum text width.
@@ -139,7 +163,7 @@ class ScaleWidget():
 			# Calculate the height to draw the row at.
 			y = base_height - row
 			# Calculate the colour for this row.
-			colour = self.values.value2colour(row2value(row))
+			colour = self.values.value2colour(self.row2value(row, height))
 			# Draw the row.
 			pygame.draw.line(surface, colour, (min_x, y), (max_x, y))
 
