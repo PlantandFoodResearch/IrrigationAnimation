@@ -133,8 +133,6 @@ class ScaleWidget():
 
 	def render(self, surface, time, pos_func, size):
 		""" Render self """
-		# TODO: Custom scale spacing (for exponential data) and custom mapping
-		# 		of labels would be nice.
 		# TODO: '0.0' is not always rendered; that should probably be included!
 		
 		# Find the initial offsets.
