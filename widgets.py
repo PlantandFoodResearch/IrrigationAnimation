@@ -97,7 +97,6 @@ class ScaleWidget():
 
 	def render(self, surface, time, pos_func, size):
 		""" Render self """
-		# TODO: Can/should this be cached?
 		# TODO: Custom scale spacing (for exponential data) and custom mapping
 		# 		of labels would be nice.
 		# TODO: '0.0' is not always rendered; that should probably be included!
