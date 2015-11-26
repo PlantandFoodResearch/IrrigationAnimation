@@ -28,7 +28,7 @@
 # Import the other modules...
 from display import play
 from config import DEFAULT_COLOUR, TEXT_HEIGHT, VALUE2VALUE, GIS_FILES, \
-	CSV_DIR, FIELD_OF_INTEREST, times, TIMEWARP, BORDER, HEADER
+	CSV_DIR, FIELD_OF_INTEREST, times, TIMEWARP, BORDER, HEADER, SCALE_WIDTH
 from models import Model, Values
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget
 # We use pygame for font rendering...
@@ -84,7 +84,7 @@ def main():
 			# Render the scale.
 			scale.render(surface, index, \
 				lambda size: (x_offset, surf_h - (BORDER + size[1])), \
-				(-1, surf_h / 3))
+				(SCALE_WIDTH, surf_h / 3))
 				
 			# Render the description.
 			desc.render(surface, index, \

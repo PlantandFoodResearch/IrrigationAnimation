@@ -17,7 +17,8 @@
 """
 
 from config import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	EDGE_RENDER, SCALE_WIDTH, SCALE_DECIMAL_PLACES, TEXT_AA, TEXT_COLOUR
+	EDGE_RENDER, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_TEXT_OFFSET, \
+	TEXT_AA, TEXT_COLOUR
 
 import pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
@@ -100,22 +101,38 @@ class ScaleWidget():
 		# TODO: Custom scale spacing (for exponential data) and custom mapping
 		# 		of labels would be nice.
 		# TODO: '0.0' is not always rendered; that should probably be included!
-		# TODO: We currently ignore the x dimension of the given size; we
-		#		should probably do something about it.
 		
 		# Find the initial offsets.
+		# We can scale dynamically in both dimensions (to a point) so we just
+		# use the given size.
 		min_x, y_offset = pos_func(size)
 		# Calculate the height, in pixels, of the scale.
 		height = size[1] - self.font.get_linesize()
 		# Calculate the base height.
 		base_height = y_offset + size[1] - (self.font.get_linesize() / 2)
-		# Calculate the x borders of the scale.
-		max_x = min_x + SCALE_WIDTH
 
 		def row2value(row):
 			""" Convert from a given row to a value """
 			return (float(row) / height) * (self.values.max - self.values.min) \
 				+ self.values.min
+				
+		# Render the values that we have space for, and save them.
+		# We use the font linespace as the minimum gap between reference points
+		rows = {} # row: text
+		max_text_width = 0 # Record the maximum text width.
+		markers = int(height / (2 * self.font.get_linesize()))
+		for mark in range(markers + 1): # +1 so that the top value is rendered.'
+			# Calculate the row to render the marker on.
+			row = (float(height) / markers) * mark
+			# Calculate the value for that row.
+			value = str(round(row2value(row), SCALE_DECIMAL_PLACES))
+			# Render and save.
+			rows[row] = self.font.render(value, TEXT_AA, TEXT_COLOUR)
+			# Update the maximum text width.
+			max_text_width = max(rows[row].get_width(), max_text_width)
+			
+		# Calculate the maximum x border of the scale.
+		max_x = (min_x + size[0]) - (max_text_width + SCALE_TEXT_OFFSET)
 
 		# Draw the scale.
 		for row in range(height + 1):
@@ -126,32 +143,16 @@ class ScaleWidget():
 			# Draw the row.
 			pygame.draw.line(surface, colour, (min_x, y), (max_x, y))
 
-		# Render the text on the scale.
-		# We use the font linespace as the minimum gap between reference points
-
-		def render_text(row):
-			""" Render a value label next to the scale at the given row """
-			# Render the text.
-			value = str(round(row2value(row), SCALE_DECIMAL_PLACES))
-			text = self.font.render(value, TEXT_AA, TEXT_COLOUR)
+		# Blit the rendered text onto the scale.
+		for row, text in rows.items():
 			# Calculate the y offset.
 			y = base_height - row
 			# Blit the text onto the surface.
-			#TODO: Figure out how to remove the hardcoded offset..
-			surface.blit(text, (max_x + 5, y - (text.get_height() / 2)))
+			surface.blit(text, \
+				(max_x + SCALE_TEXT_OFFSET, y - (text.get_height() / 2)))
 			# Draw a marker.
-			pygame.draw.line(surface, TEXT_COLOUR, (min_x, y), (max_x + 2, y))
-
-		# Render the min and max values.
-		render_text(0)
-		render_text(height)
-
-		# Render the remaining values that we have space for.
-		remaining = height - (2 * self.font.get_linesize())
-		markers = int(remaining / (2 * self.font.get_linesize()))
-		for mark in range(markers):
-			row = (float(remaining) / markers) * (mark + 1)
-			render_text(row)
+			pygame.draw.line(surface, TEXT_COLOUR, (min_x, y), \
+				(max_x + SCALE_MARKER_SIZE, y))
 
 	
 class ModelWidget():
