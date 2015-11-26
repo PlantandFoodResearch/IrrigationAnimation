@@ -100,6 +100,12 @@ class ScaleWidget():
 			
 			If None is passed for either functions, the default will be used.
 		"""
+		# NOTE: We currently do not always render '0.0'. Unfortunately, this
+		#		is fairly difficult to remedy; we would really need a value2row
+		#		function as well. If we did have that function, we should be
+		#		able to work backwards and position the remaining positive and
+		#		negative values, if applicable, and figure out where they
+		#		should all go.
 		
 		if row2value == None:
 			row2value = lambda row, height: (float(row) / height) * \
@@ -122,7 +128,7 @@ class ScaleWidget():
 						SCALE_DECIMAL_PLACES))
 					# Add it to the map.
 					labels[row] = value
-				
+
 				return labels
 		
 		self.font = font
@@ -133,7 +139,6 @@ class ScaleWidget():
 
 	def render(self, surface, time, pos_func, size):
 		""" Render self """
-		# TODO: '0.0' is not always rendered; that should probably be included!
 		
 		# Find the initial offsets.
 		# We can scale dynamically in both dimensions (to a point) so we just
@@ -166,6 +171,13 @@ class ScaleWidget():
 			pygame.draw.line(surface, colour, (min_x, y), (max_x, y))
 
 		# Blit the rendered text onto the scale.
+		# NOTE: Text rendered here may overlap. Unfortunately, fixing that is
+		#		tricky, especially as there may not be enough space, and
+		# 		the scale height may have to be resized if the text needs to be
+		#		shifted too much.
+		#		A simple bottom-up algorithm unfortunately won't do a very good
+		# 		job for those reasons...
+		#		Fixing this might allow simpler labelling algorithms, though.
 		for row, text in rows.items():
 			# Calculate the y offset.
 			y = base_height - row
