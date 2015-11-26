@@ -109,7 +109,7 @@ def play(render_frame, autoplay=AUTOPLAY, frames=200, fps=FPS):
 		elif autoplay == "WMP":
 			print("Playing with Windows Media Player...")
 			import subprocess
-			#TODO: This doesn't seem to close as expected after playing?
+			# NOTE: This doesn't seem to close as expected after playing?
 			subprocess.call(["C:/Program Files/Windows Media Player/wmplayer.exe",
 				"/play", "/close", file])
 			
