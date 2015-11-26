@@ -51,8 +51,7 @@ class Model():
 				if date == None:
 					date = dates[index][patch]
 				elif date != dates[index][patch]:
-					#TODO: Try to clarify the error message...
-					raise ValueError("Dates and rows do not line up for some CSV files!")
+					raise ValueError("For some CSV files ({}, index = {}), the dates are not on equal rows!".format(csv, index))
 			self.dates[index] = date
 			
 	def extract_field(self, field, process=lambda v: v):
