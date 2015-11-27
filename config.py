@@ -6,7 +6,7 @@
 
 # File paths:
 GIS_FILES = "H:/My Documents/vis/gis/SmallPatches"
-CSV_DIR = "H:/My Documents/vis/csv"
+CSV_DIR = "H:/My Documents/vis/csv/small"
 MOVIE_FILENAME = "H:/My Documents/vis/movie.mp4"
 
 # Animation options:
