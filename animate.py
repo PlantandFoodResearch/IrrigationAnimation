@@ -21,15 +21,16 @@
 	- String value support (eg plant stage)
 	- Pausing support for the dynamic viewer
 	- Avoiding lag with the dynamic viewer
+	- Different colours for the different values renderings
+	- Resizing for ValuesWidget currently is broken if edge rendering is
+	  disabled
 
 	Author: Alastair Hughes
 """
 
 # Import the other modules...
 from display import preview
-from config import text_height, value2value, gis_files, \
-	csv_dir, field_of_interest, times, timewarp, header, \
-	fps, movie_size, edge_render
+from config import times
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH
 from models import Model, Values
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget
@@ -106,6 +107,24 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 
 
 if __name__ == "__main__":
+
+	# File paths:
+	gis_files = "H:/My Documents/vis/gis/SmallPatches"
+	csv_dir = "H:/My Documents/vis/csv/small"
+	movie_filename = "H:/My Documents/vis/movie.mp4"
+
+	# Animation options:
+	field_of_interest = "Soil.SoilWater.Drainage"
+	value2value = 'field_delta' # Value transformation function
+	header = "Model render" # Header displayed
+	timewarp = 'delta' # Time warp method used
+
+	# Display options:
+	edge_render = True # Whether or not to render edges (plot edges, terrain).
+	fps = 4 # Frames per second
+	movie_size = (1280, 1024)
+	text_height = 30 # The height for any fonts.
+
 	# Create a Model.
 	model = Model(gis_files, csv_dir)
 	# Create the values.

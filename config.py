@@ -6,23 +6,6 @@
 
 from constants import MAX_FRAMES_PER_DAY, MIN_FRAMES_PER_DAY
 
-# File paths:
-gis_files = "H:/My Documents/vis/gis/SmallPatches"
-csv_dir = "H:/My Documents/vis/csv/small"
-movie_filename = "H:/My Documents/vis/movie.mp4"
-
-# Animation options:
-field_of_interest = "Soil.SoilWater.Drainage"
-value2value = 'field_delta' # Value transformation function
-header = "Model render" # Header displayed
-timewarp = 'delta' # Time warp method used
-
-# Display options:
-edge_render = True # Whether or not to render edges (plot edges, terrain).
-fps = 4 # Frames per second
-movie_size = (1280, 1024)
-text_height = 30 # The height for any fonts.
-
 # Transformation functions:
 # These are applied to the data as preprocessing. For instance, change_value
 # returns the delta between the current and previous value. Other useful
