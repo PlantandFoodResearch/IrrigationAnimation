@@ -1,45 +1,27 @@
-""" Configuration parameters/constants for various parts of the program,
-	and the transformation functions.
+""" Configuration parameters for various parts of the program, and the
+	transformation functions.
 
 	Author: Alastair Hughes
 """
 
+from constants import MAX_FRAMES_PER_DAY, MIN_FRAMES_PER_DAY
+
 # File paths:
-GIS_FILES = "H:/My Documents/vis/gis/SmallPatches"
-CSV_DIR = "H:/My Documents/vis/csv/small"
-MOVIE_FILENAME = "H:/My Documents/vis/movie.mp4"
+gis_files = "H:/My Documents/vis/gis/SmallPatches"
+csv_dir = "H:/My Documents/vis/csv/small"
+movie_filename = "H:/My Documents/vis/movie.mp4"
 
 # Animation options:
-FIELD_OF_INTEREST = "Soil.SoilWater.Drainage"
-VALUE2VALUE = 'field_delta' # Value transformation function
-HEADER = "Model render" # Header displayed
-TIMEWARP = 'delta' # Time warp method used
+field_of_interest = "Soil.SoilWater.Drainage"
+value2value = 'field_delta' # Value transformation function
+header = "Model render" # Header displayed
+timewarp = 'delta' # Time warp method used
 
-# Display constants:
-AUTOPLAY = "Pygame"
-BORDER = 20 # Empty space around the image, in pixels.
-BROKEN_COLOUR = (0, 0, 255)
-DEFAULT_COLOUR = (255, 255, 255)
-EDGE_COLOUR = (0, 0, 0)
-EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
-EDGE_RENDER = True # Whether or not to render edges (plot edges, terrain).
-FPS = 4 # 1 does not appear to work for MoviePy?
-MAX_FPS = 24 # Maximum allowed FPS
-MIN_FPS = 1 # Minimum allowed FPS
-MAX_FRAMES_PER_DAY = 5 # Maximum number of frames per day
-MIN_FRAMES_PER_DAY = 1 # Minimum number of frames per day
-MOVIE_SIZE = (1280, 1024)
-SCALE_DECIMAL_PLACES = 2 # Decimal places to display on the scale.
-SCALE_MARKER_SIZE = 2 # Marker size, in pixels.
-SCALE_TEXT_OFFSET = 5 # Offset of text from the scale, in pixels.
-SCALE_WIDTH = 60 # Width of the scale, in pixels, including text.
-TEXT_COLOUR = (0, 0, 0) # The colour of any text.
-TEXT_HEIGHT = 30 # The height for any fonts.
-TEXT_AA = False # Whether or not to antialias the text.
-
-# Other:
-DATE_FIELD = "Clock.Today" # Field name for dates.
-PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
+# Display options:
+edge_render = True # Whether or not to render edges (plot edges, terrain).
+fps = 4 # Frames per second
+movie_size = (1280, 1024)
+text_height = 30 # The height for any fonts.
 
 # Transformation functions:
 # These are applied to the data as preprocessing. For instance, change_value

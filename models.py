@@ -3,7 +3,8 @@
 	Author: Alastair Hughes
 """
 
-from config import DATE_FIELD, transformations, PATCH_NUMBER_FIELD
+from constants import DATE_FIELD, PATCH_NUMBER_FIELD
+from config import transformations
 # colorsys is used for the gradients
 import colorsys
 

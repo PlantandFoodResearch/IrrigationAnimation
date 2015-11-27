@@ -16,9 +16,9 @@
 	Author: Alastair Hughes
 """
 
-from config import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	EDGE_RENDER, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_TEXT_OFFSET, \
-	TEXT_AA, TEXT_COLOUR
+from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
+	SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_TEXT_OFFSET, TEXT_AA, \
+	TEXT_COLOUR
 
 import pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
@@ -267,11 +267,12 @@ class ModelWidget():
 class ValuesWidget(ModelWidget):
 	""" Widget for a specific Values """
 	
-	def __init__(self, values):
+	def __init__(self, values, edge_render):
 		""" Initialise self """
 		
 		ModelWidget.__init__(self, values.model)
 		self.values = values
+		self.edge_render = edge_render
 		
 	def render(self, surface, time, pos_func, size):
 		""" Render the given values class onto a surface """
@@ -286,6 +287,6 @@ class ValuesWidget(ModelWidget):
 			self.render_shape(surface, self.gen_transform(pos_func, size), \
 				self.model.patches[patch]['shape'], value, 0)
 		# Render shapes (not filled, just for the outlines)
-		if EDGE_RENDER:
+		if self.edge_render:
 			ModelWidget.render(self, surface, time, pos_func, size)
 
