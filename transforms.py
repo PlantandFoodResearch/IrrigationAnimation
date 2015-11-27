@@ -1,5 +1,7 @@
-""" Configuration parameters for various parts of the program, and the
-	transformation functions.
+""" A small library of transformation functions.
+
+	transformation: Data transformations
+	times: 			Time mapping transformations
 
 	Author: Alastair Hughes
 """

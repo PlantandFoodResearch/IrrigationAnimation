@@ -30,7 +30,7 @@
 
 # Import the other modules...
 from display import preview
-from config import times
+from transforms import times
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH
 from models import Model, Values
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget
