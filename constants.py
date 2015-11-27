@@ -5,7 +5,7 @@
 
 # Display constants:
 BORDER = 20 # Empty space around the image, in pixels.
-BROKEN_COLOUR = (0, 0, 255)
+BROKEN_COLOUR = (0, 0, 255) # Colour for patches missing data.
 DEFAULT_COLOUR = (255, 255, 255)
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
