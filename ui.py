@@ -15,15 +15,6 @@ import Tkinter as tk
 import tkFileDialog
 import ttk
 
-# Configuration option defaults.
-# File paths:
-gis_files = "H:/My Documents/vis/gis/SmallPatches"
-csv_dir = "H:/My Documents/vis/csv/small"
-movie_filename = "H:/My Documents/vis/movie.mp4"
-# Animation options:
-field_of_interest = "Soil.SoilWater.Drainage" # Look at a CSV file to find this?
-
-
 class InvalidOption(ValueError):
 	""" Error to be raised if an option is invalid """
 	
@@ -152,6 +143,35 @@ class Options(ttk.Frame):
 		""" Get the value of the given variable """
 		
 		return self.options[name][1]()
+		
+class ScrolledListbox(ttk.Frame):
+	""" Scrolled listbox """
+	
+	def __init__(self, master, *args, **kargs):
+		""" Initialise self """
+		
+		ttk.Frame.__init__(self, master, *args, **kargs)
+		
+		# Create the scrollbar and listbox.
+		scroll = ttk.Scrollbar(self, orient = 'vertical')
+		box = tk.Listbox(self, selectmode = 'extended', \
+			exportselection = False, yscrollcommand = scroll.set)
+		scroll.config(command = box.yview)
+		scroll.pack(side = 'right', fill = 'y', expand = True)
+		box.pack(side = 'left', fill = 'both', expand = True)
+		
+		# Pass-through the listbox functions.
+		self.curselection = lambda *args: box.curselection(*args)
+		self.get = lambda *args: box.get(*args)
+		self.delete = lambda *args: box.delete(*args)
+		self.selection_set = \
+			lambda *args, **kargs: box.selection_set(*args, **kargs)
+		self.selection_clear = \
+			lambda *args, **kargs: box.selection_clear(*args, **kargs)
+		self.bind = lambda *args: box.bind(*args)
+		self.see = lambda *args: box.see(*args)
+		self.insert = lambda *args: box.insert(*args)
+		
 	
 class ItemList(ttk.Frame):
 	""" An itemlist with flexible per-item options """
@@ -161,124 +181,124 @@ class ItemList(ttk.Frame):
 		
 		# Init self.
 		ttk.Frame.__init__(self, master, *args, **kargs)
+		self.name = name
+		self.function = function
+		# Map for items in the list.
+		self.items = {} # name: {key: value}
+		# Current context frame.
+		self.context = None
+		
+		# Create the widgets.
+		self.create_widgets()
+		
+	def create_widgets(self):
 		
 		# Add the label.
 		labelframe = ttk.Frame(self)
 		labelframe.grid(row = 1, column = 1, sticky = 'nw')
-		label = ttk.Label(labelframe, text = name)
+		label = ttk.Label(labelframe, text = self.name)
 		label.grid(row = 1, sticky = 'nw')
 
-		# Add the listbox.
-		# Create the frame holding both.
-		listframe = ttk.Frame(self)
-		listframe.grid(row = 1, column = 2, rowspan = 3, sticky = 'nes')
-		# Create the scrollbar and listbox.
-		scroll = ttk.Scrollbar(listframe, orient = 'vertical')
-		box = tk.Listbox(listframe, selectmode = 'extended', \
-			exportselection = False, yscrollcommand = scroll.set)
-		scroll.config(command = box.yview)
-		scroll.pack(side = 'right', fill = 'y', expand = True)
-		box.pack(side = 'left', fill = 'both', expand = True)
-		
-		# Items.
-		self.items = {} # name: {key: value}
-		
-		# Create callbacks for selection changes, to change the
-		# context-dependent options.
-		context = {'frame': None, 'cleanup': {}}
-		def change_active(event):
-			
-			def remove_old(new_active):
-				""" Save the contents, and remove the old frame """
-				frame = context['frame']
-				if frame != None:
-					# Save the contents.
-				
-					# Destroy the old frame.
-					frame.grid_forget()
-					frame.destroy()
-					context['frame'] = None
-					
-			# Remove and remake as required.
-			# We cannot use get('active') because active appears to lag behind
-			# the current selection :(
-			if len(box.curselection()) > 0:
-				index = box.curselection()[0]
-				active = box.get(index)
-			
-				remove_old(active)
-				# We actually create an 'Options' frame.
-				frame = context['frame'] = Options(self)
-				
-				# Add a rename option.
-				# Create the callback.
-				def rename_item(name, index):
-					""" Rename an existing item """
-					
-					if len(name) > 0 and name not in self.items:
-						box.insert(index + 1, name)
-						# Update selection, if required.
-						if index in box.curselection():
-							box.selection_set(index + 1)
-						box.delete(index)
-					
-				frame.add_raw_option("Name", lambda n: rename_item(n, index), \
-					active)
-				
-				# Add the custom buttons.
-				function(frame, active)
-				
-				# Add a 'delete' button.
-				# Create the callback.
-				def delete_item():
-					""" Delete the currently selected items """
-					selected = box.curselection()
-					while len(selected) != 0:
-						item = box.get(selected[0])
-						del(self.items[item])
-						box.delete(selected[0])
-						selected = box.curselection()
-					remove_old(None) # Nothing left selected...
-				# Create a delete button.
-				delete_button = ttk.Button(frame, text = "Delete", \
-					command = delete_item)
-				delete_button.grid(row = frame.grid_size()[1], column = 1, \
-					sticky = 'w')
-					
-				# Grid the frame in.
-				frame.grid(row = 3, column = 1, sticky = 'sw')
-		
+		self.box = ScrolledListbox(self)
+		self.box.grid(row = 1, column = 2, rowspan = 3, sticky = 'nes')
+	
 		# Bind select events to updating the active element.
-		box.bind("<<ListboxSelect>>", change_active)
+		self.box.bind("<<ListboxSelect>>", self.change_active)
 
 		# Add a 'new' button.
-		def add_new():
-			""" Add a new item to the listbox """
-			# Find a unique name
-			id = 0
-			name = 'new'
-			while name in self.items:
-				id += 1
-				name = 'new-' + str(id)
-			# Add the item.
-			self.items[name] = {}
-			box.insert('end', name)
-			# Clear the existing selection.
-			for selected in box.curselection():
-				box.selection_clear(selected)
-			# Set the selection to the new item.
-			box.selection_set(first = 'end')
-			# Activate the new item.
-			box.activate('end')
-			# 'see' the new item.
-			box.see('end')
-			# Update the active element.
-			change_active("add")
 		# Create a new button.
-		button = ttk.Button(labelframe, text = 'New', command = add_new)
+		button = ttk.Button(labelframe, text = 'New', command = self.add_new)
 		button.grid(row = 2, sticky = 'nw')
-			
 		
+	def add_new():
+		""" Add a new item to the listbox """
+		
+		# Find a unique name
+		id = 0
+		name = 'new'
+		while name in self.items:
+			id += 1
+			name = 'new-' + str(id)
+		
+		# Add the item.
+		self.items[name] = {}
+		self.box.insert('end', name)
+		
+		# Clear the existing selection.
+		for selected in self.box.curselection():
+			self.box.selection_clear(selected)
+		
+		# Set the selection to the new item.
+		self.box.selection_set(first = 'end')
+		
+		# 'see' the new item.
+		self.box.see('end')
+		
+		# Update the active element.
+		self.change_active("add")
+		
+	def change_active(self, event):
+		""" Change the active item """
+		
+		def remove_old(new_active):
+			""" Save the contents, and remove the old frame """
+			if self.context != None:
+				# Save the contents.
+			
+				# Destroy the old frame.
+				self.context.grid_forget()
+				self.context.destroy()
+				self.context = None
+				
+		# Remove and remake as required.
+		# We cannot use get('active') because active appears to lag behind
+		# the current selection :(
+		if len(self.box.curselection()) > 0:
+			index = self.box.curselection()[0]
+			active = self.box.get(index)
+		
+			remove_old(active)
+			# We actually create an 'Options' frame.
+			self.context = Options(self)
+			
+			# Add a rename option.
+			# Create the callback.
+			def rename_item(name, index):
+				""" Rename an existing item """
+				
+				if len(name) > 0 and name not in self.items:
+					self.box.insert(index + 1, name)
+					# Update selection, if required.
+					if index in self.box.curselection():
+						self.box.selection_set(index + 1)
+					self.box.delete(index)
+				
+			self.context.add_raw_option("Name", lambda n: rename_item(n, index), \
+				active)
+			
+			# Add the custom buttons.
+			self.function(self.context, active)
+			
+			# Add a 'delete' button.
+			# Create the callback.
+			def delete_item():
+				""" Delete the currently selected items """
+				selected = self.box.curselection()
+				while len(selected) != 0:
+					item = self.box.get(selected[0])
+					del(self.items[item])
+					self.box.delete(selected[0])
+					selected = self.box.curselection()
+				remove_old(None) # Nothing left selected...
+			# Create a delete button.
+			delete_button = ttk.Button(self.context, text = "Delete", \
+				command = delete_item)
+			delete_button.grid(row = self.context.grid_size()[1], column = 1, \
+				sticky = 'w')
+				
+			# Grid the frame in.
+			self.context.grid(row = 3, column = 1, sticky = 'sw')
+	
 class Main(ttk.Frame):
 	""" The main window """
 	
