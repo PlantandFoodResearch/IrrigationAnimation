@@ -18,9 +18,9 @@ import ttk
 class InvalidOption(ValueError):
 	""" Error to be raised if an option is invalid """
 	
-	def __init__(self, name, value):
+	def __init__(self, name, value, e):
 		ValueError.__init__(self, \
-			"Option '{}' has an invalid value of '{}'!".format(name, value))
+			"Option '{}' has an invalid value of '{}' (original exception: {})!".format(name, value, e))
 
 	
 class UI(ttk.Frame):
@@ -49,7 +49,7 @@ class Options(ttk.Frame):
 		# Options added.
 		self.options = {} # name: (entry, get)
 		
-	def add_raw_option(self, name, result, default, event = "<Return>"):
+	def add_raw_option(self, name, default, result):
 		""" Add an option """
 		
 		row = self.grid_size()[1]
@@ -69,21 +69,22 @@ class Options(ttk.Frame):
 		#TODO: Add validation support.
 		entry = ttk.Entry(self)
 		entry.grid(row = row, column = 2, sticky = 'e')
-		entry.bind(event, wrapper)
+		entry.bind('<Return>', wrapper)
 		entry.insert(0, default)
 		
 		# Create a get function.
 		def get():
+			current = entry.get()
 			try:
-				return result(entry.get())
-			except:
+				return result(current)
+			except Exception as e:
 				entry.delete(0, 'end')
-				raise InvalidOption(name, entry.get())
+				raise InvalidOption(name, current, e)
 		
 		# Add the option to the options array.
 		self.options[name] = (entry, get)
 		
-	def add_combobox_option(self, name, options, default):
+	def add_combobox_option(self, name, default, options):
 		""" Add a combobox option """
 		
 		row = self.grid_size()[1]
@@ -136,7 +137,7 @@ class Options(ttk.Frame):
 		""" Iterate through the existing options """
 		
 		for name, (entry, get) in self.options.items():
-			yield (name, get())
+			yield (name, get)
 		raise StopIteration
 		
 	def get(self, name):
@@ -187,6 +188,8 @@ class ItemList(ttk.Frame):
 		self.items = {} # name: {key: value}
 		# Current context frame.
 		self.context = None
+		# The index of the currently active element.
+		self.active = None
 		
 		# Create the widgets.
 		self.create_widgets()
@@ -203,14 +206,15 @@ class ItemList(ttk.Frame):
 		self.box.grid(row = 1, column = 2, rowspan = 3, sticky = 'nes')
 	
 		# Bind select events to updating the active element.
-		self.box.bind("<<ListboxSelect>>", self.change_active)
+		self.box.bind("<<ListboxSelect>>", lambda event: self.update_active())
 
 		# Add a 'new' button.
 		# Create a new button.
-		button = ttk.Button(labelframe, text = 'New', command = self.add_item)
+		button = ttk.Button(labelframe, text = 'New', \
+			command = self.add_item)
 		button.grid(row = 2, sticky = 'nw')
 		
-	def add_item():
+	def add_item(self):
 		""" Add a new item to the listbox """
 		
 		# Find a unique name
@@ -235,76 +239,122 @@ class ItemList(ttk.Frame):
 		self.box.see('end')
 		
 		# Update the active element.
-		self.change_active("add")
+		self.update_active()
 		
-	def delete_item(index):
+	def delete_item(self, index):
 		""" Remove the item at the given index from the listbox """
+		
+		if index == self.active:
+			self.active = {}
 		
 		del(self.items[self.box.get(index)])
 		self.box.delete(index)
 		
-	def change_active(self, event):
-		""" Change the active item """
+	def rename_item(self, name, index):
+		""" Rename the item at the given index """
 		
-		def remove_old(new_active):
-			""" Save the contents, and remove the old frame """
-			if self.context != None:
-				# Save the contents.
+		# Only rename if required.
+		original = self.box.get(index)
+		if name != original:
+
+			# Validate the name
+			if name in self.items:
+				raise ValueError("{} is already used!".format(name))
+			elif name == "":
+				raise ValueError("Name must contains something!")
+
+			# Add the newly named item.
+			self.box.insert(index + 1, name)
+			# Update selection, if required.
+			if index in self.box.curselection():
+				self.box.selection_set(index + 1)
+			# Remove the old item.
+			self.box.delete(index)
+			# Update self.items
+			self.items[name] = self.items[original]
+			del(self.items[original])
+			# Update the active marker, if required.
+			if self.active == original:
+				self.active = name 
 			
-				# Destroy the old frame.
-				self.context.grid_forget()
-				self.context.destroy()
-				self.context = None
-				
-		# Remove and remake as required.
-		# We cannot use get('active') because active appears to lag behind
-		# the current selection :(
-		if len(self.box.curselection()) > 0:
-			index = self.box.curselection()[0]
-			active = self.box.get(index)
+	def delete_selected(self):
+		""" Delete any currently selected items """
 		
-			remove_old(active)
-			# We actually create an 'Options' frame.
-			self.context = Options(self)
+		# Delete any currently selected items.
+		# We do this in a convoluted way because the index numbers move as
+		# things are removed.
+		selected = self.box.curselection()
+		while len(selected) != 0:
+			self.delete_item(selected[0])
+			selected = self.box.curselection()
 			
-			# Add a rename option.
-			# Create the callback.
-			def rename_item(name, index):
-				""" Rename an existing item """
-				
-				if len(name) > 0 and name not in self.items:
-					self.box.insert(index + 1, name)
-					# Update selection, if required.
-					if index in self.box.curselection():
-						self.box.selection_set(index + 1)
-					self.box.delete(index)
-				
-			self.context.add_raw_option("Name", lambda n: rename_item(n, index), \
-				active)
+		# Update the active item.
+		self.update_active()
+		
+	def create_frame(self, index):
+		""" Create a new frame for the given index """
+		
+		# Find the name for that index.
+		name = self.box.get(index)
+		
+		# Create the context.
+		self.context = Options(self)
+		self.context.grid(row = 3, column = 1, sticky = 'sw')
+		
+		# Add a rename button.
+		self.context.add_raw_option("Name", name, \
+			lambda name: self.rename_item(name, index))
+		
+		# Add the custom buttons.
+		self.function(self.context, name, self.items[name])
+		
+		# Add a 'delete' button at the bottom.
+		delete_button = ttk.Button(self.context, text = "Delete", \
+			command = self.delete_selected)
+		delete_button.grid(row = self.context.grid_size()[1], column = 1, \
+			sticky = 'sw')
 			
-			# Add the custom buttons.
-			self.function(self.context, active)
-			
-			# Add a 'delete' button.
-			# Create the callback.
-			def delete_item():
-				""" Delete the currently selected items """
-				selected = self.box.curselection()
-				while len(selected) != 0:
-					item = self.box.get(selected[0])
-					del(self.items[item])
-					self.box.delete(selected[0])
-					selected = self.box.curselection()
-				remove_old(None) # Nothing left selected...
-			# Create a delete button.
-			delete_button = ttk.Button(self.context, text = "Delete", \
-				command = delete_item)
-			delete_button.grid(row = self.context.grid_size()[1], column = 1, \
-				sticky = 'w')
+		# Note the current active item.
+		self.active = name
+		
+	def remove_frame(self):
+		""" Remove the context-specific frame, if one exists """
+		
+		if self.context != None:
+			# Save contents, if needed.
+			if self.active in self.items:
+				for name, get in self.context:
+					try:
+						self.items[self.active][name] = get()
+					except Exception as e:
+						print("WARNING: Exception {} occured".format(e))
+						# Aborting here causes problems (the frame is not
+						# destroyed like it should be), so don't do it!
+						# We can just use the old values.
 				
-			# Grid the frame in.
-			self.context.grid(row = 3, column = 1, sticky = 'sw')
+			# Destroy the old frame.
+			self.context.grid_forget()
+			self.context.destroy()
+			
+			# Update the active frame and element.
+			self.context = None
+			self.active = None
+		
+	def update_active(self):
+		""" Update the first selected item.
+			We cannot use the 'active' item because that appears to lag
+			behind the current selection :(
+		"""
+		
+		# Remove any existing frame.
+		self.remove_frame()
+		
+		# Create a new frame, if required.
+		selected = self.box.curselection()
+		if len(selected) > 0:
+			self.create_frame(selected[0])
 	
+
 class Main(ttk.Frame):
 	""" The main window """
 	
@@ -336,81 +386,99 @@ class Main(ttk.Frame):
 		self.options = Options(self)
 		self.options.pack(expand=True, fill='both')
 		# Add the 'raw' (string) options.
-		self.options.add_raw_option("Title", lambda x: x, "")
+		self.options.add_raw_option("Title", "", lambda x: x)
 		def check_int(i, min, max):
 			if min <= int(i) <= max:
 				return int(i)
 			else:
 				raise ValueError("{} not within [{}, {}]!".format(i, min, max))
-		self.options.add_raw_option("FPS", \
-			lambda x: check_int(x, MIN_FPS, MAX_FPS), 4)
+		self.options.add_raw_option("FPS", 4, \
+			lambda x: check_int(x, MIN_FPS, MAX_FPS))
 		def check_size(size):
 			x, y = size.split('x')
 			return int(x), int(y)
-		self.options.add_raw_option("Movie dimensions", check_size, \
-			"1280x1024")
-		self.options.add_raw_option("Text size", \
-			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT), 30)
+		self.options.add_raw_option("Dimensions", "1280x1024", \
+			check_size)
+		self.options.add_raw_option("Text size", 30, \
+			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
 		# Add the listbox options.
-		self.options.add_combobox_option("Value transform", \
-			transforms.transformations.keys(), 'basic')
-		self.options.add_combobox_option("Timewarp", \
-			transforms.times.keys(), 'basic')
-		self.options.add_combobox_option("Edge render", ["True", "False"], \
-			"True")
+		self.options.add_combobox_option("Value transform", 'basic', \
+			transforms.transformations.keys())
+		self.options.add_combobox_option("Timewarp", 'basic', \
+			transforms.times.keys())
+		self.options.add_combobox_option("Edge render", "True", \
+			["True", "False"])
 		# Add the file options.
-		self.options.add_file_option("GIS files", \
-			"H:/My Documents/vis/gis/SmallPatches")
-		self.options.add_file_option("CSV directory", \
-			"H:/My Documents/vis/csv/small")
 		self.options.add_file_option("Movie filename", \
 			"H:/My Documents/vis/movies/movie.mp4")
 			
+		# Helper...
+		add = lambda method, name, values, default, *args: \
+			method(name, values.get(name, default), *args)
+			
 		# Add the Models object list.
-		def model_options(master, active):
+		def model_options(master, active, values):
 			""" Create the additional options for a specified value """
 			
-			master.add_file_option("GIS files", \
+			add(master.add_file_option, "GIS files", values, \
 				"H:/My Documents/vis/gis/SmallPatches")
-			master.add_file_option("CSV directory", \
+			add(master.add_file_option, "CSV directory", values, \
 				"H:/My Documents/vis/csv/small")
 			# TODO: Having a deletion button should be controlled by whether or
 			# 		not some value is using this particular model.
 			
 		model_list = ItemList(self, "Models", model_options)
 		model_list.pack(expand = True, fill = 'both')
+		# Define a helper accessor function.
+		# TODO: This should be cached, so update dynamically?
+		def get_models():
+			models = {}
+			for name, values in model_list.items.items():
+				models[name] = Model(values['GIS files'], \
+					values['CSV directory'])
+			return models
 
-			# Add the Values object list.
-		def value_options(master, active):
+		# Add the Values object list.
+		def value_options(master, active, values):
 			""" Create the additional options for a specified value """
 			
 			# TODO: This should update when the one in model_list does.
 			models = list(model_list.items.keys())
 			if len(models) > 0:
-				master.add_combobox_option("Model", model_list.items.keys(), models[0])
-				master.add_combobox_option("Value transform", \
-					transforms.transformations.keys(), 'basic')
+				# Remove outdated value.
+				# TODO: This is a hack because changes to model_list do not
+				# 		propogate properly yet.
+				if 'Model' in values and values['Model'] not in models:
+					del(values['Model'])
+				add(master.add_combobox_option, "Model", values, models[0], \
+					models)
+				add(master.add_combobox_option, "Value transform", values, \
+					'basic', transforms.transformations.keys())
 				# TODO: Figure this out from the model.
 				# TODO: This should update when the model is changed.
-				master.add_combobox_option("Field", ["Soil.SoilWater.Drainage"], \
-					"Soil.SoilWater.Drainage")
+				add(master.add_combobox_option, "Field", values, \
+					"Soil.SoilWater.Drainage", \
+					["Soil.SoilWater.Drainage"])
 			
 		value_list = ItemList(self, "Values", value_options)
 		value_list.pack(expand = True, fill = 'both')
-
+		# TODO: This should also be dynamically updated...
+		def get_values():
+			models = get_models()
+			values = []
+			for value, config in value_list.items.items():
+				model = models[config['Model']]
+				field = config['Field']
+				transform = config['Value transform']
+				values.append(Values(model, field, transform=transform))
+			return values
+		self.get_values = get_values
 
 	def gen_frames(self):
 		""" Return a render_frame function and frames variable """
 		
-		#TODO: We should allow more than one value...
-		#TODO: This should be done elsewhere.
-		# Create a Model.
-		model = Model(self.options.get('GIS files'), self.options.get('CSV directory'))
-		# Create the values.
-		self.values = [Values(model, "Soil.SoilWater.Drainage")]
-	
 		# Create the frame rendering function.
-		return gen_render_frame(self.values, self.options.get('Text size'), \
+		return gen_render_frame(self.get_values(), self.options.get('Text size'), \
 			self.options.get('Title'), self.options.get('Timewarp'), \
 			self.options.get('Edge render') == "True")
 		
@@ -423,7 +491,7 @@ class Main(ttk.Frame):
 		# Play the animation.
 		#TODO: This should be launched in another thread to avoid hanging tk?
 		preview(render_frame, frames, self.options.get('FPS'), \
-			self.options.get('Movie dimensions'), self.options.get('Title'))
+			self.options.get('Dimensions'), self.options.get('Title'))
 
 		
 	def render(self):
