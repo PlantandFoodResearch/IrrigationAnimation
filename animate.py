@@ -3,13 +3,13 @@
 
 	Future improvements:
 	- Removing all of the TODO's...
-	- More output formats?
 	- CLI/GUI interfaces (cli option parsing)
+		- All options exposed
+		- pygame/tkinter interactions fixed?
 	- Speed ups
 	- Code cleanups
 	- Packaging
 	- Some way to work around 'clipping' in the various widgets
-	- Different colouring functions?
 	- More transformation functions/options + combining transformations
 	- Documentation
 		- A usage tutorial

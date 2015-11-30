@@ -67,7 +67,16 @@ class Model():
 				result[index][patch] = process(self.data[index][patch][field].strip())
 	
 		return result
-
+		
+	def fields(self):
+		""" Return a list of possible fields """
+		fields = {}
+		for index in self.data:
+			for patch in self.data[index]:
+				for field in self.data[index][patch].keys():
+					if field not in fields:
+						fields.add(field)
+		return fields
 		
 def find_patch_files(dir):
 	""" Generates a dict mapping from patch numbers to absolute filenames """

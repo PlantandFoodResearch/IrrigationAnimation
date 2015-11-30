@@ -13,6 +13,8 @@ MAX_FPS = 24 # Maximum allowed FPS
 MIN_FPS = 1 # Minimum allowed FPS
 MAX_FRAMES_PER_DAY = 5 # Maximum number of frames per day
 MIN_FRAMES_PER_DAY = 1 # Minimum number of frames per day
+MAX_TEXT_HEIGHT = 60 # Maximum text height
+MIN_TEXT_HEIGHT = 5 # Minimum text height
 TEXT_COLOUR = (0, 0, 0) # The colour of any text.
 TEXT_AA = False # Whether or not to antialias the text.
 
