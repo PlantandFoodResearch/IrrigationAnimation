@@ -207,10 +207,10 @@ class ItemList(ttk.Frame):
 
 		# Add a 'new' button.
 		# Create a new button.
-		button = ttk.Button(labelframe, text = 'New', command = self.add_new)
+		button = ttk.Button(labelframe, text = 'New', command = self.add_item)
 		button.grid(row = 2, sticky = 'nw')
 		
-	def add_new():
+	def add_item():
 		""" Add a new item to the listbox """
 		
 		# Find a unique name
@@ -236,6 +236,12 @@ class ItemList(ttk.Frame):
 		
 		# Update the active element.
 		self.change_active("add")
+		
+	def delete_item(index):
+		""" Remove the item at the given index from the listbox """
+		
+		del(self.items[self.box.get(index)])
+		self.box.delete(index)
 		
 	def change_active(self, event):
 		""" Change the active item """
