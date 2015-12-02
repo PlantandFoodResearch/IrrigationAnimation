@@ -15,6 +15,9 @@ import Tkinter as tk
 import tkFileDialog
 import ttk
 
+# Threading imports.
+from threading import Thread, Semaphore
+
 class InvalidOption(ValueError):
 	""" Error to be raised if an option is invalid """
 	
@@ -177,7 +180,10 @@ class ScrolledListbox(ttk.Frame):
 class ItemList(ttk.Frame):
 	""" An itemlist with flexible per-item options """
 	
-	def __init__(self, master, name, function, *args, **kargs):
+	def __init__(self, master, name, function, \
+		renamecallback=lambda name, newname: True, \
+		deletecallback=lambda name: True, \
+		addcallback=lambda name: True, *args, **kargs):
 		""" Initialise self """
 		
 		# Init self.
@@ -190,6 +196,10 @@ class ItemList(ttk.Frame):
 		self.context = None
 		# The index of the currently active element.
 		self.active = None
+		# Callbacks.
+		self.renamecallback = renamecallback
+		self.deletecallback = deletecallback
+		self.addcallback = addcallback
 		
 		# Create the widgets.
 		self.create_widgets()
@@ -306,11 +316,15 @@ class ItemList(ttk.Frame):
 			lambda name: self.rename_item(name, index))
 		
 		# Add the custom buttons.
-		self.function(self.context, name, self.items[name])
+		deleteable = self.function(self.context, name, self.items[name])
 		
 		# Add a 'delete' button at the bottom.
 		delete_button = ttk.Button(self.context, text = "Delete", \
 			command = self.delete_selected)
+		if not deleteable:
+			# Disable the delete button if it is not possible to delete this
+			# value.
+			delete_button.config(state = 'disabled')
 		delete_button.grid(row = self.context.grid_size()[1], column = 1, \
 			sticky = 'sw')
 			
@@ -375,12 +389,62 @@ class Main(ttk.Frame):
 		# Create the widgets...
 		
 		# Run buttons.
+		# Create the holder frame.
 		lower = ttk.Frame(self)
 		lower.pack(side='bottom', fill='x')
-		preview = ttk.Button(lower, text='Preview', command=self.preview)
-		preview.pack(side='left')
-		render = ttk.Button(lower, text='Render', command=self.render)
-		render.pack(side='right')
+		# Create the helper function...
+		def render_wrapper(button, func, *args):
+			""" Helper render wrapper """
+			
+			# Disable the button in question.
+			button.config(state = "disabled")
+			
+			try:
+				# Generate the render_frame function and the frame count.
+				render_frame, frames = gen_render_frame(self.get_values(), \
+					self.options.get('Text size'), \
+					self.options.get('Title'), self.options.get('Timewarp'), \
+					self.options.get('Edge render') == "True")
+				
+				# Create the job.
+				semaphore = Semaphore()
+				job = ThreadedJob(semaphore, func, render_frame, frames, \
+					*[self.options.get(arg) for arg in args])
+					
+				# Create a helper function for the end of the job.
+				def check_ended():
+					""" Check whether the process has finished or not; clean up if
+						it has.
+					"""
+					if semaphore.acquire(False):
+						button.config(state = "normal")
+					else:
+						self.master.after(100, check_ended)
+				
+				# Start the job.
+				job.start()
+			except Exception as e:
+				# Ensure that the button is returned to normal...
+				button.config(state = "normal")
+				raise e
+			# Add a check for the job finishing.
+			self.master.after(100, check_ended)
+			
+		# Create the buttons.
+		# Preview button.
+		# TODO: Currently, this hangs the UI (something to do with the
+		#		interaction between pygame and tkinter?), so we set it to
+		# 		disabled by default.
+		preview_button = ttk.Button(lower, text='Preview', state='disabled')
+		preview_button.config(command=lambda: render_wrapper(preview_button, \
+			preview, 'FPS', 'Dimensions', 'Title'))
+		preview_button.pack(side='left')
+		
+		# Render button.
+		render_button = ttk.Button(lower, text='Render')
+		render_button.config(command=lambda: render_wrapper(render_button, \
+			render, 'FPS', 'Dimensions', 'Movie filename'))
+		render_button.pack(side='right')
 		
 		# Create the options...
 		self.options = Options(self)
@@ -402,8 +466,6 @@ class Main(ttk.Frame):
 		self.options.add_raw_option("Text size", 30, \
 			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
 		# Add the listbox options.
-		self.options.add_combobox_option("Value transform", 'basic', \
-			transforms.transformations.keys())
 		self.options.add_combobox_option("Timewarp", 'basic', \
 			transforms.times.keys())
 		self.options.add_combobox_option("Edge render", "True", \
@@ -424,8 +486,10 @@ class Main(ttk.Frame):
 				"H:/My Documents/vis/gis/SmallPatches")
 			add(master.add_file_option, "CSV directory", values, \
 				"H:/My Documents/vis/csv/small")
+				
 			# TODO: Having a deletion button should be controlled by whether or
 			# 		not some value is using this particular model.
+			return True
 			
 		model_list = ItemList(self, "Models", model_options)
 		model_list.pack(expand = True, fill = 'both')
@@ -459,6 +523,8 @@ class Main(ttk.Frame):
 				add(master.add_combobox_option, "Field", values, \
 					"Soil.SoilWater.Drainage", \
 					["Soil.SoilWater.Drainage"])
+					
+			return True
 			
 		value_list = ItemList(self, "Values", value_options)
 		value_list.pack(expand = True, fill = 'both')
@@ -473,40 +539,25 @@ class Main(ttk.Frame):
 				values.append(Values(model, field, transform=transform))
 			return values
 		self.get_values = get_values
-
-	def gen_frames(self):
-		""" Return a render_frame function and frames variable """
 		
-		# Create the frame rendering function.
-		return gen_render_frame(self.get_values(), self.options.get('Text size'), \
-			self.options.get('Title'), self.options.get('Timewarp'), \
-			self.options.get('Edge render') == "True")
+class ThreadedJob(Thread):
+	""" Threaded job class """
+	
+	def __init__(self, semaphore, function, *args, **kargs):
+		""" Initialise self """
 		
-	def preview(self):
-		""" Preview! """
+		Thread.__init__(self)
+		self.semaphore = semaphore
+		self.function = function
+		self.args = args
+		self.kargs = kargs
 		
-		# Generate the render_frame function and the frame count.
-		render_frame, frames = self.gen_frames()
+	def run(self):
+		""" Run the function """
 		
-		# Play the animation.
-		#TODO: This should be launched in another thread to avoid hanging tk?
-		preview(render_frame, frames, self.options.get('FPS'), \
-			self.options.get('Dimensions'), self.options.get('Title'))
-
-		
-	def render(self):
-		""" Render! """
-		
-		# Generate the render_frame function and the frame count.
-		render_frame, frames = self.gen_frames()
-		
-		# Play the animation.
-		#TODO: This should be launched in another thread to avoid hanging tk?
-		#TODO: Progress bar?
-		render(render_frame, frames, self.options.get('FPS'), \
-			self.options.get('Movie dimensions'), self.options.get('Movie filename'))
-
-		
+		self.semaphore.acquire()
+		self.function(*self.args, **self.kargs)
+		self.semaphore.release()
 
 if __name__ == "__main__":
 	root = tk.Tk()
