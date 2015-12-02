@@ -23,23 +23,7 @@ class InvalidOption(ValueError):
 	
 	def __init__(self, name, value, e):
 		ValueError.__init__(self, \
-			"Option '{}' has an invalid value of '{}' (original exception: {})!".format(name, value, e))
-
-	
-class UI(ttk.Frame):
-	
-	def __init__(self, master, pages, *args, **kargs):
-		""" Initialise self """
-		
-		self.master = master
-		ttk.Frame.__init__(self, self.master, *args, **kargs)
-		self.pack(expand=True, fill='both')
-		
-		# Create the tabs.
-		self.windows = ttk.Notebook(self)
-		for page in pages:
-			self.windows.add(pages[page](self.windows), text=page)
-		self.windows.pack(expand=True, fill='both')		
+			"Option '{}' has an invalid value of '{}' (original exception: {})!".format(name, value, e))	
 		
 class Options(ttk.Frame):
 
@@ -87,7 +71,8 @@ class Options(ttk.Frame):
 		# Add the option to the options array.
 		self.options[name] = (entry, get)
 		
-	def add_combobox_option(self, name, default, options):
+	def add_combobox_option(self, name, default, options, \
+		callback=lambda: None):
 		""" Add a combobox option """
 		
 		row = self.grid_size()[1]
@@ -96,16 +81,22 @@ class Options(ttk.Frame):
 		label = ttk.Label(self, text = name + ':')
 		label.grid(row = row, column = 1, sticky = 'w')
 		
-		# Create the combobox.
-		box = ttk.Combobox(self)
-		box.grid(row = row, column = 2, sticky = 'e')
-		box['values'] = list(options)
-		
+		# Create the StringVar.
+		def callback_wrapper(var_name, index, operation):
+			""" Wrapper for the callback """
+			callback()
+		var = tk.StringVar()
 		# Set the default.
-		box.current(options.index(default))
+		var.set(default)
+		# Add the trace.
+		var.trace("w", callback_wrapper)
+
+		# Create the combobox.
+		box = ttk.Combobox(self, textvariable=var, values=list(options))
+		box.grid(row = row, column = 2, sticky = 'e')
 		
 		# Add the option to the options array.
-		self.options[name] = (box, lambda: box.get())
+		self.options[name] = (box, lambda: var.get())
 		
 	def add_file_option(self, name, default):
 		""" Add a file selection option """
@@ -251,14 +242,23 @@ class ItemList(ttk.Frame):
 		# Update the active element.
 		self.update_active()
 		
+		# Call the custom callback.
+		self.addcallback(name)
+		
 	def delete_item(self, index):
 		""" Remove the item at the given index from the listbox """
 		
+		# Reset self.active, if need be.
 		if index == self.active:
-			self.active = {}
+			self.active = None
 		
-		del(self.items[self.box.get(index)])
+		# Remove the item from self.items and the listbox.
+		name = self.box.get(index)
+		del(self.items[name])
 		self.box.delete(index)
+		
+		# Call the custom callback.
+		self.deletecallback(name)
 		
 	def rename_item(self, name, index):
 		""" Rename the item at the given index """
@@ -285,7 +285,9 @@ class ItemList(ttk.Frame):
 			del(self.items[original])
 			# Update the active marker, if required.
 			if self.active == original:
-				self.active = name 
+				self.active = name
+			# Call the custom callback.
+			self.renamecallback(original, name)
 			
 	def delete_selected(self):
 		""" Delete any currently selected items """
@@ -335,6 +337,20 @@ class ItemList(ttk.Frame):
 		""" Remove the context-specific frame, if one exists """
 		
 		if self.context != None:
+			self.save_current()
+				
+			# Destroy the old frame.
+			self.context.grid_forget()
+			self.context.destroy()
+			
+			# Update the active frame and element.
+			self.context = None
+			self.active = None
+			
+	def save_current(self):
+		""" Save the current contents, if applicable """
+		
+		if self.context != None:
 			# Save contents, if needed.
 			if self.active in self.items:
 				for name, get in self.context:
@@ -345,16 +361,8 @@ class ItemList(ttk.Frame):
 						# Aborting here causes problems (the frame is not
 						# destroyed like it should be), so don't do it!
 						# We can just use the old values.
-				
-			# Destroy the old frame.
-			self.context.grid_forget()
-			self.context.destroy()
-			
-			# Update the active frame and element.
-			self.context = None
-			self.active = None
 		
-	def update_active(self):
+	def update_active(self, callback = lambda: True):
 		""" Update the first selected item.
 			We cannot use the 'active' item because that appears to lag
 			behind the current selection :(
@@ -362,6 +370,11 @@ class ItemList(ttk.Frame):
 		
 		# Remove any existing frame.
 		self.remove_frame()
+		
+		# Run the callback.
+		# This is used, for instance, if self.items is being updated in the
+		# background.
+		callback()
 		
 		# Create a new frame, if required.
 		selected = self.box.curselection()
@@ -382,9 +395,9 @@ class Main(ttk.Frame):
 		self.pack(expand=True, fill='both')
 		
 		# Models.
-		self.models = []
+		self.models = {}
 		# Values.
-		self.values = []
+		self.values = {}
 		
 		# Create the widgets...
 		
@@ -399,34 +412,30 @@ class Main(ttk.Frame):
 			# Disable the button in question.
 			button.config(state = "disabled")
 			
-			try:
-				# Generate the render_frame function and the frame count.
-				render_frame, frames = gen_render_frame(self.get_values(), \
-					self.options.get('Text size'), \
-					self.options.get('Title'), self.options.get('Timewarp'), \
-					self.options.get('Edge render') == "True")
+			# Generate the render_frame function and the frame count.
+			render_frame, frames = gen_render_frame(self.get_values(), \
+				self.options.get('Text size'), \
+				self.options.get('Title'), self.options.get('Timewarp'), \
+				self.options.get('Edge render') == "True")
+
+			# Create the job.
+			semaphore = Semaphore()
+			job = ThreadedJob(semaphore, func, render_frame, frames, \
+				*[self.options.get(arg) for arg in args])
 				
-				# Create the job.
-				semaphore = Semaphore()
-				job = ThreadedJob(semaphore, func, render_frame, frames, \
-					*[self.options.get(arg) for arg in args])
-					
-				# Create a helper function for the end of the job.
-				def check_ended():
-					""" Check whether the process has finished or not; clean up if
-						it has.
-					"""
-					if semaphore.acquire(False):
-						button.config(state = "normal")
-					else:
-						self.master.after(100, check_ended)
-				
-				# Start the job.
-				job.start()
-			except Exception as e:
-				# Ensure that the button is returned to normal...
-				button.config(state = "normal")
-				raise e
+			# Create a helper function for the end of the job.
+			def check_ended():
+				""" Check whether the process has finished or not; clean up if
+					it has.
+				"""
+				if semaphore.acquire(False):
+					button.config(state = "normal")
+				else:
+					self.master.after(100, check_ended)
+			
+			# Start the job.
+			job.start()
+
 			# Add a check for the job finishing.
 			self.master.after(100, check_ended)
 			
@@ -475,10 +484,86 @@ class Main(ttk.Frame):
 			"H:/My Documents/vis/movies/movie.mp4")
 			
 		# Helper...
-		add = lambda method, name, values, default, *args: \
-			method(name, values.get(name, default), *args)
+		add = lambda method, name, values, default, *args, **kargs: \
+			method(name, values.get(name, default), *args, **kargs)
 			
-		# Add the Models object list.
+		# Create the actual Models list, with a dummy model_options function.
+		model_list = ItemList(self, "Models", lambda: True)
+		model_list.pack(expand = True, fill = 'both')
+		
+		# Create the actual Values list. 
+		value_list = ItemList(self, "Values", lambda: True)
+		value_list.pack(expand = True, fill = 'both')
+		
+		# Generate the function for Values.
+		def value_options(master, active, values):
+			""" Create the additional options for a specified value """
+			
+			# TODO: This should update when the one in model_list does.
+			models = list(model_list.items.keys())
+			if len(models) > 0:
+				def gen_field(name):
+					""" Return the options for the field """
+					
+					#TODO: This should use the cached models.
+					#TODO: This hangs a few things... 
+					values = model_list.items[name]
+					return Model(values['GIS files'], \
+							values['CSV directory']).fields()
+			
+				def model_update_callback():
+					""" Model update callback, to ensure that Models changes
+						as required if the selected model changes for a
+						value.
+						
+					"""
+					value_list.save_current()
+					model_list.update_active()
+					# We also reset the 'Field' option.
+					fields = gen_field(master.options['Model'][1]())
+					master.options['Field'][0]['values'] = list(fields)
+					# TODO: Not only is this a hack, but it doesn't really
+					#		work...
+					#		What happens if the current field no longer exists?
+					#		We can't just run value_list.update_active(),
+					#		because it hangs...
+				
+				model_list.save_current()
+				add(master.add_combobox_option, "Model", values, models[0], \
+					models, callback=model_update_callback)
+				add(master.add_combobox_option, "Value transform", values, \
+					'basic', transforms.transformations.keys(), \
+					callback=lambda: value_list.save_current())
+				add(master.add_combobox_option, "Field", values, \
+					"", list(gen_field(master.options['Model'][1]())), \
+					callback=lambda: value_list.save_current())
+					
+			return True
+		# Add the function...
+		value_list.function = value_options
+		
+		# Edit the model_list so that it updates the items in value_list if
+		# things change in it.
+		model_list.addcallback = lambda name: value_list.update_active()
+		model_list.deletecallback = lambda name: value_list.update_active()
+		def renamecallback(original, name):
+			""" Deal with a model being renamed by updating all of the values
+				that refer to that model.
+				We ignore the active item, as this will be called in the middle
+				of updating the current dynamic textboxes, so there is no
+				'active' item.
+			"""
+			
+			for item in value_list.items:
+				current = value_list.items[item].get('Model', None)
+				if original == current:
+					value_list.items[item]['Model'] = name
+			
+		model_list.renamecallback = lambda original, name: \
+			value_list.update_active(callback=lambda: \
+				renamecallback(original, name))
+		
+		# Redefine model_list.function so that in-use models cannot be deleted.
 		def model_options(master, active, values):
 			""" Create the additional options for a specified value """
 			
@@ -487,48 +572,31 @@ class Main(ttk.Frame):
 			add(master.add_file_option, "CSV directory", values, \
 				"H:/My Documents/vis/csv/small")
 				
-			# TODO: Having a deletion button should be controlled by whether or
-			# 		not some value is using this particular model.
-			return True
-			
-		model_list = ItemList(self, "Models", model_options)
-		model_list.pack(expand = True, fill = 'both')
-		# Define a helper accessor function.
-		# TODO: This should be cached, so update dynamically?
+			# Check that the model is not used elsewhere.
+			used = False
+			for item_values in value_list.items.values():
+				if 'Model' in item_values and item_values['Model'] == active:
+					used = True
+				
+			return not used
+		model_list.function = model_options
+		
+		# Add callbacks to values_list so that model_list updates whether or
+		# not the item can be deleted.
+		def update_both():
+			value_list.save_current()
+			model_list.update_active()
+		value_list.addcallback = lambda name: update_both()
+		value_list.deletecallback = lambda name: model_list.update_active()
+		
+		# Create the helper generator functions.
+		# TODO: These should be dynamically updated.
 		def get_models():
 			models = {}
 			for name, values in model_list.items.items():
 				models[name] = Model(values['GIS files'], \
 					values['CSV directory'])
 			return models
-
-		# Add the Values object list.
-		def value_options(master, active, values):
-			""" Create the additional options for a specified value """
-			
-			# TODO: This should update when the one in model_list does.
-			models = list(model_list.items.keys())
-			if len(models) > 0:
-				# Remove outdated value.
-				# TODO: This is a hack because changes to model_list do not
-				# 		propogate properly yet.
-				if 'Model' in values and values['Model'] not in models:
-					del(values['Model'])
-				add(master.add_combobox_option, "Model", values, models[0], \
-					models)
-				add(master.add_combobox_option, "Value transform", values, \
-					'basic', transforms.transformations.keys())
-				# TODO: Figure this out from the model.
-				# TODO: This should update when the model is changed.
-				add(master.add_combobox_option, "Field", values, \
-					"Soil.SoilWater.Drainage", \
-					["Soil.SoilWater.Drainage"])
-					
-			return True
-			
-		value_list = ItemList(self, "Values", value_options)
-		value_list.pack(expand = True, fill = 'both')
-		# TODO: This should also be dynamically updated...
 		def get_values():
 			models = get_models()
 			values = []

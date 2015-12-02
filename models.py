@@ -70,12 +70,12 @@ class Model():
 		
 	def fields(self):
 		""" Return a list of possible fields """
-		fields = {}
+		fields = set()
 		for index in self.data:
 			for patch in self.data[index]:
 				for field in self.data[index][patch].keys():
 					if field not in fields:
-						fields.add(field)
+						fields.add(field.strip())
 		return fields
 		
 def find_patch_files(dir):
