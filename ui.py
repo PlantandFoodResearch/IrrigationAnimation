@@ -72,7 +72,7 @@ class Options(ttk.Frame):
 		
 	def add_combobox_option(self, name, var, options, \
 		callback = lambda old, new: None, \
-		postcommand = lambda box, var: None):
+		postcommand = lambda box: None):
 		""" Add a combobox option """
 		
 		row = self.grid_size()[1]
@@ -380,6 +380,10 @@ class ItemList(ttk.Frame):
 		for item in self.items.values():
 			yield item
 		raise StopIteration()
+		
+	def __getitem__(self, name):
+		""" Get the given item """
+		return self.items[name]
 	
 
 class Main(ttk.Frame):
@@ -390,9 +394,7 @@ class Main(ttk.Frame):
 		
 		self.master = master
 		ttk.Frame.__init__(self, self.master, *args, **kargs)
-
-		# Pack self.
-		self.pack(expand=True, fill='both')
+		self.pack(expand = True, fill = 'both')
 		
 		# Models.
 		self.models = {}
@@ -401,103 +403,14 @@ class Main(ttk.Frame):
 		
 		# Create the widgets...
 		self.create_buttons()
-		
 		# Create the options...
-		self.options = Options(self)
-		self.options.pack(expand = True, fill = 'both')
-		# Add the 'raw' (string) options.
-		self.options.add_raw_option("Title", tk.StringVar())
-		def check_int(i, min, max):
-			if min <= i <= max:
-				return i
-			else:
-				raise ValueError("{} not within [{}, {}]!".format(i, min, max))
-		self.options.add_raw_option("FPS", tk.IntVar(value = 4), \
-			lambda x: check_int(x, MIN_FPS, MAX_FPS))
-		def check_size(size):
-			x, y = size.split('x')
-			return int(x), int(y)
-		self.options.add_raw_option("Dimensions", \
-			tk.StringVar(value = "1280x1024"), check_size)
-		self.options.add_raw_option("Text size", tk.IntVar(value = 30), \
-			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
-		# Add the listbox options.
-		self.options.add_combobox_option("Timewarp", \
-			tk.StringVar(value = 'basic'), transforms.times.keys())
-		self.options.add_combobox_option("Edge render", \
-			tk.StringVar(value = "True"), ["True", "False"])
-		# Add the file options.
-		movie_filename = tk.StringVar(value = "H:/My Documents/vis/movies/movie.mp4")
-		self.options.add_file_option("Movie filename", movie_filename)
-
-		# Create the actual Models list.
-		def model_options(master, active, values):
-			""" Create the additional options for a specified value """
-			
-			def add_file(name, default, *args):
-				if name not in values:
-					values[name] = tk.StringVar(value = default)
-				master.add_file_option(name, values[name], *args)
-			
-			add_file("GIS files", "H:/My Documents/vis/gis/SmallPatches", \
-				tkFileDialog.askopenfilename)
-			add_file("CSV directory", "H:/My Documents/vis/csv/small", \
-				tkFileDialog.askdirectory)
-
-			
-		model_list = ItemList(self, "Models", model_options)
-		model_list.pack(expand = True, fill = 'both')
+		self.create_options()
 		
-		# Create the actual Values list. 
-		value_list = ItemList(self, "Values", lambda: True)
-		value_list.pack(expand = True, fill = 'both')
+		# Create a dummy value_list.
+		value_list = None
 		
-		# Generate the function for Values.
-		def value_options(master, active, values):
-			""" Create the additional options for a specified value """
-			
-			def add_combo(name, options, default, **kargs):
-				if name not in values:
-					values[name] = tk.StringVar(value = default)
-				master.add_combobox_option(name, values[name], options, \
-					**kargs)
-					
-			def update_model_callback(old, new):
-				""" Update the delete button and the field """
-				model_list.update_deleteable()
-				# Reset the field value (it may have changed).
-				values['Field'].set("")
-				# Load the appropriate model.
-				# TODO: This should be done async, to avoid hanging the UI.
-				# post_field({}, values['Field'])
-					
-			def post_model(box):
-				""" Callback function for updating the list of models """
-				models = sorted(list(model_list.items.keys()))
-				box['values'] = models
-
-			def post_field(box):
-				""" Callback function for updating the list of fields """
-				# TODO: This hangs for a bit if the model is not cached.
-				try:
-					model_values = model_list.items[values['Model'].get()]
-					fields = self.get_model(model_values['GIS files'].get(), \
-						model_values['CSV directory'].get()).fields()
-				except KeyError:
-					fields = []
-				box['values'] = sorted(list(fields))
-			
-			add_combo("Model", [], "", \
-				callback = update_model_callback, postcommand = post_model)
-			add_combo("Value transform", transforms.transformations.keys(), \
-				'basic')
-			add_combo("Field", [], "", postcommand = post_field)
-
-		# Add the function...
-		value_list.function = value_options
-		
-		# Add a callback for when things are renamed so that any values using
-		# the name of the model are also updated.
+		# Create a callback for when things are renamed so that any values
+		# using the name of the model are also updated.
 		# TODO: I *should* be able to get rid of this? (shared StringVar)
 		def renamecallback(original, name):
 			""" Deal with a model being renamed by updating all of the values
@@ -511,9 +424,8 @@ class Main(ttk.Frame):
 				current = item['Model'].get()
 				if original == current:
 					item['Model'].set(name)
-		model_list.renamecallback = renamecallback
 		
-		# Add a "deleteable" function.
+		# Create a deleteable callback for model_list.
 		def deleteable(active):
 			""" Helper function, returning true if the current active item is
 				deleteable.
@@ -523,17 +435,78 @@ class Main(ttk.Frame):
 					return False
 					used = True
 			return True
-		model_list.deleteable = deleteable
-		# If we delete an item, we may be able to delete the active model.
-		# This is not the case for adding; the default model is "", ie none.
-		value_list.deletecallback = lambda name: model_list.update_deleteable()
+		
+		# Create the actual model_list.
+		def model_options(master, active, values):
+			""" Create the additional options for a specified value """
+			
+			def add_file(name, default, *args):
+				if name not in values:
+					values[name] = tk.StringVar(value = default)
+				master.add_file_option(name, values[name], *args)
+			
+			add_file("GIS files", "H:/My Documents/vis/gis/SmallPatches", \
+				tkFileDialog.askopenfilename)
+			add_file("CSV directory", "H:/My Documents/vis/csv/small", \
+				tkFileDialog.askdirectory)
+
+		model_list = ItemList(self, "Models", model_options, \
+			renamecallback = renamecallback, deleteable = deleteable)
+		model_list.pack(expand = True, fill = 'both')
+		
+		# Generate the function for the value_list.
+		def value_options(master, active, values):
+			""" Create the additional options for a specified value """
+			
+			def add_combo(name, options, default, **kargs):
+				if name not in values:
+					values[name] = tk.StringVar(value = default)
+				master.add_combobox_option(name, values[name], options, \
+					**kargs)
+					
+			def update_model_callback(old, new):
+				""" Update the delete button and the field """
+				model_list.update_deleteable()
+				# Reset the field value (it may now be invalid).
+				values['Field'].set("")
+				# Load the appropriate model.
+				# TODO: This should be done async, to avoid hanging the UI.
+				# post_field({})
+					
+			def post_model(box):
+				""" Callback function for updating the list of models """
+				models = sorted(list(model_list.items.keys()))
+				box['values'] = models
+
+			def post_field(box):
+				""" Callback function for updating the list of fields """
+				# TODO: This hangs for a bit if the model is not cached.
+				try:
+					model_values = model_list[values['Model'].get()]
+					fields = self.get_model(model_values['GIS files'].get(), \
+						model_values['CSV directory'].get()).fields()
+				except KeyError:
+					fields = []
+				box['values'] = sorted(list(fields))
+			
+			add_combo("Model", [], "", \
+				callback = update_model_callback, postcommand = post_model)
+			add_combo("Value transform", transforms.transformations.keys(), \
+				'basic')
+			add_combo("Field", [], "", postcommand = post_field)
+		
+		# Create the actual Values list. 
+		value_list = ItemList(self, "Values", value_options, \
+			deletecallback = lambda name: model_list.update_deleteable(), \
+			)
+		value_list.pack(expand = True, fill = 'both')
 		
 		# Create the helper generator functions.
 		# TODO: These should be dynamically updated.
 		def get_values():
 			values = []
 			for config in value_list:
-				model_values = model_list.items[config['Model'].get()]
+				model_values = model_list[config['Model'].get()]
 				model = self.get_model(model_values['GIS files'].get(), \
 					model_values['CSV directory'].get())
 				field = config['Field'].get()
@@ -625,6 +598,36 @@ class Main(ttk.Frame):
 				'Dimensions', 'Movie filename'))
 		render_button.pack(side='right')
 		
+	def create_options(self):
+		""" Create self's options """
+
+		self.options = Options(self)
+		self.options.pack(expand = True, fill = 'both')
+		# Add the 'raw' (string) options.
+		self.options.add_raw_option("Title", tk.StringVar())
+		def check_int(i, min, max):
+			if min <= i <= max:
+				return i
+			else:
+				raise ValueError("{} not within [{}, {}]!".format(i, min, max))
+		self.options.add_raw_option("FPS", tk.IntVar(value = 4), \
+			lambda x: check_int(x, MIN_FPS, MAX_FPS))
+		def check_size(size):
+			x, y = size.split('x')
+			return int(x), int(y)
+		self.options.add_raw_option("Dimensions", \
+			tk.StringVar(value = "1280x1024"), check_size)
+		self.options.add_raw_option("Text size", tk.IntVar(value = 30), \
+			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
+		# Add the listbox options.
+		self.options.add_combobox_option("Timewarp", \
+			tk.StringVar(value = 'basic'), transforms.times.keys())
+		self.options.add_combobox_option("Edge render", \
+			tk.StringVar(value = "True"), ["True", "False"])
+		# Add the file option.
+		movie_filename = tk.StringVar(value = "H:/My Documents/vis/movies/movie.mp4")
+		self.options.add_file_option("Movie filename", movie_filename)
+
 		
 class ThreadedJob(Thread):
 	""" Threaded job class """
