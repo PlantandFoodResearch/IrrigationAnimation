@@ -36,7 +36,7 @@ class Options(ttk.Frame):
 		# Options added.
 		self.options = {} # name: (entry, get)
 		
-	def add_raw_option(self, name, default, result):
+	def add_raw_option(self, name, var, result = lambda x: x):
 		""" Add an option """
 		
 		row = self.grid_size()[1]
@@ -44,35 +44,34 @@ class Options(ttk.Frame):
 		# Create a wrapper callback.
 		def wrapper(event):
 			try:
-				result(event.widget.get())
+				result(var.get())
 			except:
-				event.widget.delete(0, 'end')
+				var.set("")
 
 		# Create a label.
 		label = ttk.Label(self, text = name + ':')
 		label.grid(row = row, column = 1, sticky = 'w')
 		
 		# Create an entry.
-		#TODO: Add validation support.
-		entry = ttk.Entry(self)
+		#TODO: Add validation support?
+		entry = ttk.Entry(self, textvariable = var)
 		entry.grid(row = row, column = 2, sticky = 'e')
 		entry.bind('<Return>', wrapper)
-		entry.insert(0, default)
 		
 		# Create a get function.
 		def get():
-			current = entry.get()
+			current = var.get()
 			try:
 				return result(current)
 			except Exception as e:
-				entry.delete(0, 'end')
+				var.set("")
 				raise InvalidOption(name, current, e)
 		
 		# Add the option to the options array.
 		self.options[name] = (entry, get)
 		
-	def add_combobox_option(self, name, default, options, \
-		callback=lambda: None):
+	def add_combobox_option(self, name, var, options, \
+		postcommand = lambda box, var: None):
 		""" Add a combobox option """
 		
 		row = self.grid_size()[1]
@@ -81,30 +80,27 @@ class Options(ttk.Frame):
 		label = ttk.Label(self, text = name + ':')
 		label.grid(row = row, column = 1, sticky = 'w')
 		
-		# Create the StringVar.
-		def callback_wrapper(var_name, index, operation):
-			""" Wrapper for the callback """
-			callback()
-		var = tk.StringVar()
-		# Set the default.
-		var.set(default)
-		# Add the trace.
-		var.trace("w", callback_wrapper)
+		# Create a postcommand wrapper.
+		def post():
+			""" Call the given postcommand with the combobox. """
+			postcommand(box, var)
 
 		# Create the combobox.
-		box = ttk.Combobox(self, textvariable=var, values=list(options))
+		box = ttk.Combobox(self, textvariable = var, values = list(options), \
+			postcommand = post)
 		box.grid(row = row, column = 2, sticky = 'e')
 		
 		# Add the option to the options array.
 		self.options[name] = (box, lambda: var.get())
 		
-	def add_file_option(self, name, default):
-		""" Add a file selection option """
+	def add_file_option(self, name, filevar, \
+		function = tkFileDialog.asksaveasfilename):
+		""" Add a file selection option.
+			filevar is the current selection (a string variable).
+			Function is the Tk chooser function to call.
+		"""
 		
 		row = self.grid_size()[1]
-		
-		# Create a string variable.
-		file = tk.StringVar()
 		
 		# Create a label.
 		label = ttk.Label(self)
@@ -113,19 +109,20 @@ class Options(ttk.Frame):
 		
 		# Create a callback for changing the label.
 		def label_callback(var_name, index, operation):
-			label.config(text = "{}: {}".format(name, file.get()))
+			label.config(text = "{}: {}".format(name, filevar.get()))
 		# Add the callback.
-		file.trace('w', label_callback)
-		# Set the default.
-		file.set(default)
+		filevar.trace('w', label_callback)
+		# Call the callback to init the label.
+		label_callback('', 0, 'w')
 			
 		# Create a button to change the file.
+		# TODO: Add sanity checking of the resulting filename.
 		button = ttk.Button(self, text = "Change", \
-			command = lambda: file.set(tkFileDialog.askopenfilename()))
+			command = lambda: filevar.set(function()))
 		button.grid(row = row, column = 3)
 		
 		# Add the option to the options array.
-		self.options[name] = (file, lambda: file.get())
+		self.options[name] = (filevar, lambda: filevar.get())
 	
 	def __iter__(self):
 		""" Iterate through the existing options """
@@ -174,7 +171,8 @@ class ItemList(ttk.Frame):
 	def __init__(self, master, name, function, \
 		renamecallback=lambda name, newname: True, \
 		deletecallback=lambda name: True, \
-		addcallback=lambda name: True, *args, **kargs):
+		addcallback=lambda name: True, \
+		deleteable=lambda active: True, *args, **kargs):
 		""" Initialise self """
 		
 		# Init self.
@@ -182,12 +180,17 @@ class ItemList(ttk.Frame):
 		self.name = name
 		self.function = function
 		# Map for items in the list.
-		self.items = {} # name: {key: value}
+		self.items = {} # name: {key: var}
 		# Current context frame.
 		self.context = None
 		# The index of the currently active element.
 		self.active = None
-		# Callbacks.
+		# The current delete button.
+		self.delete_button = None
+		# Callback function for checking whether or not the current item can
+		# be deleted.
+		self.deleteable = deleteable
+		# Generic callbacks.
 		self.renamecallback = renamecallback
 		self.deletecallback = deletecallback
 		self.addcallback = addcallback
@@ -210,7 +213,6 @@ class ItemList(ttk.Frame):
 		self.box.bind("<<ListboxSelect>>", lambda event: self.update_active())
 
 		# Add a 'new' button.
-		# Create a new button.
 		button = ttk.Button(labelframe, text = 'New', \
 			command = self.add_item)
 		button.grid(row = 2, sticky = 'nw')
@@ -313,32 +315,33 @@ class ItemList(ttk.Frame):
 		self.context = Options(self)
 		self.context.grid(row = 3, column = 1, sticky = 'sw')
 		
-		# Add a rename button.
-		self.context.add_raw_option("Name", name, \
-			lambda name: self.rename_item(name, index))
+		# Add a rename option.
+		var = tk.StringVar(value = name)
+		var.trace("w", lambda *args: self.rename_item(var.get(), index))
+		self.context.add_raw_option("Name", var)
 		
 		# Add the custom buttons.
-		deleteable = self.function(self.context, name, self.items[name])
+		self.function(self.context, name, self.items[name])
 		
 		# Add a 'delete' button at the bottom.
-		delete_button = ttk.Button(self.context, text = "Delete", \
+		self.delete_button = ttk.Button(self.context, text = "Delete", \
 			command = self.delete_selected)
-		if not deleteable:
-			# Disable the delete button if it is not possible to delete this
-			# value.
-			delete_button.config(state = 'disabled')
-		delete_button.grid(row = self.context.grid_size()[1], column = 1, \
+		self.delete_button.grid(row = self.context.grid_size()[1], column = 1, \
 			sticky = 'sw')
 			
 		# Note the current active item.
 		self.active = name
 		
+		# Update the delete button's status.
+		self.update_deleteable()
+		
 	def remove_frame(self):
 		""" Remove the context-specific frame, if one exists """
 		
 		if self.context != None:
-			self.save_current()
-				
+			# Unset the delete button.
+			self.delete_button = None
+			
 			# Destroy the old frame.
 			self.context.grid_forget()
 			self.context.destroy()
@@ -346,21 +349,6 @@ class ItemList(ttk.Frame):
 			# Update the active frame and element.
 			self.context = None
 			self.active = None
-			
-	def save_current(self):
-		""" Save the current contents, if applicable """
-		
-		if self.context != None:
-			# Save contents, if needed.
-			if self.active in self.items:
-				for name, get in self.context:
-					try:
-						self.items[self.active][name] = get()
-					except Exception as e:
-						print("WARNING: Exception {} occured".format(e))
-						# Aborting here causes problems (the frame is not
-						# destroyed like it should be), so don't do it!
-						# We can just use the old values.
 		
 	def update_active(self, callback = lambda: True):
 		""" Update the first selected item.
@@ -371,15 +359,19 @@ class ItemList(ttk.Frame):
 		# Remove any existing frame.
 		self.remove_frame()
 		
-		# Run the callback.
-		# This is used, for instance, if self.items is being updated in the
-		# background.
-		callback()
-		
 		# Create a new frame, if required.
 		selected = self.box.curselection()
 		if len(selected) > 0:
 			self.create_frame(selected[0])
+			
+	def update_deleteable(self):
+		""" Force an update for the deletion button """
+		
+		if self.delete_button != None and self.active != None:
+			if self.deleteable(self.active):
+				self.delete_button.config(state = 'enabled')
+			else:
+				self.delete_button.config(state = 'disabled')
 	
 
 class Main(ttk.Frame):
@@ -409,30 +401,42 @@ class Main(ttk.Frame):
 		def render_wrapper(button, func, *args):
 			""" Helper render wrapper """
 			
+			# TODO: We really should validate the fields before starting in
+			# 		order to return a sane error message.
+			
 			# Disable the button in question.
 			button.config(state = "disabled")
 			
-			# Generate the render_frame function and the frame count.
-			render_frame, frames = gen_render_frame(self.get_values(), \
-				self.options.get('Text size'), \
-				self.options.get('Title'), self.options.get('Timewarp'), \
-				self.options.get('Edge render') == "True")
+			try:
+				# Generate the render_frame function and the frame count.
+				print("Getting frame")
+				render_frame, frames = gen_render_frame(self.get_values(), \
+					self.options.get('Text size'), \
+					self.options.get('Title'), self.options.get('Timewarp'), \
+					self.options.get('Edge render') == "True")
+				print("Creating a job")
 
-			# Create the job.
-			semaphore = Semaphore()
-			job = ThreadedJob(semaphore, func, render_frame, frames, \
-				*[self.options.get(arg) for arg in args])
-				
-			# Create a helper function for the end of the job.
-			def check_ended():
-				""" Check whether the process has finished or not; clean up if
-					it has.
-				"""
-				if semaphore.acquire(False):
-					button.config(state = "normal")
-				else:
-					self.master.after(100, check_ended)
+				# Create the job.
+				semaphore = Semaphore()
+				job = ThreadedJob(semaphore, func, render_frame, frames, \
+					*[self.options.get(arg) for arg in args])
+					
+				# Create a helper function for the end of the job.
+				def check_ended():
+					""" Check whether the process has finished or not; clean up if
+						it has.
+					"""
+					if semaphore.acquire(False):
+						button.config(state = "normal")
+					else:
+						self.master.after(100, check_ended)
 			
+			except Exception as e:
+				button.config(state = 'normal')
+				# Re-enable the button!
+				# TODO: Add some kind of alert for a problem.
+				raise e
+				
 			# Start the job.
 			job.start()
 
@@ -457,38 +461,57 @@ class Main(ttk.Frame):
 		
 		# Create the options...
 		self.options = Options(self)
-		self.options.pack(expand=True, fill='both')
+		self.options.pack(expand = True, fill = 'both')
 		# Add the 'raw' (string) options.
-		self.options.add_raw_option("Title", "", lambda x: x)
+		self.title = tk.StringVar()
+		self.options.add_raw_option("Title", self.title)
 		def check_int(i, min, max):
-			if min <= int(i) <= max:
-				return int(i)
+			if min <= i <= max:
+				return i
 			else:
 				raise ValueError("{} not within [{}, {}]!".format(i, min, max))
-		self.options.add_raw_option("FPS", 4, \
+		self.fps = tk.IntVar(value = 4)
+		self.options.add_raw_option("FPS", self.fps, \
 			lambda x: check_int(x, MIN_FPS, MAX_FPS))
 		def check_size(size):
 			x, y = size.split('x')
 			return int(x), int(y)
-		self.options.add_raw_option("Dimensions", "1280x1024", \
-			check_size)
-		self.options.add_raw_option("Text size", 30, \
+		self.size = tk.StringVar(value = "1280x1024")
+		self.options.add_raw_option("Dimensions", self.size, check_size)
+		self.text_size = tk.IntVar(value = 30)
+		self.options.add_raw_option("Text size", self.text_size, \
 			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
 		# Add the listbox options.
-		self.options.add_combobox_option("Timewarp", 'basic', \
+		self.timewarp = tk.StringVar(value = 'basic')
+		self.options.add_combobox_option("Timewarp", self.timewarp, \
 			transforms.times.keys())
-		self.options.add_combobox_option("Edge render", "True", \
+		self.edge_render = tk.StringVar(value = "True")
+		self.options.add_combobox_option("Edge render", self.edge_render, \
 			["True", "False"])
 		# Add the file options.
-		self.options.add_file_option("Movie filename", \
-			"H:/My Documents/vis/movies/movie.mp4")
+		movie_filename = tk.StringVar(value = "H:/My Documents/vis/movies/movie.mp4")
+		self.options.add_file_option("Movie filename", movie_filename)
 			
 		# Helper...
 		add = lambda method, name, values, default, *args, **kargs: \
 			method(name, values.get(name, default), *args, **kargs)
 			
-		# Create the actual Models list, with a dummy model_options function.
-		model_list = ItemList(self, "Models", lambda: True)
+		# Create the actual Models list.
+		def model_options(master, active, values):
+			""" Create the additional options for a specified value """
+			
+			def add_file(name, default, *args):
+				if name not in values:
+					values[name] = tk.StringVar(value = default)
+				master.add_file_option(name, values[name], *args)
+			
+			add_file("GIS files", "H:/My Documents/vis/gis/SmallPatches", \
+				tkFileDialog.askopenfilename)
+			add_file("CSV directory", "H:/My Documents/vis/csv/small", \
+				tkFileDialog.askdirectory)
+
+			
+		model_list = ItemList(self, "Models", model_options)
 		model_list.pack(expand = True, fill = 'both')
 		
 		# Create the actual Values list. 
@@ -499,53 +522,43 @@ class Main(ttk.Frame):
 		def value_options(master, active, values):
 			""" Create the additional options for a specified value """
 			
-			# TODO: This should update when the one in model_list does.
 			models = list(model_list.items.keys())
 			if len(models) > 0:
 				def gen_field(name):
 					""" Return the options for the field """
 					
-					#TODO: This should use the cached models.
-					#TODO: This hangs a few things... 
+					#TODO: This hangs for a bit if the model is not cached.
 					values = model_list.items[name]
-					return Model(values['GIS files'], \
-							values['CSV directory']).fields()
-			
-				def model_update_callback():
-					""" Model update callback, to ensure that Models changes
-						as required if the selected model changes for a
-						value.
-						
-					"""
-					value_list.save_current()
-					model_list.update_active()
-					# We also reset the 'Field' option.
-					fields = gen_field(master.options['Model'][1]())
-					master.options['Field'][0]['values'] = list(fields)
-					# TODO: Not only is this a hack, but it doesn't really
-					#		work...
-					#		What happens if the current field no longer exists?
-					#		We can't just run value_list.update_active(),
-					#		because it hangs...
+					return self.get_model(values['GIS files'].get(), \
+							values['CSV directory'].get()).fields()
+
+				def add_combo(name, options, default, callback = None, \
+					postcommand = lambda box, var: None):
+					if name not in values:
+						values[name] = tk.StringVar(value = default)
+						if callback:
+							values[name].trace("w", callback)
+					master.add_combobox_option(name, values[name], options, \
+						postcommand = postcommand)
 				
-				model_list.save_current()
-				add(master.add_combobox_option, "Model", values, models[0], \
-					models, callback=model_update_callback)
-				add(master.add_combobox_option, "Value transform", values, \
-					'basic', transforms.transformations.keys(), \
-					callback=lambda: value_list.save_current())
-				add(master.add_combobox_option, "Field", values, \
-					"", list(gen_field(master.options['Model'][1]())), \
-					callback=lambda: value_list.save_current())
-					
-			return True
+				add_combo("Model", models, models[0], \
+					callback = lambda *args: model_list.update_deleteable())
+				add_combo("Value transform", transforms.transformations.keys(), \
+					'basic')
+				# TODO: What happens if the current field no longer exists?
+				# 		We should probably at least blank out the variable.
+				def post(box, var):
+					fields = gen_field(values['Model'].get())
+					box['values'] = sorted(list(fields))
+					if var.get() not in fields:
+						var.set("")
+				add_combo("Field", [], "", postcommand = post)
 		# Add the function...
 		value_list.function = value_options
 		
-		# Edit the model_list so that it updates the items in value_list if
-		# things change in it.
-		model_list.addcallback = lambda name: value_list.update_active()
-		model_list.deletecallback = lambda name: value_list.update_active()
+		# Add a callback for when things are renamed so that any values using
+		# the name of the model are also updated.
+		# TODO: I *should* be able to get rid of this? (shared StringVar)
 		def renamecallback(original, name):
 			""" Deal with a model being renamed by updating all of the values
 				that refer to that model.
@@ -554,59 +567,65 @@ class Main(ttk.Frame):
 				'active' item.
 			"""
 			
-			for item in value_list.items:
-				current = value_list.items[item].get('Model', None)
+			for item in value_list.items.values():
+				current = item['Model'].get()
 				if original == current:
-					value_list.items[item]['Model'] = name
-			
-		model_list.renamecallback = lambda original, name: \
-			value_list.update_active(callback=lambda: \
-				renamecallback(original, name))
+					item['Model'].set(name)
+		model_list.renamecallback = renamecallback
 		
-		# Redefine model_list.function so that in-use models cannot be deleted.
-		def model_options(master, active, values):
-			""" Create the additional options for a specified value """
+		# Add a "deleteable" function.
+		def deleteable(active):
+			""" Helper function, returning true if the current active item is
+				deleteable.
+			"""
 			
-			add(master.add_file_option, "GIS files", values, \
-				"H:/My Documents/vis/gis/SmallPatches")
-			add(master.add_file_option, "CSV directory", values, \
-				"H:/My Documents/vis/csv/small")
-				
 			# Check that the model is not used elsewhere.
 			used = False
 			for item_values in value_list.items.values():
-				if 'Model' in item_values and item_values['Model'] == active:
+				if 'Model' in item_values and item_values['Model'].get() == active:
 					used = True
 				
 			return not used
-		model_list.function = model_options
-		
+		model_list.deleteable = deleteable
 		# Add callbacks to values_list so that model_list updates whether or
-		# not the item can be deleted.
-		def update_both():
-			value_list.save_current()
-			model_list.update_active()
-		value_list.addcallback = lambda name: update_both()
-		value_list.deletecallback = lambda name: model_list.update_active()
+		# not the item can be deleted when items are added or removed.
+		value_list.addcallback = lambda name: model_list.update_deleteable()
+		value_list.deletecallback = lambda name: model_list.update_deleteable()
 		
 		# Create the helper generator functions.
 		# TODO: These should be dynamically updated.
 		def get_models():
 			models = {}
 			for name, values in model_list.items.items():
-				models[name] = Model(values['GIS files'], \
-					values['CSV directory'])
+				models[name] = self.get_model(values['GIS files'].get(), \
+					values['CSV directory'].get())
 			return models
 		def get_values():
 			models = get_models()
 			values = []
-			for value, config in value_list.items.items():
-				model = models[config['Model']]
-				field = config['Field']
-				transform = config['Value transform']
+			for config in value_list.items.values():
+				model = models[config['Model'].get()]
+				field = config['Field'].get()
+				transform = config['Value transform'].get()
 				values.append(Values(model, field, transform=transform))
 			return values
 		self.get_values = get_values
+		
+	def load_model(self, gis, csv):
+		""" Load the given model """
+		# TODO: It would be nice if this could be run in the background...
+		self.models[(gis, csv)] = Model(gis, csv)
+		
+	def get_model(self, gis, csv):
+		""" Return the model associated with the given csv and gis files,
+			loading it if required.
+		"""
+		
+		if (gis, csv) not in self.models:
+			# TODO: It would be nice if this could be run in the background...
+			self.load_model(gis, csv)
+		return self.models[(gis, csv)]
+		
 		
 class ThreadedJob(Thread):
 	""" Threaded job class """
