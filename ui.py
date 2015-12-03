@@ -374,11 +374,12 @@ class ItemList(ttk.Frame):
 	def update_deleteable(self):
 		""" Force an update for the deletion button """
 		
-		if self.delete_button != None and self.active != None:
-			if self.deleteable(self.active):
-				self.delete_button.config(state = 'enabled')
-			else:
-				self.delete_button.config(state = 'disabled')
+		if self.delete_button != None:
+			# Check for all of the selected items.
+			self.delete_button.config(state = 'enabled')
+			for selected in self.box.curselection():
+				if not self.deleteable(self.box.get(index)):
+					self.delete_button.config(state = 'disabled')
 				
 	def __iter__(self):
 		""" Iterate through self's items """
