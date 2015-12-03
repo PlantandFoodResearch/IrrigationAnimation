@@ -1,5 +1,9 @@
 """ User interface code for the animation renderer.
 
+	Future:
+	- Saving existing setups.
+	- Custom code integration.
+
 	Author: Alastair Hughes
 """
 
@@ -16,7 +20,7 @@ import tkFileDialog
 import ttk
 
 # Threading imports.
-from threading import Thread, Semaphore
+from threading import Thread, Lock
 
 class InvalidOption(ValueError):
 	""" Error to be raised if an option is invalid """
@@ -82,14 +86,17 @@ class Options(ttk.Frame):
 		label.grid(row = row, column = 1, sticky = 'w')
 		
 		# Define a validator command and callback.
-		def valid(old, new):
-			callback(old, new)
-			return new in box['values']
+		def valid(old, new, reason):
+			if new in box['values']:
+				if old != new or reason == "focusin":
+					callback(old, new)
+				return True
+			return False
 			
 		# Create the combobox.
 		box = ttk.Combobox(self, textvariable = var, values = list(options), \
 			postcommand = lambda: postcommand(box), validate='all', \
-			validatecommand = (self.register(valid), "%s", "%P"))
+			validatecommand = (self.register(valid), "%s", "%P", "%V"))
 		box.grid(row = row, column = 2, sticky = 'e')
 		
 		# Add the option to the options array.
@@ -104,19 +111,17 @@ class Options(ttk.Frame):
 		
 		row = self.grid_size()[1]
 		
-		# Create a label.
-		label = ttk.Label(self)
-		label.grid(row = row, column = 1, columnspan = 2, \
-			sticky = 'w')
+		# Create a frame to hold the label and filename.
+		frame = ttk.Frame(self)
+		frame.grid(row = row, column = 1, columnspan = 2, sticky = 'ew')
 		
-		# Create a callback for changing the label.
-		def label_callback(var_name, index, operation):
-			label.config(text = "{}: {}".format(name, filevar.get()))
-		# Add the callback.
-		filevar.trace('w', label_callback)
-		# Call the callback to init the label.
-		label_callback('', 0, 'w')
-			
+		# Create a label.
+		label = ttk.Label(frame, text = name + ": ")
+		label.pack(side = 'left')
+		# Create the callback for the name.
+		file_label = ttk.Label(frame, textvariable = filevar)
+		file_label.pack(side = 'right')
+		
 		# Create a button to change the file.
 		# TODO: Add sanity checking of the resulting filename.
 		button = ttk.Button(self, text = "Change", \
@@ -397,9 +402,12 @@ class Main(ttk.Frame):
 		self.pack(expand = True, fill = 'both')
 		
 		# Models.
-		self.models = {}
+		self.models = ThreadedDict(lambda name: Model(*name))
 		# Values.
-		self.values = {}
+		# Don't bother with early caching for this; rendering takes quite a bit
+		# longer anyway...
+		self.values = ThreadedDict(lambda name: Values(self.models[name[0]], \
+			name[1], transform = name[2]))
 		
 		# Create the widgets...
 		self.create_buttons()
@@ -427,15 +435,27 @@ class Main(ttk.Frame):
 			try:
 				# Generate the render_frame function and the frame count.
 				print("Getting frame")
-				render_frame, frames = gen_render_frame(self.get_values(), \
+						
+				# Find the values to render.
+
+				values = []
+				for config in self.value_list:
+					model_values = self.model_list[config['Model'].get()]
+					gis = model_values['GIS files'].get()
+					csv = model_values['CSV directory'].get()
+					field = config['Field'].get()
+					transform = config['Value transform'].get()
+					values.append(self.values[((gis, csv), field, transform)])
+
+				render_frame, frames = gen_render_frame(values, \
 					self.options.get('Text size'), \
 					self.options.get('Title'), self.options.get('Timewarp'), \
 					self.options.get('Edge render') == "True")
 				print("Creating a job")
 
 				# Create the job.
-				semaphore = Semaphore()
-				job = ThreadedJob(semaphore, func, render_frame, frames, \
+				lock = Lock()
+				job = ThreadedJob(lock, func, render_frame, frames, \
 					*[self.options.get(arg) for arg in args])
 					
 				# Create a helper function for the end of the job.
@@ -443,7 +463,7 @@ class Main(ttk.Frame):
 					""" Check whether the process has finished or not; clean up if
 						it has.
 					"""
-					if semaphore.acquire(False):
+					if lock.acquire(False):
 						button.config(state = "normal")
 					else:
 						self.master.after(100, check_ended)
@@ -510,7 +530,7 @@ class Main(ttk.Frame):
 		""" Create the lists """
 		
 		# Create a dummy value_list.
-		value_list = None
+		self.value_list = None
 		
 		# Create a callback for when things are renamed so that any values
 		# using the name of the model are also updated.
@@ -523,7 +543,7 @@ class Main(ttk.Frame):
 				'active' item.
 			"""
 			
-			for item in value_list:
+			for item in self.value_list:
 				current = item['Model'].get()
 				if original == current:
 					item['Model'].set(name)
@@ -533,7 +553,7 @@ class Main(ttk.Frame):
 			""" Helper function, returning true if the current active item is
 				deleteable.
 			"""
-			for item_values in value_list:
+			for item_values in self.value_list:
 				if item_values['Model'].get() == active:
 					return False
 					used = True
@@ -543,9 +563,20 @@ class Main(ttk.Frame):
 		def model_options(master, active, values):
 			""" Create the additional options for a specified value """
 			
+			def cache_model():
+				""" Cache the given model (async) """
+				print("Caching the current model...")
+				try:
+					self.models.cache((values['GIS files'].get(), \
+						values['CSV directory'].get()))
+				except KeyError:
+					pass
+
 			def add_file(name, default, *args):
 				if name not in values:
 					values[name] = tk.StringVar(value = default)
+					values[name].trace("w", lambda *args: cache_model())
+					cache_model() # Pre-cache default the model.
 				master.add_file_option(name, values[name], *args)
 			
 			add_file("GIS files", "H:/My Documents/vis/gis/SmallPatches", \
@@ -553,9 +584,9 @@ class Main(ttk.Frame):
 			add_file("CSV directory", "H:/My Documents/vis/csv/small", \
 				tkFileDialog.askdirectory)
 
-		model_list = ItemList(self, "Models", model_options, \
+		self.model_list = ItemList(self, "Models", model_options, \
 			renamecallback = renamecallback, deleteable = deleteable)
-		model_list.pack(expand = True, fill = 'both')
+		self.model_list.pack(expand = True, fill = 'both')
 		
 		# Generate the function for the value_list.
 		def value_options(master, active, values):
@@ -569,25 +600,31 @@ class Main(ttk.Frame):
 					
 			def update_model_callback(old, new):
 				""" Update the delete button and the field """
-				model_list.update_deleteable()
+				self.model_list.update_deleteable()
 				# Reset the field value (it may now be invalid).
 				values['Field'].set("")
-				# Load the appropriate model.
-				# TODO: This should be done async, to avoid hanging the UI.
-				# post_field({})
+				# TODO: We should really edit the field box so that there are
+				# 		no valid values, at least until someone selects the
+				#		drop down, to prevent copy-pasting invalid values.
+				# Cache the appropriate model (async).
+				try:
+					model_values = self.model_list[values['Model'].get()]
+					self.models.cache((model_values['GIS files'].get(), \
+						model_values['CSV directory'].get()))
+				except KeyError:
+					return
 					
 			def post_model(box):
 				""" Callback function for updating the list of models """
-				models = sorted(list(model_list.items.keys()))
-				box['values'] = models
+				box['values'] = sorted(list(self.model_list.items.keys()))
 
 			def post_field(box):
 				""" Callback function for updating the list of fields """
 				# TODO: This hangs for a bit if the model is not cached.
 				try:
-					model_values = model_list[values['Model'].get()]
-					fields = self.get_model(model_values['GIS files'].get(), \
-						model_values['CSV directory'].get()).fields()
+					model_values = self.model_list[values['Model'].get()]
+					fields = self.models[(model_values['GIS files'].get(), \
+						model_values['CSV directory'].get())].fields()
 				except KeyError:
 					fields = []
 				box['values'] = sorted(list(fields))
@@ -599,48 +636,69 @@ class Main(ttk.Frame):
 			add_combo("Field", [], "", postcommand = post_field)
 		
 		# Create the actual Values list. 
-		value_list = ItemList(self, "Values", value_options, \
-			deletecallback = lambda name: model_list.update_deleteable(), \
-			)
-		value_list.pack(expand = True, fill = 'both')
+		self.value_list = ItemList(self, "Values", value_options, \
+			deletecallback = lambda name: self.model_list.update_deleteable())
+		self.value_list.pack(expand = True, fill = 'both')
+
 		
-		# Create the helper generator functions.
-		# TODO: These should be dynamically updated.
-		def get_values():
-			values = []
-			for config in value_list:
-				model_values = model_list[config['Model'].get()]
-				model = self.get_model(model_values['GIS files'].get(), \
-					model_values['CSV directory'].get())
-				field = config['Field'].get()
-				transform = config['Value transform'].get()
-				values.append(Values(model, field, transform=transform))
-			return values
-		self.get_values = get_values
-		
-	def load_model(self, gis, csv):
-		""" Load the given model """
-		# TODO: It would be nice if this could be run in the background...
-		self.models[(gis, csv)] = Model(gis, csv)
-		
-	def get_model(self, gis, csv):
-		""" Return the model associated with the given csv and gis files,
-			loading it if required.
+class ThreadedDict(object):
+	""" A threaded, locking, load-from-disk dict """
+	
+	def __init__(self, load_func):
+		""" Initialise self.
+			load_func is the function to call to try to load a value.
 		"""
 		
-		if (gis, csv) not in self.models:
-			# TODO: It would be nice if this could be run in the background...
-			self.load_model(gis, csv)
-		return self.models[(gis, csv)]
+		# TODO: Add some way of giving user feedback (why is it hanging??)
 		
+		# Global dict lock.
+		# TODO: Consider using a lock protecting a value->lock dict.
+		#		Is there any use case/performance improvements?
+		self.lock = Lock()
+		# Self's dict.
+		self.dict = {}
+		# The load function takes a name, and returns the corresponding value.
+		def wrapper(name):
+			self.dict[name] = load_func(name)
+		self.load_func = wrapper
+		
+	def __getitem__(self, name):
+		""" Try to get the given item """
+		
+		# Ensure that the value is cached.
+		self.cache(name)
+		# Now we lock, retrieve the value, and return.
+		if not self.lock.acquire(False):
+			print("WARNING: Waiting for lock... (get)")
+		else:
+			self.lock.release()
+		with self.lock:
+			return self.dict[name]
+		
+	def cache(self, name):
+		""" Cache the given item, if required. """
+		
+		# We get the lock to check whether or not the item exists.
+		if not self.lock.acquire(False):
+			print("WARNING: Waiting for lock... (cache check)")
+		else:
+			self.lock.release()
+		with self.lock:
+			exists = name in self.dict
+		# If it doesn't, we need to cache it, so run the caching job.
+		if not exists:
+			# We don't lock here, or the job will not be able to continue!
+			job = ThreadedJob(self.lock, self.load_func, name)
+			job.start()
+	
 class ThreadedJob(Thread):
 	""" Threaded job class """
 	
-	def __init__(self, semaphore, function, *args, **kargs):
+	def __init__(self, lock, function, *args, **kargs):
 		""" Initialise self """
 		
 		Thread.__init__(self)
-		self.semaphore = semaphore
+		self.lock = lock
 		self.function = function
 		self.args = args
 		self.kargs = kargs
@@ -648,11 +706,8 @@ class ThreadedJob(Thread):
 	def run(self):
 		""" Run the function """
 		
-		self.semaphore.acquire()
-		try:
+		with self.lock:
 			self.function(*self.args, **self.kargs)
-		finally:
-			self.semaphore.release()
 
 if __name__ == "__main__":
 	root = tk.Tk()
