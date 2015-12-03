@@ -522,37 +522,44 @@ class Main(ttk.Frame):
 		def value_options(master, active, values):
 			""" Create the additional options for a specified value """
 			
-			models = list(model_list.items.keys())
-			if len(models) > 0:
-				def gen_field(name):
-					""" Return the options for the field """
+			def add_combo(name, options, default, callback = None, \
+				postcommand = lambda box, var: None):
+				if name not in values:
+					values[name] = tk.StringVar(value = default)
+					if callback:
+						values[name].trace("w", lambda *args: callback)
+				master.add_combobox_option(name, values[name], options, \
+					postcommand = postcommand)
 					
-					#TODO: This hangs for a bit if the model is not cached.
-					values = model_list.items[name]
-					return self.get_model(values['GIS files'].get(), \
-							values['CSV directory'].get()).fields()
+			def update_model_callback():
+				""" Update the model """
+				model_list.update_deleteable()
+				post_field({}, values['Field'])
+					
+			def post_model(box, var):
+				""" Callback function for updating the list of models """
+				models = sorted(list(model_list.items.keys()))
+				box['values'] = models
+				if var.get() not in model_list.items:
+					var.set("")
 
-				def add_combo(name, options, default, callback = None, \
-					postcommand = lambda box, var: None):
-					if name not in values:
-						values[name] = tk.StringVar(value = default)
-						if callback:
-							values[name].trace("w", callback)
-					master.add_combobox_option(name, values[name], options, \
-						postcommand = postcommand)
-				
-				add_combo("Model", models, models[0], \
-					callback = lambda *args: model_list.update_deleteable())
-				add_combo("Value transform", transforms.transformations.keys(), \
-					'basic')
-				# TODO: What happens if the current field no longer exists?
-				# 		We should probably at least blank out the variable.
-				def post(box, var):
-					fields = gen_field(values['Model'].get())
-					box['values'] = sorted(list(fields))
-					if var.get() not in fields:
-						var.set("")
-				add_combo("Field", [], "", postcommand = post)
+			def post_field(box, var):
+				""" Callback function for updating the list of fields """
+				#TODO: This hangs for a bit if the model is not cached.
+				value_list = model_list.items[values['Model'].get()]
+				fields = self.get_model(value_list['GIS files'].get(), \
+						value_list['CSV directory'].get()).fields()
+				box['values'] = sorted(list(fields))
+				if var.get() not in fields:
+					var.set("")
+			
+			add_combo("Model", [], "", \
+				callback = update_model_callback, postcommand = post_model)
+			add_combo("Value transform", transforms.transformations.keys(), \
+				'basic')
+			# TODO: This should be updated if the model changes.
+			add_combo("Field", [], "", postcommand = post_field)
+
 		# Add the function...
 		value_list.function = value_options
 		
@@ -594,17 +601,12 @@ class Main(ttk.Frame):
 		
 		# Create the helper generator functions.
 		# TODO: These should be dynamically updated.
-		def get_models():
-			models = {}
-			for name, values in model_list.items.items():
-				models[name] = self.get_model(values['GIS files'].get(), \
-					values['CSV directory'].get())
-			return models
 		def get_values():
-			models = get_models()
 			values = []
 			for config in value_list.items.values():
-				model = models[config['Model'].get()]
+				model_values = model_list.items[config['Model'].get()]
+				model = self.get_model(model_values['GIS files'].get(), \
+					model_values['CSV directory'].get())
 				field = config['Field'].get()
 				transform = config['Value transform'].get()
 				values.append(Values(model, field, transform=transform))
