@@ -400,7 +400,6 @@ class Main(ttk.Frame):
 		self.values = {}
 		
 		# Create the widgets...
-		
 		self.create_buttons()
 		
 		# Create the options...
@@ -602,33 +601,33 @@ class Main(ttk.Frame):
 						button.config(state = "normal")
 					else:
 						self.master.after(100, check_ended)
-			
-			except Exception as e:
-				button.config(state = 'normal')
-				# Re-enable the button!
-				# TODO: Add some kind of alert for a problem.
-				raise e
 				
-			# Start the job.
-			job.start()
+				# Start the job.
+				job.start()
 
-			# Add a check for the job finishing.
-			self.master.after(100, check_ended)
+				# Add a check for the job finishing.
+				self.master.after(100, check_ended)
+			except Exception as e:
+				# We reset the button's state, and then re-raise the error.
+				button.config(state = 'normal')
+				# Unfortunately, we can't use 'finally', as we only want the
+				# button to be activated after the render finishes.
+				raise e
 			
 		# Create the buttons.
 		# Preview button.
 		# TODO: Currently, this hangs the UI (something to do with the
 		#		interaction between pygame and tkinter?), so we set it to
 		# 		disabled by default.
-		preview_button = ttk.Button(lower, text='Preview', state='disabled')
-		preview_button.config(command=lambda: render_wrapper(preview_button, \
-			preview, 'FPS', 'Dimensions', 'Title'))
+		preview_button = ttk.Button(lower, text='Preview', state='disabled', \
+			command=lambda: render_wrapper(preview_button, preview, 'FPS', \
+				'Dimensions', 'Title'))
 		preview_button.pack(side='left')
 		
 		# Render button.
-		render_button = ttk.Button(lower, text='Render')
-		render_button.config(command=lambda: render_wrapper(render_button, \
-			render, 'FPS', 'Dimensions', 'Movie filename'))
+		render_button = ttk.Button(lower, text='Render', \
+			command=lambda: render_wrapper(render_button, render, 'FPS', \
+				'Dimensions', 'Movie filename'))
 		render_button.pack(side='right')
 		
 		
