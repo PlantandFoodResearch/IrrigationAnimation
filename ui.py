@@ -21,9 +21,9 @@ from threading import Thread, Semaphore
 class InvalidOption(ValueError):
 	""" Error to be raised if an option is invalid """
 	
-	def __init__(self, name, value, e):
+	def __init__(self, name, value, error = None):
 		ValueError.__init__(self, \
-			"Option '{}' has an invalid value of '{}' (original exception: {})!".format(name, value, e))	
+			"Option '{}' has an invalid value of '{}' (original exception: {})!".format(name, value, error))
 		
 class Options(ttk.Frame):
 
@@ -79,15 +79,13 @@ class Options(ttk.Frame):
 		# Create a label.
 		label = ttk.Label(self, text = name + ':')
 		label.grid(row = row, column = 1, sticky = 'w')
-		
-		# Create a postcommand wrapper.
-		def post():
-			""" Call the given postcommand with the combobox. """
-			postcommand(box, var)
 
 		# Create the combobox.
+		valid = lambda *args: False
+		self.register(valid)
 		box = ttk.Combobox(self, textvariable = var, values = list(options), \
-			postcommand = post)
+			postcommand = lambda: postcommand(box, var), validate='key', \
+			validatecommand = valid)
 		box.grid(row = row, column = 2, sticky = 'e')
 		
 		# Add the option to the options array.
@@ -526,13 +524,13 @@ class Main(ttk.Frame):
 				postcommand = lambda box, var: None):
 				if name not in values:
 					values[name] = tk.StringVar(value = default)
-					if callback:
-						values[name].trace("w", lambda *args: callback)
+					if callback != None:
+						values[name].trace("w", lambda *args: callback())
 				master.add_combobox_option(name, values[name], options, \
 					postcommand = postcommand)
 					
 			def update_model_callback():
-				""" Update the model """
+				""" Update the delete button and the field """
 				model_list.update_deleteable()
 				post_field({}, values['Field'])
 					
@@ -540,24 +538,22 @@ class Main(ttk.Frame):
 				""" Callback function for updating the list of models """
 				models = sorted(list(model_list.items.keys()))
 				box['values'] = models
-				if var.get() not in model_list.items:
-					var.set("")
 
 			def post_field(box, var):
 				""" Callback function for updating the list of fields """
 				#TODO: This hangs for a bit if the model is not cached.
-				value_list = model_list.items[values['Model'].get()]
-				fields = self.get_model(value_list['GIS files'].get(), \
+				try:
+					value_list = model_list.items[values['Model'].get()]
+					fields = self.get_model(value_list['GIS files'].get(), \
 						value_list['CSV directory'].get()).fields()
+				except KeyError:
+					fields = []
 				box['values'] = sorted(list(fields))
-				if var.get() not in fields:
-					var.set("")
 			
 			add_combo("Model", [], "", \
 				callback = update_model_callback, postcommand = post_model)
 			add_combo("Value transform", transforms.transformations.keys(), \
 				'basic')
-			# TODO: This should be updated if the model changes.
 			add_combo("Field", [], "", postcommand = post_field)
 
 		# Add the function...
