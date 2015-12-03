@@ -374,6 +374,12 @@ class ItemList(ttk.Frame):
 				self.delete_button.config(state = 'enabled')
 			else:
 				self.delete_button.config(state = 'disabled')
+				
+	def __iter__(self):
+		""" Iterate through self's items """
+		for item in self.items.values():
+			yield item
+		raise StopIteration()
 	
 
 class Main(ttk.Frame):
@@ -395,71 +401,7 @@ class Main(ttk.Frame):
 		
 		# Create the widgets...
 		
-		# Run buttons.
-		# Create the holder frame.
-		lower = ttk.Frame(self)
-		lower.pack(side='bottom', fill='x')
-		# Create the helper function...
-		def render_wrapper(button, func, *args):
-			""" Helper render wrapper """
-			
-			# TODO: We really should validate the fields before starting in
-			# 		order to return a sane error message.
-			
-			# Disable the button in question.
-			button.config(state = "disabled")
-			
-			try:
-				# Generate the render_frame function and the frame count.
-				print("Getting frame")
-				render_frame, frames = gen_render_frame(self.get_values(), \
-					self.options.get('Text size'), \
-					self.options.get('Title'), self.options.get('Timewarp'), \
-					self.options.get('Edge render') == "True")
-				print("Creating a job")
-
-				# Create the job.
-				semaphore = Semaphore()
-				job = ThreadedJob(semaphore, func, render_frame, frames, \
-					*[self.options.get(arg) for arg in args])
-					
-				# Create a helper function for the end of the job.
-				def check_ended():
-					""" Check whether the process has finished or not; clean up if
-						it has.
-					"""
-					if semaphore.acquire(False):
-						button.config(state = "normal")
-					else:
-						self.master.after(100, check_ended)
-			
-			except Exception as e:
-				button.config(state = 'normal')
-				# Re-enable the button!
-				# TODO: Add some kind of alert for a problem.
-				raise e
-				
-			# Start the job.
-			job.start()
-
-			# Add a check for the job finishing.
-			self.master.after(100, check_ended)
-			
-		# Create the buttons.
-		# Preview button.
-		# TODO: Currently, this hangs the UI (something to do with the
-		#		interaction between pygame and tkinter?), so we set it to
-		# 		disabled by default.
-		preview_button = ttk.Button(lower, text='Preview', state='disabled')
-		preview_button.config(command=lambda: render_wrapper(preview_button, \
-			preview, 'FPS', 'Dimensions', 'Title'))
-		preview_button.pack(side='left')
-		
-		# Render button.
-		render_button = ttk.Button(lower, text='Render')
-		render_button.config(command=lambda: render_wrapper(render_button, \
-			render, 'FPS', 'Dimensions', 'Movie filename'))
-		render_button.pack(side='right')
+		self.create_buttons()
 		
 		# Create the options...
 		self.options = Options(self)
@@ -544,9 +486,9 @@ class Main(ttk.Frame):
 				""" Callback function for updating the list of fields """
 				#TODO: This hangs for a bit if the model is not cached.
 				try:
-					value_list = model_list.items[values['Model'].get()]
-					fields = self.get_model(value_list['GIS files'].get(), \
-						value_list['CSV directory'].get()).fields()
+					model_values = model_list.items[values['Model'].get()]
+					fields = self.get_model(model_values['GIS files'].get(), \
+						model_values['CSV directory'].get()).fields()
 				except KeyError:
 					fields = []
 				box['values'] = sorted(list(fields))
@@ -571,7 +513,7 @@ class Main(ttk.Frame):
 				'active' item.
 			"""
 			
-			for item in value_list.items.values():
+			for item in value_list:
 				current = item['Model'].get()
 				if original == current:
 					item['Model'].set(name)
@@ -582,25 +524,21 @@ class Main(ttk.Frame):
 			""" Helper function, returning true if the current active item is
 				deleteable.
 			"""
-			
-			# Check that the model is not used elsewhere.
-			used = False
-			for item_values in value_list.items.values():
-				if 'Model' in item_values and item_values['Model'].get() == active:
+			for item_values in value_list:
+				if item_values['Model'].get() == active:
+					return False
 					used = True
-				
-			return not used
+			return True
 		model_list.deleteable = deleteable
-		# Add callbacks to values_list so that model_list updates whether or
-		# not the item can be deleted when items are added or removed.
-		value_list.addcallback = lambda name: model_list.update_deleteable()
+		# If we delete an item, we may be able to delete the active model.
+		# This is not the case for adding; the default model is "", ie none.
 		value_list.deletecallback = lambda name: model_list.update_deleteable()
 		
 		# Create the helper generator functions.
 		# TODO: These should be dynamically updated.
 		def get_values():
 			values = []
-			for config in value_list.items.values():
+			for config in value_list:
 				model_values = model_list.items[config['Model'].get()]
 				model = self.get_model(model_values['GIS files'].get(), \
 					model_values['CSV directory'].get())
@@ -625,6 +563,74 @@ class Main(ttk.Frame):
 			self.load_model(gis, csv)
 		return self.models[(gis, csv)]
 		
+	def create_buttons(self):
+		""" Create the button widgets """
+
+		# Create the holder frame.
+		lower = ttk.Frame(self)
+		lower.pack(side='bottom', fill='x')
+		# Create the helper function...
+		def render_wrapper(button, func, *args):
+			""" Helper render wrapper """
+			
+			# TODO: We really should validate the fields before starting in
+			# 		order to return a sane error message.
+			
+			# Disable the button in question.
+			button.config(state = "disabled")
+			
+			try:
+				# Generate the render_frame function and the frame count.
+				print("Getting frame")
+				render_frame, frames = gen_render_frame(self.get_values(), \
+					self.options.get('Text size'), \
+					self.options.get('Title'), self.options.get('Timewarp'), \
+					self.options.get('Edge render') == "True")
+				print("Creating a job")
+
+				# Create the job.
+				semaphore = Semaphore()
+				job = ThreadedJob(semaphore, func, render_frame, frames, \
+					*[self.options.get(arg) for arg in args])
+					
+				# Create a helper function for the end of the job.
+				def check_ended():
+					""" Check whether the process has finished or not; clean up if
+						it has.
+					"""
+					if semaphore.acquire(False):
+						button.config(state = "normal")
+					else:
+						self.master.after(100, check_ended)
+			
+			except Exception as e:
+				button.config(state = 'normal')
+				# Re-enable the button!
+				# TODO: Add some kind of alert for a problem.
+				raise e
+				
+			# Start the job.
+			job.start()
+
+			# Add a check for the job finishing.
+			self.master.after(100, check_ended)
+			
+		# Create the buttons.
+		# Preview button.
+		# TODO: Currently, this hangs the UI (something to do with the
+		#		interaction between pygame and tkinter?), so we set it to
+		# 		disabled by default.
+		preview_button = ttk.Button(lower, text='Preview', state='disabled')
+		preview_button.config(command=lambda: render_wrapper(preview_button, \
+			preview, 'FPS', 'Dimensions', 'Title'))
+		preview_button.pack(side='left')
+		
+		# Render button.
+		render_button = ttk.Button(lower, text='Render')
+		render_button.config(command=lambda: render_wrapper(render_button, \
+			render, 'FPS', 'Dimensions', 'Movie filename'))
+		render_button.pack(side='right')
+		
 		
 class ThreadedJob(Thread):
 	""" Threaded job class """
@@ -642,8 +648,10 @@ class ThreadedJob(Thread):
 		""" Run the function """
 		
 		self.semaphore.acquire()
-		self.function(*self.args, **self.kargs)
-		self.semaphore.release()
+		try:
+			self.function(*self.args, **self.kargs)
+		finally:
+			self.semaphore.release()
 
 if __name__ == "__main__":
 	root = tk.Tk()
