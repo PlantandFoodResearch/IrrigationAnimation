@@ -53,7 +53,7 @@ class Options(ttk.Frame):
 		label.grid(row = row, column = 1, sticky = 'w')
 		
 		# Create an entry.
-		#TODO: Add validation support?
+		# TODO: Add validation support?
 		entry = ttk.Entry(self, textvariable = var)
 		entry.grid(row = row, column = 2, sticky = 'e')
 		entry.bind('<Return>', wrapper)
@@ -405,6 +405,109 @@ class Main(ttk.Frame):
 		self.create_buttons()
 		# Create the options...
 		self.create_options()
+		# Create the lists...
+		self.create_lists()
+		
+	def create_buttons(self):
+		""" Create the button widgets """
+
+		# Create the holder frame.
+		lower = ttk.Frame(self)
+		lower.pack(side='bottom', fill='x')
+		# Create the helper function...
+		def render_wrapper(button, func, *args):
+			""" Helper render wrapper """
+			
+			# TODO: We really should validate the fields before starting in
+			# 		order to return a sane error message.
+			
+			# Disable the button in question.
+			button.config(state = "disabled")
+			
+			try:
+				# Generate the render_frame function and the frame count.
+				print("Getting frame")
+				render_frame, frames = gen_render_frame(self.get_values(), \
+					self.options.get('Text size'), \
+					self.options.get('Title'), self.options.get('Timewarp'), \
+					self.options.get('Edge render') == "True")
+				print("Creating a job")
+
+				# Create the job.
+				semaphore = Semaphore()
+				job = ThreadedJob(semaphore, func, render_frame, frames, \
+					*[self.options.get(arg) for arg in args])
+					
+				# Create a helper function for the end of the job.
+				def check_ended():
+					""" Check whether the process has finished or not; clean up if
+						it has.
+					"""
+					if semaphore.acquire(False):
+						button.config(state = "normal")
+					else:
+						self.master.after(100, check_ended)
+				
+				# Start the job.
+				job.start()
+
+				# Add a check for the job finishing.
+				self.master.after(100, check_ended)
+			except Exception as e:
+				# We reset the button's state, and then re-raise the error.
+				button.config(state = 'normal')
+				# Unfortunately, we can't use 'finally', as we only want the
+				# button to be activated after the render finishes.
+				raise e
+			
+		# Create the buttons.
+		# Preview button.
+		# TODO: Currently, this hangs the UI (something to do with the
+		#		interaction between pygame and tkinter?), so we set it to
+		# 		disabled by default.
+		preview_button = ttk.Button(lower, text='Preview', state='disabled', \
+			command=lambda: render_wrapper(preview_button, preview, 'FPS', \
+				'Dimensions', 'Title'))
+		preview_button.pack(side='left')
+		
+		# Render button.
+		render_button = ttk.Button(lower, text='Render', \
+			command=lambda: render_wrapper(render_button, render, 'FPS', \
+				'Dimensions', 'Movie filename'))
+		render_button.pack(side='right')
+		
+	def create_options(self):
+		""" Create self's options """
+
+		self.options = Options(self)
+		self.options.pack(expand = True, fill = 'both')
+		# Add the 'raw' (string) options.
+		self.options.add_raw_option("Title", tk.StringVar())
+		def check_int(i, min, max):
+			if min <= i <= max:
+				return i
+			else:
+				raise ValueError("{} not within [{}, {}]!".format(i, min, max))
+		self.options.add_raw_option("FPS", tk.IntVar(value = 4), \
+			lambda x: check_int(x, MIN_FPS, MAX_FPS))
+		def check_size(size):
+			x, y = size.split('x')
+			return int(x), int(y)
+		self.options.add_raw_option("Dimensions", \
+			tk.StringVar(value = "1280x1024"), check_size)
+		self.options.add_raw_option("Text size", tk.IntVar(value = 30), \
+			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
+		# Add the listbox options.
+		self.options.add_combobox_option("Timewarp", \
+			tk.StringVar(value = 'basic'), transforms.times.keys())
+		self.options.add_combobox_option("Edge render", \
+			tk.StringVar(value = "True"), ["True", "False"])
+		# Add the file option.
+		movie_filename = tk.StringVar(value = "H:/My Documents/vis/movies/movie.mp4")
+		self.options.add_file_option("Movie filename", movie_filename)
+		
+	def create_lists(self):
+		""" Create the lists """
 		
 		# Create a dummy value_list.
 		value_list = None
@@ -529,105 +632,6 @@ class Main(ttk.Frame):
 			# TODO: It would be nice if this could be run in the background...
 			self.load_model(gis, csv)
 		return self.models[(gis, csv)]
-		
-	def create_buttons(self):
-		""" Create the button widgets """
-
-		# Create the holder frame.
-		lower = ttk.Frame(self)
-		lower.pack(side='bottom', fill='x')
-		# Create the helper function...
-		def render_wrapper(button, func, *args):
-			""" Helper render wrapper """
-			
-			# TODO: We really should validate the fields before starting in
-			# 		order to return a sane error message.
-			
-			# Disable the button in question.
-			button.config(state = "disabled")
-			
-			try:
-				# Generate the render_frame function and the frame count.
-				print("Getting frame")
-				render_frame, frames = gen_render_frame(self.get_values(), \
-					self.options.get('Text size'), \
-					self.options.get('Title'), self.options.get('Timewarp'), \
-					self.options.get('Edge render') == "True")
-				print("Creating a job")
-
-				# Create the job.
-				semaphore = Semaphore()
-				job = ThreadedJob(semaphore, func, render_frame, frames, \
-					*[self.options.get(arg) for arg in args])
-					
-				# Create a helper function for the end of the job.
-				def check_ended():
-					""" Check whether the process has finished or not; clean up if
-						it has.
-					"""
-					if semaphore.acquire(False):
-						button.config(state = "normal")
-					else:
-						self.master.after(100, check_ended)
-				
-				# Start the job.
-				job.start()
-
-				# Add a check for the job finishing.
-				self.master.after(100, check_ended)
-			except Exception as e:
-				# We reset the button's state, and then re-raise the error.
-				button.config(state = 'normal')
-				# Unfortunately, we can't use 'finally', as we only want the
-				# button to be activated after the render finishes.
-				raise e
-			
-		# Create the buttons.
-		# Preview button.
-		# TODO: Currently, this hangs the UI (something to do with the
-		#		interaction between pygame and tkinter?), so we set it to
-		# 		disabled by default.
-		preview_button = ttk.Button(lower, text='Preview', state='disabled', \
-			command=lambda: render_wrapper(preview_button, preview, 'FPS', \
-				'Dimensions', 'Title'))
-		preview_button.pack(side='left')
-		
-		# Render button.
-		render_button = ttk.Button(lower, text='Render', \
-			command=lambda: render_wrapper(render_button, render, 'FPS', \
-				'Dimensions', 'Movie filename'))
-		render_button.pack(side='right')
-		
-	def create_options(self):
-		""" Create self's options """
-
-		self.options = Options(self)
-		self.options.pack(expand = True, fill = 'both')
-		# Add the 'raw' (string) options.
-		self.options.add_raw_option("Title", tk.StringVar())
-		def check_int(i, min, max):
-			if min <= i <= max:
-				return i
-			else:
-				raise ValueError("{} not within [{}, {}]!".format(i, min, max))
-		self.options.add_raw_option("FPS", tk.IntVar(value = 4), \
-			lambda x: check_int(x, MIN_FPS, MAX_FPS))
-		def check_size(size):
-			x, y = size.split('x')
-			return int(x), int(y)
-		self.options.add_raw_option("Dimensions", \
-			tk.StringVar(value = "1280x1024"), check_size)
-		self.options.add_raw_option("Text size", tk.IntVar(value = 30), \
-			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
-		# Add the listbox options.
-		self.options.add_combobox_option("Timewarp", \
-			tk.StringVar(value = 'basic'), transforms.times.keys())
-		self.options.add_combobox_option("Edge render", \
-			tk.StringVar(value = "True"), ["True", "False"])
-		# Add the file option.
-		movie_filename = tk.StringVar(value = "H:/My Documents/vis/movies/movie.mp4")
-		self.options.add_file_option("Movie filename", movie_filename)
-
 		
 class ThreadedJob(Thread):
 	""" Threaded job class """
