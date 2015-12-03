@@ -88,7 +88,7 @@ class Options(ttk.Frame):
 			
 		# Create the combobox.
 		box = ttk.Combobox(self, textvariable = var, values = list(options), \
-			postcommand = lambda: postcommand(box, var), validate='all', \
+			postcommand = lambda: postcommand(box), validate='all', \
 			validatecommand = (self.register(valid), "%s", "%P"))
 		box.grid(row = row, column = 2, sticky = 'e')
 		
@@ -406,39 +406,30 @@ class Main(ttk.Frame):
 		self.options = Options(self)
 		self.options.pack(expand = True, fill = 'both')
 		# Add the 'raw' (string) options.
-		self.title = tk.StringVar()
-		self.options.add_raw_option("Title", self.title)
+		self.options.add_raw_option("Title", tk.StringVar())
 		def check_int(i, min, max):
 			if min <= i <= max:
 				return i
 			else:
 				raise ValueError("{} not within [{}, {}]!".format(i, min, max))
-		self.fps = tk.IntVar(value = 4)
-		self.options.add_raw_option("FPS", self.fps, \
+		self.options.add_raw_option("FPS", tk.IntVar(value = 4), \
 			lambda x: check_int(x, MIN_FPS, MAX_FPS))
 		def check_size(size):
 			x, y = size.split('x')
 			return int(x), int(y)
-		self.size = tk.StringVar(value = "1280x1024")
-		self.options.add_raw_option("Dimensions", self.size, check_size)
-		self.text_size = tk.IntVar(value = 30)
-		self.options.add_raw_option("Text size", self.text_size, \
+		self.options.add_raw_option("Dimensions", \
+			tk.StringVar(value = "1280x1024"), check_size)
+		self.options.add_raw_option("Text size", tk.IntVar(value = 30), \
 			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
 		# Add the listbox options.
-		self.timewarp = tk.StringVar(value = 'basic')
-		self.options.add_combobox_option("Timewarp", self.timewarp, \
-			transforms.times.keys())
-		self.edge_render = tk.StringVar(value = "True")
-		self.options.add_combobox_option("Edge render", self.edge_render, \
-			["True", "False"])
+		self.options.add_combobox_option("Timewarp", \
+			tk.StringVar(value = 'basic'), transforms.times.keys())
+		self.options.add_combobox_option("Edge render", \
+			tk.StringVar(value = "True"), ["True", "False"])
 		# Add the file options.
 		movie_filename = tk.StringVar(value = "H:/My Documents/vis/movies/movie.mp4")
 		self.options.add_file_option("Movie filename", movie_filename)
-			
-		# Helper...
-		add = lambda method, name, values, default, *args, **kargs: \
-			method(name, values.get(name, default), *args, **kargs)
-			
+
 		# Create the actual Models list.
 		def model_options(master, active, values):
 			""" Create the additional options for a specified value """
@@ -474,16 +465,20 @@ class Main(ttk.Frame):
 			def update_model_callback(old, new):
 				""" Update the delete button and the field """
 				model_list.update_deleteable()
-				post_field({}, values['Field'])
+				# Reset the field value (it may have changed).
+				values['Field'].set("")
+				# Load the appropriate model.
+				# TODO: This should be done async, to avoid hanging the UI.
+				# post_field({}, values['Field'])
 					
-			def post_model(box, var):
+			def post_model(box):
 				""" Callback function for updating the list of models """
 				models = sorted(list(model_list.items.keys()))
 				box['values'] = models
 
-			def post_field(box, var):
+			def post_field(box):
 				""" Callback function for updating the list of fields """
-				#TODO: This hangs for a bit if the model is not cached.
+				# TODO: This hangs for a bit if the model is not cached.
 				try:
 					model_values = model_list.items[values['Model'].get()]
 					fields = self.get_model(model_values['GIS files'].get(), \
