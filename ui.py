@@ -71,6 +71,7 @@ class Options(ttk.Frame):
 		self.options[name] = (entry, get)
 		
 	def add_combobox_option(self, name, var, options, \
+		callback = lambda old, new: None, \
 		postcommand = lambda box, var: None):
 		""" Add a combobox option """
 		
@@ -79,13 +80,16 @@ class Options(ttk.Frame):
 		# Create a label.
 		label = ttk.Label(self, text = name + ':')
 		label.grid(row = row, column = 1, sticky = 'w')
-
+		
+		# Define a validator command and callback.
+		def valid(old, new):
+			callback(old, new)
+			return new in box['values']
+			
 		# Create the combobox.
-		valid = lambda *args: False
-		self.register(valid)
 		box = ttk.Combobox(self, textvariable = var, values = list(options), \
-			postcommand = lambda: postcommand(box, var), validate='key', \
-			validatecommand = valid)
+			postcommand = lambda: postcommand(box, var), validate='all', \
+			validatecommand = (self.register(valid), "%s", "%P"))
 		box.grid(row = row, column = 2, sticky = 'e')
 		
 		# Add the option to the options array.
@@ -520,16 +524,13 @@ class Main(ttk.Frame):
 		def value_options(master, active, values):
 			""" Create the additional options for a specified value """
 			
-			def add_combo(name, options, default, callback = None, \
-				postcommand = lambda box, var: None):
+			def add_combo(name, options, default, **kargs):
 				if name not in values:
 					values[name] = tk.StringVar(value = default)
-					if callback != None:
-						values[name].trace("w", lambda *args: callback())
 				master.add_combobox_option(name, values[name], options, \
-					postcommand = postcommand)
+					**kargs)
 					
-			def update_model_callback():
+			def update_model_callback(old, new):
 				""" Update the delete button and the field """
 				model_list.update_deleteable()
 				post_field({}, values['Field'])
