@@ -357,19 +357,19 @@ class ItemList(ttk.Frame):
 			self.context = None
 			self.active = None
 		
-	def update_active(self, callback = lambda: True):
+	def update_active(self):
 		""" Update the first selected item.
 			We cannot use the 'active' item because that appears to lag
 			behind the current selection :(
 		"""
 		
-		# Remove any existing frame.
-		self.remove_frame()
-		
-		# Create a new frame, if required.
 		selected = self.box.curselection()
 		if len(selected) > 0:
-			self.create_frame(selected[0])
+			if self.box.get(selected[0]) != self.active:
+				self.remove_frame()
+				self.create_frame(selected[0])
+		else:
+			self.remove_frame()
 			
 	def update_deleteable(self):
 		""" Force an update for the deletion button """
@@ -378,7 +378,7 @@ class ItemList(ttk.Frame):
 			# Check for all of the selected items.
 			self.delete_button.config(state = 'enabled')
 			for selected in self.box.curselection():
-				if not self.deleteable(self.box.get(index)):
+				if not self.deleteable(self.box.get(selected)):
 					self.delete_button.config(state = 'disabled')
 				
 	def __iter__(self):
