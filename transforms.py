@@ -82,7 +82,10 @@ def map_delta(values):
 	# Iterate through the dates, adding them and increasing the number of
 	# frames for days with large deltas.
 	for date in sorted(dates.values()):
-		relative_delta = (max_deltas[date]-min_delta) / (max_delta-min_delta)
+		try:
+			relative_delta = (max_deltas[date]-min_delta) / (max_delta-min_delta)
+		except ZeroDivisionError:
+			relative_delta = 0
 		frame_count = int((MAX_FRAMES_PER_DAY - MIN_FRAMES_PER_DAY) \
 			* relative_delta + MIN_FRAMES_PER_DAY)
 		for i in range(frame_count):
