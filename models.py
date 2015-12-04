@@ -232,7 +232,10 @@ class Values():
 			# Convert to something in the range of 0 to 120 degrees, fed into
 			# the colorsys function (red..green in HSV)
 			#TODO: Would it make more sense to use a single colour?
-			hue = ((value - self.min) / (self.max - self.min)) # 0-1
+			try:
+				hue = ((value - self.min) / (self.max - self.min)) # 0-1
+			except ZeroDivisionError:
+				hue = 0
 			return [int(i*255) for i in colorsys.hsv_to_rgb(hue / 3, 1.0, 1.0)]
 		
 		self.value2colour = value2colour
