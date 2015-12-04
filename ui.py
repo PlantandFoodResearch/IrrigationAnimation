@@ -578,6 +578,13 @@ class Main(ttk.Frame):
 			
 			def cache_model():
 				""" Cache the given model (async) """
+				# TODO: This can still hang things...
+				#		Potential fixes include 'fixing' the ThreadedDict
+				#		implementation so that caching does nothing if there
+				#		is already a lock on the given name, changing this
+				#		so that it doesn't cache so early, or fixing the
+				#		defaults so that there is nothing to cache initially
+				#		(the main problem here).
 				try:
 					self.models.cache((values['GIS files'].get(), \
 						values['CSV directory'].get()))
