@@ -403,7 +403,8 @@ class Main(ttk.Frame):
 		self.pack(expand = True, fill = 'both')
 		
 		# Models.
-		self.models = ThreadedDict(lambda name: Model(*name))
+		self.models = ThreadedDict(lambda name: Model(*name), \
+			start = lambda: self.bar_start(), end = lambda: self.bar_stop())
 		# Values.
 		# Don't bother with early caching for this; rendering takes quite a bit
 		# longer anyway...
@@ -432,13 +433,22 @@ class Main(ttk.Frame):
 			
 			# Disable the button in question.
 			button.config(state = "disabled")
+			# Start the progress bar.
+			# TODO: Figure out how to use a 'determinate' mode for the bar.
+			self.bar_start()
+			# Create a lock.
+			lock = Lock()
+			
+			# Create a cleanup helper function that waits for the job to finish
+			# and then cleans up.
+			def check_ended():
+				if lock.acquire(False):
+					button.config(state = "normal")
+					self.bar_stop()
+				else:
+					self.master.after(100, check_ended)
 			
 			try:
-				# Generate the render_frame function and the frame count.
-				print("Getting frame")
-						
-				# Find the values to render.
-
 				values = []
 				for config in self.value_list:
 					model_values = self.model_list[config['Model'].get()]
@@ -452,34 +462,16 @@ class Main(ttk.Frame):
 					self.options.get('Text size'), \
 					self.options.get('Title'), self.options.get('Timewarp'), \
 					self.options.get('Edge render') == "True")
-				print("Creating a job")
 
-				# Create the job.
-				lock = Lock()
+				# Create and start the job.
 				job = ThreadedJob(lock, func, render_frame, frames, \
 					*[self.options.get(arg) for arg in args])
-					
-				# Create a helper function for the end of the job.
-				def check_ended():
-					""" Check whether the process has finished or not; clean up if
-						it has.
-					"""
-					if lock.acquire(False):
-						button.config(state = "normal")
-					else:
-						self.master.after(100, check_ended)
-				
-				# Start the job.
 				job.start()
+			finally:
+				# Call the cleanup function, which will reschedule itself as
+				# required.
+				check_ended()
 
-				# Add a check for the job finishing.
-				self.master.after(100, check_ended)
-			except Exception as e:
-				# We reset the button's state, and then re-raise the error.
-				button.config(state = 'normal')
-				# Unfortunately, we can't use 'finally', as we only want the
-				# button to be activated after the render finishes.
-				raise e
 			
 		# Create the buttons.
 		# Preview button.
@@ -496,6 +488,26 @@ class Main(ttk.Frame):
 			command=lambda: render_wrapper(render_button, render, 'FPS', \
 				'Dimensions', 'Movie filename'))
 		render_button.pack(side='right')
+		
+		# Create the progress bar (shares the same frame).
+		# Do not pack; that will happen as required.
+		bar = ttk.Progressbar(lower, mode = 'indeterminate')
+		# Create the control variable.
+		self.bar_running = tk.IntVar(value = False)
+		# Create the callback function.
+		def bar_callback(*args):
+			""" Pack, start, and stop, the bar as required """
+			value = self.bar_running.get()
+			if value == 0:
+				bar.stop()
+				bar.pack_forget()
+			elif value > 0:
+				bar.start()
+				bar.pack()
+			else:
+				print("WARNING: Progress bar has a value of {}!".format(value))
+		# Add it.
+		self.bar_running.trace("w", bar_callback)
 		
 	def create_options(self):
 		""" Create self's options """
@@ -566,7 +578,6 @@ class Main(ttk.Frame):
 			
 			def cache_model():
 				""" Cache the given model (async) """
-				print("Caching the current model...")
 				try:
 					self.models.cache((values['GIS files'].get(), \
 						values['CSV directory'].get()))
@@ -580,9 +591,9 @@ class Main(ttk.Frame):
 					cache_model() # Pre-cache default the model.
 				master.add_file_option(name, values[name], *args)
 			
-			add_file("GIS files", "H:/My Documents/vis/gis/SmallPatches", \
+			add_file("GIS files", "H:/My Documents/vis/gis/MediumPatches", \
 				tkFileDialog.askopenfilename)
-			add_file("CSV directory", "H:/My Documents/vis/csv/small", \
+			add_file("CSV directory", "H:/My Documents/vis/csv/medium", \
 				tkFileDialog.askdirectory)
 
 		self.model_list = ItemList(self, "Models", model_options, \
@@ -607,21 +618,13 @@ class Main(ttk.Frame):
 				# TODO: We should really edit the field box so that there are
 				# 		no valid values, at least until someone selects the
 				#		drop down, to prevent copy-pasting invalid values.
-				# Cache the appropriate model (async).
-				try:
-					model_values = self.model_list[values['Model'].get()]
-					self.models.cache((model_values['GIS files'].get(), \
-						model_values['CSV directory'].get()))
-				except KeyError:
-					return
-					
+
 			def post_model(box):
 				""" Callback function for updating the list of models """
 				box['values'] = sorted(list(self.model_list.items.keys()))
 
 			def post_field(box):
 				""" Callback function for updating the list of fields """
-				# TODO: This hangs for a bit if the model is not cached.
 				try:
 					model_values = self.model_list[values['Model'].get()]
 					fields = self.models[(model_values['GIS files'].get(), \
@@ -640,22 +643,68 @@ class Main(ttk.Frame):
 		self.value_list = ItemList(self, "Values", value_options, \
 			deletecallback = lambda name: self.model_list.update_deleteable())
 		self.value_list.pack(expand = True, fill = 'both')
+	
+	def bar_start(self):
+		""" Start the progress bar """
+		self.bar_running.set(self.bar_running.get() + 1)
+		
+	def bar_stop(self):
+		""" Stop the progress bar """
+		self.bar_running.set(self.bar_running.get() - 1)
+		
+class WrappedLock(object):
+	""" Wrapping around a Lock with start and end callbacks for blocking
+		acquires.
+	"""
+	
+	def __init__(self, start, end, *args, **kargs):
+		""" Init self """
+		
+		self.lock = Lock(*args, **kargs)
+		self.start = start
+		self.end = end
+		
+	def acquire(self, blocking = True):
+		""" Acquire the lock """
 
+		if blocking:
+			# Try to acquire the lock without blocking first.
+			if not self.lock.acquire(False):
+				print("WARNING: Waiting for lock...")
+				try:
+					# Defend against problems here resulting in deadlock.
+					self.start()
+				finally:
+					self.lock.acquire()
+				self.end()
+		else:
+			return self.lock.acquire(False)
+			
+	def release(self):
+		""" Release the lock """
+		
+		self.lock.release()
+		
+	def __enter__(self):
+		self.acquire()
+		
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		self.release()
 		
 class ThreadedDict(object):
 	""" A threaded, locking, load-from-disk dict """
 	
-	def __init__(self, load_func):
+	def __init__(self, load_func, start = lambda: None, end = lambda: None):
 		""" Initialise self.
 			load_func is the function to call to try to load a value.
+			start and end are callbacks passed to the lock wrapper to provide
+			a means of giving user feedback.
 		"""
-		
-		# TODO: Add some way of giving user feedback (why is it hanging??)
-		
+				
 		# Global dict lock.
 		# TODO: Consider using a lock protecting a value->lock dict.
 		#		Is there any use case/performance improvements?
-		self.lock = Lock()
+		self.lock = WrappedLock(start, end)
 		# Self's dict.
 		self.dict = {}
 		# The load function takes a name, and returns the corresponding value.
@@ -669,10 +718,6 @@ class ThreadedDict(object):
 		# Ensure that the value is cached.
 		self.cache(name)
 		# Now we lock, retrieve the value, and return.
-		if not self.lock.acquire(False):
-			print("WARNING: Waiting for lock... (get)")
-		else:
-			self.lock.release()
 		with self.lock:
 			return self.dict[name]
 		
@@ -680,16 +725,12 @@ class ThreadedDict(object):
 		""" Cache the given item, if required. """
 		
 		# We get the lock to check whether or not the item exists.
-		if not self.lock.acquire(False):
-			print("WARNING: Waiting for lock... (cache check)")
-		else:
-			self.lock.release()
 		with self.lock:
 			exists = name in self.dict
 		# If it doesn't, we need to cache it, so run the caching job.
 		if not exists:
 			# We don't lock here, or the job will not be able to continue!
-			job = ThreadedJob(self.lock, self.load_func, name)
+			job = ThreadedJob(self.lock.lock, self.load_func, name)
 			job.start()
 	
 class ThreadedJob(Thread):
@@ -707,6 +748,8 @@ class ThreadedJob(Thread):
 	def run(self):
 		""" Run the function """
 		
+		# TODO: Currently, if this fails, the exception is not passed out to
+		#		the caller.
 		with self.lock:
 			self.function(*self.args, **self.kargs)
 
