@@ -138,6 +138,8 @@ def load_shapes(shape_file):
 		# field[0] is the name of the field ('Area', 'Zone', etc).
 		# We offset by one because the first entry in fields is 'DeletionFlag'
 		# which is not in the record for a given patch.
+		# TODO: Fork/patch pyshp to get rid of this issue, or at least *check*
+		# 		the status of the DeletionFlag.
 		fields[field[0]] = index
 	
 	# Iterate through the records and fill in the datatypes.
