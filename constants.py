@@ -23,6 +23,7 @@ DATE_FIELD = "Clock.Today" # Field name for dates.
 PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
 
 # Temporary constants:
+# TODO: Make these configurable.
 SCALE_DECIMAL_PLACES = 2 # Decimal places to display on the scale.
 SCALE_MARKER_SIZE = 2 # Marker size, in pixels.
 SCALE_TEXT_OFFSET = 5 # Offset of text from the scale, in pixels.
