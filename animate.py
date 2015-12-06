@@ -3,27 +3,27 @@
 
 	Future improvements:
 	- Removing all of the TODO's...
-	- CLI/GUI interfaces (cli option parsing)
-		- All options exposed
-		- pygame/tkinter interactions fixed?
-	- Speed ups
+	- GUI tweaking
+	- Speed ups + profiling
 	- Code cleanups
-	- Packaging
 	- Some way to work around 'clipping' in the various widgets
 	- More transformation functions/options + combining transformations
-	- Documentation
-		- A usage tutorial
-		- Design notes
 	- Work on making specifying custom transformations easier
-	- Marker on scale to represent the current values (maybe a textual indicator?)
-	- Some kind of relative time indicator, with monthly markers?
-	- Remove pygame dependency?
-	- String value support (eg plant stage)?
+	- Documentation
+		- Design notes
+	- Additional widgets:
+		- Simple value marker (on scale, or just as a value)
+		- Time marker
+		- Realtime graphs
 	- Pausing support for the dynamic viewer
 	- Avoiding lag with the dynamic viewer
 	- Different colours for the different values renderings
-	- Resizing for ValuesWidget currently is broken if edge rendering is
-	  disabled
+	
+	Stretch goals:
+	- Packaging?
+	- Remove pygame dependency?
+	- String value support (eg plant stage)?
+	- CLI interface
 
 	Author: Alastair Hughes
 """
@@ -79,12 +79,17 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 		# Record a list of 'dirty' rects.
 		dirty = []
 		
+		# TODO: Currently we manually place all the widgets, and attempt to be
+		#		intelligent about their positioning so that they do not clip.
+		#		It would be better if the widgets were smart enough to place
+		#		themselves...
+		
 		# Render the date and label.
-		dirty.append(date.render(surface, index, \
-			lambda size: (surf_w - (BORDER + size[0]), BORDER)))
+		date_rect = date.render(surface, index, \
+			lambda size: (surf_w - (BORDER + size[0]), BORDER))
 		label_rect = label.render(surface, index, \
 			lambda size: (BORDER, BORDER))
-		dirty.append(label_rect)
+		dirty += [label_rect, date_rect]
 		
 		# Render the maps and scales.
 		# desc_offset is the current leftmost offset for a description,
