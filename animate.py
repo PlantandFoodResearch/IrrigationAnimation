@@ -18,7 +18,7 @@
 	- Marker on scale to represent the current values (maybe a textual indicator?)
 	- Some kind of relative time indicator, with monthly markers?
 	- Remove pygame dependency?
-	- String value support (eg plant stage)
+	- String value support (eg plant stage)?
 	- Pausing support for the dynamic viewer
 	- Avoiding lag with the dynamic viewer
 	- Different colours for the different values renderings
@@ -70,10 +70,14 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 	def render_frame(surface, frame):
 		""" Render a frame """
 		
-		index = frame_map[frame]
-		surface.fill(DEFAULT_COLOUR)
+		index = frame_map[frame] # Figure out the row index in the CSV.
+		surface.fill(DEFAULT_COLOUR) # Fill the surface.
+		# Cache the surface width and height for readability purposes.
 		surf_w = surface.get_width()
 		surf_h = surface.get_height()
+		
+		# Record a list of 'dirty' rects.
+		dirty = []
 		
 		# Render the maps and scales.
 		map_size = [i - (2 * BORDER) for i in (surf_w / len(maps), surf_h)]
@@ -81,27 +85,36 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 			map, scale, desc = maps[i], scales[i], descriptions[i]
 			
 			x_offset = (surf_w / len(maps)) * i + BORDER
-		
-			# Render the map.
-			map.render(surface, index, \
-				lambda size: (x_offset + (map_size[0] / 2) - (size[0] / 2), \
-					(surf_h / 2) - (size[1] / 2)), \
-				map_size)
 			
 			# Render the scale.
-			scale.render(surface, index, \
+			dirty.append(scale.render(surface, index, \
 				lambda size: (x_offset, surf_h - (BORDER + size[1])), \
-				(SCALE_WIDTH, surf_h / 3))
+				(SCALE_WIDTH, surf_h / 3)))
 				
 			# Render the description.
-			desc.render(surface, index, \
+			dirty.append(desc.render(surface, index, \
 				lambda size: (x_offset + (map_size[0] / 2) - (size[0] / 2), \
-					BORDER))
+					BORDER)))
+					
+			# Render the map.
+			dirty.append(map.render(surface, index, \
+				lambda size: (x_offset + (map_size[0] / 2) - (size[0] / 2), \
+					(surf_h / 2) - (size[1] / 2)), \
+				map_size))
 		
 		# Render the date and label.
-		date.render(surface, index, \
-			lambda size: (surf_w -(BORDER + size[0]), BORDER))
-		label.render(surface, index, lambda size: (BORDER, BORDER))
+		dirty.append(date.render(surface, index, \
+			lambda size: (surf_w -(BORDER + size[0]), BORDER)))
+		dirty.append(label.render(surface, index, \
+			lambda size: (BORDER, BORDER)))
+		
+		# Check for intersections, and print a warning if any are found.
+		if len(dirty) != 0:
+			for index, widget in enumerate(dirty):
+				intersects = widget.collidelistall(dirty[index + 1:])
+				for collision in intersects:
+					print("WARNING: Widgets intersect! ({}, {})".format(index, \
+						collision + index + 1))
 		
 	return render_frame, len(frame_map)
 
@@ -112,13 +125,14 @@ if __name__ == "__main__":
 	model = Model("H:/My Documents/vis/gis/SmallPatches", \
 		"H:/My Documents/vis/csv/small")
 	# Create the values.
-	values = [Values(model, "Soil.SoilWater.Drainage", transform='field_delta'),
-		Values(model, "Soil.SoilWater.Drainage")]
+	#values = [Values(model, "Soil.SoilWater.Drainage", transform='field_delta'),
+	#	Values(model, "Soil.SoilWater.Drainage")]
+	values = [Values(model, "Soil.SoilWater.Drainage")]
 		
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
 	timewarp = 'delta' # Time warp method used
-	edge_render = True # Whether or not to render edges (plot edges, terrain).
+	edge_render = False # Whether or not to render edges (plot edges, terrain).
 	text_height = 30 # The height for any fonts.
 	render_frame, frames = gen_render_frame(values, text_height, header, \
 		timewarp, edge_render)
