@@ -17,7 +17,7 @@ def preview(render_frame, frames, fps, size, caption):
 		The builtin MoviePy one seems broken, and this skips
 		rendering a video... usefull for development.
 	"""
-	#TODO: Add widget to allow rapidly switching between frames.
+	
 	screen = pygame.display.set_mode(size, pygame.RESIZABLE)
 	pygame.display.set_caption(caption)
 	# Render an initial frame.
