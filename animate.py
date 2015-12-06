@@ -108,32 +108,23 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 
 if __name__ == "__main__":
 
-	# File paths:
-	gis_files = "H:/My Documents/vis/gis/SmallPatches"
-	csv_dir = "H:/My Documents/vis/csv/small"
-	movie_filename = "H:/My Documents/vis/movie.mp4"
-
-	# Animation options:
-	field_of_interest = "Soil.SoilWater.Drainage"
-	value2value = 'field_delta' # Value transformation function
+	# Create a Model.
+	model = Model("H:/My Documents/vis/gis/SmallPatches", \
+		"H:/My Documents/vis/csv/small")
+	# Create the values.
+	values = [Values(model, "Soil.SoilWater.Drainage", transform='field_delta'),
+		Values(model, "Soil.SoilWater.Drainage")]
+		
+	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
 	timewarp = 'delta' # Time warp method used
-
-	# Display options:
 	edge_render = True # Whether or not to render edges (plot edges, terrain).
-	fps = 4 # Frames per second
-	movie_size = (1280, 1024)
 	text_height = 30 # The height for any fonts.
-
-	# Create a Model.
-	model = Model(gis_files, csv_dir)
-	# Create the values.
-	values = [Values(model, field_of_interest, transform=value2value),
-		Values(model, field_of_interest)]
-		
 	render_frame, frames = gen_render_frame(values, text_height, header, \
 		timewarp, edge_render)
 	
 	# Play the animation.
-	preview(render_frame, frames, fps, movie_size, header)
+	fps = 4 # Frames per second
+	display_size = (1280, 1024) # Default size.
+	preview(render_frame, frames, fps, display_size, header)
 	
