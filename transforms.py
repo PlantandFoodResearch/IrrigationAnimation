@@ -18,7 +18,7 @@ time_delta_value = lambda values, index, patch: values[index][patch] - \
 	values.get(index - 1, {patch: values[index][patch]})[patch]
 # Field delta uses the relative delta between a value and the maximum and
 # minimums on one specific day.
-#TODO: This is quite inefficient...
+# TODO: This is quite inefficient...
 def field_delta_value(values, index, patch):
 	min_day, max_day = min(values[index].values()), max(values[index].values())
 	try:
@@ -26,8 +26,8 @@ def field_delta_value(values, index, patch):
 	except ZeroDivisionError:
 		return 0
 
-#TODO: Other useful functions might be exponential decay based
-#	   (with min as the baseline, max as the max)
+# TODO: Other useful functions might be exponential decay based
+#	    (with min as the baseline, max as the max)
 transformations = {'basic': basic_value,
 	'time_delta': time_delta_value,
 	'field_delta': field_delta_value,
@@ -51,7 +51,7 @@ def map_delta(values):
 	""" Map from frames to dates, with the frame count per date largely
 		changing with respect to the maximum delta that day.
 	"""
-	#TODO: This is not at all smoothed!
+	# TODO: This is not at all smoothed!
 	
 	# Validate the values.
 	dates = map_basic(values)
