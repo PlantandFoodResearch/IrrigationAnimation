@@ -1,5 +1,20 @@
 """ User interface code for the animation renderer.
 
+	Current TODO's:
+	- Error reporting is broken/non-existant.
+	- There is no validation before trying to render, so no nice error
+	  messages.
+	- Clicking on 'model' currently cans the field.
+	- There are *lots* of TODO's.
+	- Hanging without any indications is still broken (my progress bar starter
+	  does not work...)
+	- The open file/dir dialogs do not have any customisation.
+	- We currently happily overwrite existing videos without any kind of
+	  warning.
+	- The whole split model/values thing is broken; the two should be combined
+	  to reduce the number of bugs.
+	- There are *lots* of bugs...
+
 	Future:
 	- Saving existing setups.
 	- Custom code integration.
