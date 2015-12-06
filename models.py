@@ -89,8 +89,8 @@ def find_patch_files(dir):
 	patches = {}
 	for file in files:
 		# Check that the file name is in a sane format (ie looks like a CSV patch file).
-		#TODO: We make some assumptions here about the format of the file names
-		#	   which may or may not be accurate.
+		# TODO: We make some assumptions here about the format of the file names
+		#	    which may or may not be accurate.
 		match = re.search(r"(Report)([1-9][0-9]*)(\.csv)$", file)
 		
 		if match:
@@ -196,12 +196,12 @@ class Values():
 		if data_type == 'float':
 			process = lambda v: float(v)
 		else:
-			#TODO: Implement more data types... string is one obvious one.
-			# 	   Even better, get to a point where we don't have to care
-			#	   about it here...
-			# 	   A different colour mapping function will be required, and
-			#	   maximums and minimums are different and not really
-			#	   applicable.
+			# TODO: Implement more data types... string is one obvious one.
+			# 	   	Even better, get to a point where we don't have to care
+			#	   	about it here...
+			# 	   	A different colour mapping function will be required, and
+			#	   	maximums and minimums are different and not really
+			#	   	applicable.
 			raise ValueError("Unknown data type {}".format(data_type))
 			
 		self.field = field
@@ -231,7 +231,7 @@ class Values():
 			# Using this: http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855	
 			# Convert to something in the range of 0 to 120 degrees, fed into
 			# the colorsys function (red..green in HSV)
-			#TODO: Would it make more sense to use a single colour?
+			# TODO: Would it make more sense to use a single colour?
 			try:
 				hue = ((value - self.min) / (self.max - self.min)) # 0-1
 			except ZeroDivisionError:
