@@ -205,23 +205,24 @@ class ValuesWidget():
 	
 	def __init__(self, values, edge_render):
 		""" Initialise self """
-		
-		# TODO: We only have things related to rendering here.
-		#		Both models.Model and values.Value contains lots of bits and
-		# 		pieces, including the bounding box and colour function code,
-		#		which we (currently) leave as-is.
-		#		In the future, it would be nice to move the bounding box code
-		#		here, but the colour function code is also used for the scale,
-		#		among other things, so it should be left as-is.
+
 		self.size = None # This widget is dynamically sized.
 		self.values = values
 		self.model = values.model
 		self.edge_render = edge_render
 		
-		# Find the bounding box, center, and size for the gis shapes.
-		bbox = bounding_box(self.model.shapes)
+		# The shapes we use for the bbox/center/size depend largely on whether
+		# or not we are rendering the edges as well, because the edges take up
+		# a much larger space than just the patches.
+		if self.edge_render:
+			shapes = self.model.shapes
+		else:
+			shapes = (self.model.patches[patch]['shape'] \
+				for patch in self.model.patches)
+		# Find the bounding box, center, and size for the shapes.
+		bbox = bounding_box(shapes)
 		self.center = [((bbox[i] + bbox[i+2]) / 2) for i in range(2)]
-		self.size = [(bbox[i+2] - bbox[i]) for i in range(2)]
+		self.actual_size = [(bbox[i+2] - bbox[i]) for i in range(2)]
 		
 	def gen_transform(self, pos_func, size):
 		""" Generate a transformation function to adjust the points in the model """
@@ -229,10 +230,10 @@ class ValuesWidget():
 		# The scaling factor required to scale the image to fit nicely in
 		# the given size.
 		# This is the minimum of the x and y scaling to avoid clipping.
-		scale = min([float(size[i])/self.size[i] for i in range(2)])
+		scale = min([float(size[i])/self.actual_size[i] for i in range(2)])
 		
 		# Calculate the offset with the *real* size.
-		real_size = [self.size[i]*scale for i in range(2)]
+		real_size = [self.actual_size[i]*scale for i in range(2)]
 		offset = pos_func(real_size)
 		
 		def transform(vert):
@@ -252,7 +253,7 @@ class ValuesWidget():
 		# Dirty rects.
 		dirty = []
 		
-		# Transform.
+		# Transform function.
 		trans = self.gen_transform(pos_func, size)
 	
 		# Render patches (filled).
@@ -326,10 +327,10 @@ def merge_rects(dirty):
 	
 def bounding_box(shapes):
 	""" Returns the bounding box for all of the given shapes """
-	
+
 	mins = [float('inf'), float('inf')]
 	maxs = [-float('inf'), -float('inf')]
-	
+
 	for shape in shapes:
 		min_pos = [min(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
 		max_pos = [max(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
@@ -338,5 +339,5 @@ def bounding_box(shapes):
 				mins[i] = min_pos[i]
 			if max_pos[i] > maxs[i]:
 				maxs[i] = max_pos[i]
-	
+
 	return [mins[0], mins[1], maxs[0], maxs[1]]
