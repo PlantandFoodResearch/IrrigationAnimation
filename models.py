@@ -251,6 +251,9 @@ class Values():
 	def description(self):
 		""" Return a string description of self """
 		
+		# TODO: Make this configurable, ie string formatting (%f = field,
+		#		%c = csv, etc)?
+		
 		return "Field of interest: " + self.field + '\n' + \
 			"GIS: " + self.model.gis + '\n' + \
 			"CSV: " + self.model.csv + '\n' + \
