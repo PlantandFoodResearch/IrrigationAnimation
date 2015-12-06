@@ -79,34 +79,53 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 		# Record a list of 'dirty' rects.
 		dirty = []
 		
+		# Render the date and label.
+		dirty.append(date.render(surface, index, \
+			lambda size: (surf_w - (BORDER + size[0]), BORDER)))
+		label_rect = label.render(surface, index, \
+			lambda size: (BORDER, BORDER))
+		dirty.append(label_rect)
+		
 		# Render the maps and scales.
-		map_size = [i - (2 * BORDER) for i in (surf_w / len(maps), surf_h)]
+		# desc_offset is the current leftmost offset for a description,
+		# calculated to avoid clipping.
+		desc_offset = label_rect.right + BORDER
+		# value_area is the area dedicated to a specific map/scale/description.
+		# It is calculated as a fraction of the space available, where the
+		# denominator is the number of values.
+		value_area = [i - (2 * BORDER) for i in (surf_w / len(maps), surf_h)]
+		# Iterate through the values and render them.
 		for i in range(len(values)):
 			map, scale, desc = maps[i], scales[i], descriptions[i]
 			
+			# The x offset is the leftmost start point for an item.
 			x_offset = (surf_w / len(maps)) * i + BORDER
 			
-			# Render the scale.
-			dirty.append(scale.render(surface, index, \
-				lambda size: (x_offset, surf_h - (BORDER + size[1])), \
-				(SCALE_WIDTH, surf_h / 3)))
-				
 			# Render the description.
-			dirty.append(desc.render(surface, index, \
-				lambda size: (x_offset + (map_size[0] / 2) - (size[0] / 2), \
-					BORDER)))
+			# We use the maximum of desc_offset and x_offset to avoid clipping, if
+			# possible.
+			desc_rect = desc.render(surface, index, \
+				lambda size: (max(x_offset + (value_area[0] / 2) - (size[0] / 2), \
+					desc_offset), BORDER))
+			# Update the description offset.
+			desc_offset = desc_rect.right + BORDER
 					
 			# Render the map.
-			dirty.append(map.render(surface, index, \
-				lambda size: (x_offset + (map_size[0] / 2) - (size[0] / 2), \
-					(surf_h / 2) - (size[1] / 2)), \
-				map_size))
-		
-		# Render the date and label.
-		dirty.append(date.render(surface, index, \
-			lambda size: (surf_w -(BORDER + size[0]), BORDER)))
-		dirty.append(label.render(surface, index, \
-			lambda size: (BORDER, BORDER)))
+			# The map size is shrunk by the description's height to avoid
+			# clipping.
+			map_size = (value_area[0], value_area[1] - (desc_rect.height + BORDER))
+			map_rect = map.render(surface, index, \
+				lambda size: (x_offset + (value_area[0] / 2) - (size[0] / 2), \
+					(desc_rect.bottom + BORDER + (map_size[1] / 2)) - \
+						(size[1] / 2)), \
+				map_size)
+				
+			# Render the scale.
+			scale_rect = scale.render(surface, index, \
+				lambda size: (x_offset, surf_h - (BORDER + size[1])), \
+				(SCALE_WIDTH, surf_h / 3))
+				
+			dirty += [map_rect, desc_rect, scale_rect]
 		
 		# Check for intersections, and print a warning if any are found.
 		if len(dirty) != 0:
@@ -125,15 +144,14 @@ if __name__ == "__main__":
 	model = Model("H:/My Documents/vis/gis/SmallPatches", \
 		"H:/My Documents/vis/csv/small")
 	# Create the values.
-	#values = [Values(model, "Soil.SoilWater.Drainage", transform='field_delta'),
-	#	Values(model, "Soil.SoilWater.Drainage")]
-	values = [Values(model, "Soil.SoilWater.Drainage")]
+	values = [Values(model, "Soil.SoilWater.Drainage", transform='field_delta'),
+		Values(model, "Soil.SoilWater.Drainage")]
 		
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
 	timewarp = 'delta' # Time warp method used
 	edge_render = False # Whether or not to render edges (plot edges, terrain).
-	text_height = 30 # The height for any fonts.
+	text_height = 25 # The height for any fonts.
 	render_frame, frames = gen_render_frame(values, text_height, header, \
 		timewarp, edge_render)
 	

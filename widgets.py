@@ -8,6 +8,7 @@
 	into (a size variable).
 	Statically sized widgets are expected to have a size variable which
 	approximates how much space they will take up when rendered.
+	Both are expected to return a Rect covering the actual area rendered to.
 	
 	The function given to render is assumed to accept the size of the rendered
 	image, and the surface being rendered onto. It will return an offset from
@@ -43,10 +44,14 @@ class TextWidget():
 	def render(self, surface, time, pos_func):
 		""" Render self """
 		
+		dirty = []
+		
 		x, y = pos_func(self.size)
 		for line in self.lines:
-			surface.blit(line, (x, y))
+			dirty.append(surface.blit(line, (x, y)))
 			y += self.linesize
+			
+		return merge_rects(dirty)
 			
 	def gen_size(self):
 		""" Return self's size """
@@ -83,7 +88,7 @@ class DynamicTextWidget(TextWidget):
 	def render(self, surface, time, pos_func):
 		""" Render self """
 		self.update_text(time)
-		TextWidget.render(self, surface, time, pos_func)
+		return TextWidget.render(self, surface, time, pos_func)
 	
 
 class ScaleWidget():
@@ -169,6 +174,10 @@ class ScaleWidget():
 			colour = self.values.value2colour(self.row2value(row, height))
 			# Draw the row.
 			pygame.draw.line(surface, colour, (min_x, y), (max_x, y))
+			
+		# Initialise 'dirty' with a rect representing the scale.
+		dirty = [pygame.Rect(min_x, base_height - height, \
+			max_x - min_x, height)]
 
 		# Blit the rendered text onto the scale.
 		# NOTE: Text rendered here may overlap. Unfortunately, fixing that is
@@ -182,11 +191,13 @@ class ScaleWidget():
 			# Calculate the y offset.
 			y = base_height - row
 			# Blit the text onto the surface.
-			surface.blit(text, \
-				(max_x + SCALE_TEXT_OFFSET, y - (text.get_height() / 2)))
+			dirty.append(surface.blit(text, \
+				(max_x + SCALE_TEXT_OFFSET, y - (text.get_height() / 2))))
 			# Draw a marker.
 			pygame.draw.line(surface, TEXT_COLOUR, (min_x, y), \
 				(max_x + SCALE_MARKER_SIZE, y))
+				
+		return merge_rects(dirty)
 
 	
 class ModelWidget():
@@ -227,9 +238,14 @@ class ModelWidget():
 	def render(self, surface, time, pos_func, size):
 		""" Render self """
 		
+		dirty = []
+		
 		for shape in self.model.shapes:
-			self.render_shape(surface, self.gen_transform(pos_func, size), \
-				shape, EDGE_COLOUR, EDGE_THICKNESS)
+			dirty += self.render_shape(surface, \
+				self.gen_transform(pos_func, size), shape, EDGE_COLOUR, \
+				EDGE_THICKNESS)
+				
+		return merge_rects(dirty)
 			
 	def render_shape(self, surface, transform, shape, colour, width):
 		""" Render the given shape onto the given surface, applying the given
@@ -242,26 +258,34 @@ class ModelWidget():
 			# If this happens, you will probably need to go and investigate the
 			# spec:
 			# http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf
+			# Basically, there are many supported shapes, but I only expect to
+			# encounter POLYGON's in a GIS file, and so have only written a
+			# rendering routine for those.
 			# The library that we are using doesn't have much documentation, so
 			# dir() and help() are your friends, or the source, which is online
 			# at https://github.com/GeospatialPython/pyshp.
+			# Also, pygame has some helpful routines for rendering shapes which
+			# might come in handy.
 			# Hopefully this never stops working!
 			raise ValueError("Unknown shape type %s" %shape.shapeType)
 			
 		if shape.shapeType == shapefile.NULL:
 			# Nothing to render...
-			return
+			return []
 		
 		# We have a polygon!
 		# Polygons are made of different "parts", which are ordered sets of points
 		# that are assumed to join up, so we render them part-by-part.
+		dirty = [] # List of 'dirty' rects.
 		for num, part in enumerate(shape.parts):
 			if num + 1 >= len(shape.parts):
 				end = len(shape.points)
 			else:
 				end = shape.parts[num + 1]
-			pygame.draw.polygon(surface, colour,
-				[transform(point) for point in shape.points[part:end]], width)
+			dirty.append(pygame.draw.polygon(surface, colour,
+				[transform(point) for point in shape.points[part:end]], width))
+				
+		return dirty
 				
 
 class ValuesWidget(ModelWidget):
@@ -276,17 +300,36 @@ class ValuesWidget(ModelWidget):
 		
 	def render(self, surface, time, pos_func, size):
 		""" Render the given values class onto a surface """
+		
+		# Dirty rects.
+		dirty = []
 	
-		# Render patches (filled)
+		# Render patches (filled).
 		for patch in self.model.patches:
 			try:
 				value = self.values.values[time][patch]
 			except KeyError:
 				print("WARNING: Failed to get data for patch {} for time {}!".format(patch, time))
 				value = BROKEN_COLOUR
-			self.render_shape(surface, self.gen_transform(pos_func, size), \
+			dirty += self.render_shape(surface, \
+				self.gen_transform(pos_func, size), \
 				self.model.patches[patch]['shape'], value, 0)
-		# Render shapes (not filled, just for the outlines)
+		# Render shapes (not filled, just for the outlines).
 		if self.edge_render:
-			ModelWidget.render(self, surface, time, pos_func, size)
+			dirty.append(ModelWidget.render(self, surface, time, pos_func, \
+				size))
+			
+		return merge_rects(dirty)
 
+
+def merge_rects(dirty):
+	""" Merges a list of rects into a single rect """
+	
+	# Ignore empty lists.
+	if len(dirty) == 0:
+		return None
+	
+	# Merge the remaining rects.
+	first = dirty[0]
+	return first.unionall(dirty[1:])
+	
