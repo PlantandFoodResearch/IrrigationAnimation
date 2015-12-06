@@ -198,20 +198,25 @@ class ScaleWidget():
 				(max_x + SCALE_MARKER_SIZE, y))
 				
 		return merge_rects(dirty)
+		
 
+class ValuesWidget():
+	""" Widget for a specific Values """
 	
-class ModelWidget():
-	""" A model widget, representing a specific model """
-	
-	def __init__(self, model):
+	def __init__(self, values, edge_render):
 		""" Initialise self """
 		
-		# NOTE: We only have things related to rendering here.
-		#		models.Model contains lots of bits and pieces, including the
-		#		bounding box code; because one model might be shared across
-		#		multiple widgets, we leave the bounding box code where it is.
-		self.model = model
-		self.size = None
+		# TODO: We only have things related to rendering here.
+		#		Both models.Model and values.Value contains lots of bits and
+		# 		pieces, including the bounding box and colour function code,
+		#		which we (currently) leave as-is.
+		#		In the future, it would be nice to move the bounding box code
+		#		here, but the colour function code is also used for the scale,
+		#		among other things, so it should be left as-is.
+		self.size = None # This widget is dynamically sized.
+		self.values = values
+		self.model = values.model
+		self.edge_render = edge_render
 		
 	def gen_transform(self, pos_func, size):
 		""" Generate a transformation function to adjust the points in the model """
@@ -235,16 +240,31 @@ class ModelWidget():
 			
 		return transform
 		
-	def render(self, surface, time, pos_func, size):
-		""" Render self """
 		
+	def render(self, surface, time, pos_func, size):
+		""" Render the given values class onto a surface """
+		
+		# Dirty rects.
 		dirty = []
 		
-		for shape in self.model.shapes:
-			dirty += self.render_shape(surface, \
-				self.gen_transform(pos_func, size), shape, EDGE_COLOUR, \
-				EDGE_THICKNESS)
-				
+		# Transform.
+		trans = self.gen_transform(pos_func, size)
+	
+		# Render patches (filled).
+		for patch in self.model.patches:
+			try:
+				value = self.values.values[time][patch]
+			except KeyError:
+				print("WARNING: Failed to get data for patch {} for time {}!".format(patch, time))
+				value = BROKEN_COLOUR
+			dirty += self.render_shape(surface, trans, \
+				self.model.patches[patch]['shape'], value, 0)
+		# Render shapes (not filled, just for the outlines).
+		if self.edge_render:
+			for shape in self.model.shapes:
+				dirty += self.render_shape(surface, trans, shape,
+					EDGE_COLOUR, EDGE_THICKNESS)
+			
 		return merge_rects(dirty)
 			
 	def render_shape(self, surface, transform, shape, colour, width):
@@ -286,41 +306,6 @@ class ModelWidget():
 				[transform(point) for point in shape.points[part:end]], width))
 				
 		return dirty
-				
-
-class ValuesWidget(ModelWidget):
-	""" Widget for a specific Values """
-	
-	def __init__(self, values, edge_render):
-		""" Initialise self """
-		
-		ModelWidget.__init__(self, values.model)
-		self.values = values
-		self.edge_render = edge_render
-		
-	def render(self, surface, time, pos_func, size):
-		""" Render the given values class onto a surface """
-		
-		# Dirty rects.
-		dirty = []
-	
-		# Render patches (filled).
-		for patch in self.model.patches:
-			try:
-				value = self.values.values[time][patch]
-			except KeyError:
-				print("WARNING: Failed to get data for patch {} for time {}!".format(patch, time))
-				value = BROKEN_COLOUR
-			dirty += self.render_shape(surface, \
-				self.gen_transform(pos_func, size), \
-				self.model.patches[patch]['shape'], value, 0)
-		# Render shapes (not filled, just for the outlines).
-		if self.edge_render:
-			dirty.append(ModelWidget.render(self, surface, time, pos_func, \
-				size))
-			
-		return merge_rects(dirty)
-
 
 def merge_rects(dirty):
 	""" Merges a list of rects into a single rect """
