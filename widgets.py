@@ -218,21 +218,26 @@ class ValuesWidget():
 		self.model = values.model
 		self.edge_render = edge_render
 		
+		# Find the bounding box, center, and size for the gis shapes.
+		bbox = bounding_box(self.model.shapes)
+		self.center = [((bbox[i] + bbox[i+2]) / 2) for i in range(2)]
+		self.size = [(bbox[i+2] - bbox[i]) for i in range(2)]
+		
 	def gen_transform(self, pos_func, size):
 		""" Generate a transformation function to adjust the points in the model """
 		
 		# The scaling factor required to scale the image to fit nicely in
 		# the given size.
 		# This is the minimum of the x and y scaling to avoid clipping.
-		scale = min([float(size[i])/self.model.size[i] for i in range(2)])
+		scale = min([float(size[i])/self.size[i] for i in range(2)])
 		
 		# Calculate the offset with the *real* size.
-		real_size = [self.model.size[i]*scale for i in range(2)]
+		real_size = [self.size[i]*scale for i in range(2)]
 		offset = pos_func(real_size)
 		
 		def transform(vert):
 			# Calculate a scaled and recentered vertex.
-			point = [(vert[i] - self.model.center[i])*scale for i in range(2)]
+			point = [(vert[i] - self.center[i])*scale for i in range(2)]
 			
 			# Transform the recentered vertex into offset pygame coordinates.
 			return ((real_size[0]/2) + point[0] + offset[0], \
@@ -306,6 +311,7 @@ class ValuesWidget():
 				[transform(point) for point in shape.points[part:end]], width))
 				
 		return dirty
+		
 
 def merge_rects(dirty):
 	""" Merges a list of rects into a single rect """
@@ -318,3 +324,19 @@ def merge_rects(dirty):
 	first = dirty[0]
 	return first.unionall(dirty[1:])
 	
+def bounding_box(shapes):
+	""" Returns the bounding box for all of the given shapes """
+	
+	mins = [float('inf'), float('inf')]
+	maxs = [-float('inf'), -float('inf')]
+	
+	for shape in shapes:
+		min_pos = [min(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
+		max_pos = [max(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
+		for i in range(2):
+			if min_pos[i] < mins[i]:
+				mins[i] = min_pos[i]
+			if max_pos[i] > maxs[i]:
+				maxs[i] = max_pos[i]
+	
+	return [mins[0], mins[1], maxs[0], maxs[1]]

@@ -32,10 +32,6 @@ class Model():
 		# Load the GIS data.
 		self.gis = gis
 		self.shapes, self.patches = load_shapes(self.gis)
-		# Find the bounding box, center, and size for the gis shapes.
-		self.bbox = bounding_box(self.shapes)
-		self.center = [((self.bbox[i] + self.bbox[i+2]) / 2) for i in range(2)]
-		self.size = [(self.bbox[i+2] - self.bbox[i]) for i in range(2)]
 		
 		# Load the CSV files.
 		self.csv = csv
@@ -165,23 +161,6 @@ def load_shapes(shape_file):
 		file.close()
 	
 	return shapes, patches
-
-def bounding_box(shapes):
-	""" Returns the bounding box for all of the given shapes """
-	
-	mins = [float('inf'), float('inf')]
-	maxs = [-float('inf'), -float('inf')]
-	
-	for shape in shapes:
-		min_pos = [min(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
-		max_pos = [max(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
-		for i in range(2):
-			if min_pos[i] < mins[i]:
-				mins[i] = min_pos[i]
-			if max_pos[i] > maxs[i]:
-				maxs[i] = max_pos[i]
-	
-	return [mins[0], mins[1], maxs[0], maxs[1]]
 		
 
 class Values():
