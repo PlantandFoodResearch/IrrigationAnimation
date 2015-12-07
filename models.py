@@ -31,7 +31,7 @@ class Model():
 		
 		# Load the GIS data.
 		self.gis = gis
-		self.shapes, self.patches = load_shapes(self.gis)
+		self.patches = load_shapes(self.gis)
 		
 		# Load the CSV files.
 		self.csv = csv
@@ -127,8 +127,6 @@ def load_shapes(shape_file):
 	
 	sf = shapefile.Reader(shape_file)
 	
-	# Data structures
-	shapes = [] # List of shapes
 	# Map for patches
 	patches = {} # patch: {key: value}
 	
@@ -138,21 +136,20 @@ def load_shapes(shape_file):
 		# field[0] is the name of the field ('Area', 'Zone', etc).
 		# We offset by one because the first entry in fields is 'DeletionFlag'
 		# which is not in the record for a given patch.
-		# TODO: Fork/patch pyshp to get rid of this issue, or at least *check*
-		# 		the status of the DeletionFlag.
 		fields[field[0]] = index
 	
 	# Iterate through the records and fill in the datatypes.
 	for id in range(sf.numRecords):
-		shapes.append(sf.shape(id))
 		record = sf.record(id)
+		# pyshp returns None is a record has been deleted, so ignore those
+		# records.
 		if record != None:
 			# Extract the patch number.
 			patch = record[fields[PATCH_NUMBER_FIELD]]
 			if patch in patches:
 				raise ValueError("Patch {} referenced twice!".format(patch))
 			# Add the patch to the map.
-			patches[patch] = {'shape': shapes[-1]}
+			patches[patch] = {'shape': sf.shape(id)}
 			# Add the remaining data.
 			for field in fields:
 				patches[patch][field] = record[fields[field]]
@@ -162,7 +159,7 @@ def load_shapes(shape_file):
 	for file in sf.shp, sf.shx:
 		file.close()
 	
-	return shapes, patches
+	return patches
 		
 
 class Values():

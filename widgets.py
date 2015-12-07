@@ -213,16 +213,9 @@ class ValuesWidget():
 		self.model = values.model
 		self.edge_render = edge_render
 		
-		# The shapes we use for the bbox/center/size depend largely on whether
-		# or not we are rendering the edges as well, because the edges take up
-		# a much larger space than just the patches.
-		if self.edge_render:
-			shapes = self.model.shapes
-		else:
-			shapes = (self.model.patches[patch]['shape'] \
-				for patch in self.model.patches)
-		# Find the bounding box, center, and size for the shapes.
-		bbox = bounding_box(shapes)
+		# Find the bounding box, center, and size for the patches.
+		bbox = bounding_box((self.model.patches[patch]['shape'] \
+			for patch in self.model.patches))
 		self.center = [((bbox[i] + bbox[i+2]) / 2) for i in range(2)]
 		self.actual_size = [(bbox[i+2] - bbox[i]) for i in range(2)]
 		
@@ -258,20 +251,21 @@ class ValuesWidget():
 		# Transform function.
 		trans = self.gen_transform(pos_func, size)
 	
-		# Render patches (filled).
+		# Render patches.
 		for patch in self.model.patches:
 			try:
 				value = self.values.values[time][patch]
 			except KeyError:
 				print("WARNING: Failed to get data for patch {} for time {}!".format(patch, time))
 				value = BROKEN_COLOUR
+			# Render the filled patch.
 			dirty += self.render_shape(surface, trans, \
 				self.model.patches[patch]['shape'], value, 0)
-		# Render shapes (not filled, just for the outlines).
-		if self.edge_render:
-			for shape in self.model.shapes:
-				dirty += self.render_shape(surface, trans, shape,
-					EDGE_COLOUR, EDGE_THICKNESS)
+			# Render edges as required (not filled, just for the outlines).
+			if self.edge_render:
+				self.render_shape(surface, trans, \
+					self.model.patches[patch]['shape'], EDGE_COLOUR, \
+					EDGE_THICKNESS)
 			
 		return merge_rects(dirty)
 			

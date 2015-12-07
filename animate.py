@@ -171,7 +171,7 @@ if __name__ == "__main__":
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
 	timewarp = 'delta' # Time warp method used
-	edge_render = False # Whether or not to render edges (plot edges, terrain).
+	edge_render = True # Whether or not to render edges (plot edges, terrain).
 	text_height = 25 # The height for any fonts.
 	render_frame, frames = gen_render_frame(values, text_height, header, \
 		timewarp, edge_render)
