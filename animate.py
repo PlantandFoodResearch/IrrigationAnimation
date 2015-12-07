@@ -35,8 +35,9 @@
 from display import preview
 from transforms import times
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH
-from models import Model, Values
-from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget
+from models import Model, Values, Graphable
+from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
+	GraphWidget
 # We use pygame for font rendering...
 import pygame.font
 
@@ -61,10 +62,13 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 	maps = []
 	scales = []
 	descriptions = []
+	graphs = []
 	for i in values:
 		maps.append(ValuesWidget(i, edge_render))
 		scales.append(ScaleWidget(i, font))
 		descriptions.append(TextWidget(i.description(), font))
+		# TODO: In reality, we may not always want a graph...
+		graphs.append(GraphWidget(Graphable(i.model, i.field), dates))
 	label = TextWidget(header, font)
 	date = DynamicTextWidget(lambda time: dates[time], font)
 	
@@ -104,7 +108,8 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 		value_area = [i - (2 * BORDER) for i in (surf_w / len(maps), surf_h)]
 		# Iterate through the values and render them.
 		for i in range(len(values)):
-			map, scale, desc = maps[i], scales[i], descriptions[i]
+			map, scale, desc, graph = maps[i], scales[i], descriptions[i], \
+				graphs[i]
 			
 			# The x offset is the leftmost start point for an item.
 			x_offset = (surf_w / len(maps)) * i + BORDER
@@ -120,10 +125,7 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 			
 			# Render the scale.
 			scale_rect = scale.render(surface, index, \
-				lambda size: (x_offset, \
-					desc_rect.bottom + BORDER + \
-						((value_area[1] - (desc_rect.height + BORDER) - \
-						size[1]) / 2)), \
+				lambda size: (x_offset, desc_rect.bottom + BORDER), \
 				(float('inf'), min(value_area[0] - (BORDER + SCALE_WIDTH), \
 					value_area[1] - (desc_rect.height + BORDER))))
 
@@ -135,11 +137,16 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 			map_rect = map.render(surface, index, \
 				lambda size: (scale_rect.right + BORDER + \
 						((map_size[0] - size[0]) / 2), \
-					desc_rect.bottom + BORDER + \
-						((map_size[1] - size[1]) / 2)), \
+					desc_rect.bottom + BORDER), \
 				map_size)
 				
-			dirty += [map_rect, desc_rect, scale_rect]
+			# Render the graph.
+			lowest = max(map_rect.bottom, scale_rect.bottom)
+			graph_rect = graph.render(surface, index, \
+				lambda size: (x_offset, lowest + BORDER), \
+				(value_area[0], surf_h - (lowest + (BORDER * 2))))
+				
+			dirty += [map_rect, desc_rect, scale_rect, graph_rect]
 		
 		# Check for intersections, and print a warning if any are found.
 		if len(dirty) != 0:

@@ -21,7 +21,7 @@ from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
 	SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_TEXT_OFFSET, SCALE_WIDTH, \
 	TEXT_AA, TEXT_COLOUR
 
-import pygame.draw # We currently render using pygame...
+import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
 
 class TextWidget():
@@ -315,6 +315,80 @@ class ValuesWidget():
 				
 		return dirty
 		
+class GraphWidget():
+	""" Widget for realtime graphs of a given Graphable """
+	
+	def __init__(self, graphable, dates):
+		""" Initialise self """
+		
+		self.graphable = graphable
+		self.dates = dates
+		self.size = None
+		
+	def render(self, surface, time, pos_func, size):
+		""" Render the given graphable class onto a surface """
+		
+		topleft = pos_func(size)
+		dirty = pygame.Rect(topleft, size)
+
+		# We start by rendering a scale...
+		scale_size = self.render_scale(surface, topleft, size)
+		size = [size[i] - scale_size[i] for i in range(2)]
+		topleft = (topleft[0] + scale_size[0], topleft[1])
+		
+		# We render the lines.
+		# TODO: Actually render *lines*, plural.
+		# Get a subsurf.
+		subsurf = surface.subsurface(pygame.Rect(topleft, size))
+		# Render the line.
+		def column2row(column, height):
+			""" Convert from a column (percentage) to a scaled value """
+			# Find the closest date for that point.
+			date = int(column * len(self.dates))
+			# Find the value associated with that date.
+			value = self.graphable.values[date]
+			# Return a compensated height.
+			return height * ((value - self.graphable.min) / \
+				(self.graphable.max - self.graphable.min))
+		# TODO: Render more than one line...
+		self.render_line(subsurf, column2row, TEXT_COLOUR)
+		
+		# TODO: There is probably some duplication here with a pure time
+		#		marker?
+		offset = ((float(time) / len(self.dates)) * size[0]) + \
+			topleft[0]
+		pygame.draw.line(surface, TEXT_COLOUR, (offset, topleft[1]), \
+			(offset, topleft[1] + size[1]))
+		
+		return dirty
+		
+	def render_scale(self, surface, topleft, size):
+		""" Render the scale """
+		
+		# TODO: Render some text as well, and offset appropriately.
+		# TODO: There will be some duplication here with ScaleWidget; try to
+		# 		figure out how to remove that.
+		# TODO: Add some styling (arrows?)
+		pygame.draw.aalines(surface, TEXT_COLOUR, False, \
+			[topleft, \
+				(topleft[0], topleft[1] + size[1]), \
+				(topleft[0] + size[0], topleft[1] + size[1])])
+				
+		return 1, 1 # width, height
+
+	def render_line(self, surface, column2row, colour):
+		""" Render a line onto the given surface """
+		
+		width, height = surface.get_size()
+		old = column2row(0, height) # The prior value to draw from.
+		for i in range(width):
+			# Calculate the current height.
+			current = column2row(float(i) / width, height - 1)
+			# Draw a line between the old and new points.
+			pygame.draw.aaline(surface, TEXT_COLOUR, \
+				(i - 1, height - old), (i, height - current))
+			old = current
+			
 
 def merge_rects(dirty):
 	""" Merges a list of rects into a single rect """

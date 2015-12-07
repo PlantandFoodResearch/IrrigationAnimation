@@ -3,7 +3,7 @@
 	Author: Alastair Hughes
 """
 
-from constants import DATE_FIELD, PATCH_NUMBER_FIELD
+from constants import AREA_FIELD, DATE_FIELD, PATCH_NUMBER_FIELD
 from transforms import transformations
 # colorsys is used for the gradients
 import colorsys
@@ -175,7 +175,7 @@ class Values():
 		self.transform = transform
 		
 		if data_type == 'float':
-			process = lambda v: float(v)
+			process = float
 		else:
 			# TODO: Implement more data types... string is one obvious one.
 			# 	   	Even better, get to a point where we don't have to care
@@ -239,5 +239,46 @@ class Values():
 			"GIS: " + self.model.gis + '\n' + \
 			"CSV: " + self.model.csv + '\n' + \
 			"Transformation type: " + self.transform
+
+
+class Graphable():
+	""" Wrapper class for a model containing 'graphable' information - anything
+		not tied to a specific patch.
+	"""
+	
+	def __init__(self, model, field):
+		""" Initialise self """
 		
-				
+		self.model = model
+		self.field = field
+		# We assume floating point values for now.
+		# TODO: Explore supporting other data types?
+		values = self.model.extract_field(self.field, float)
+	
+		# Calculate the statistic in question.
+		# TODO: We currently hardcode a mean, weighted by area.
+		#		We should at least be able to do a mean, minimum, maximum, sum,
+		#		and possibly something custom.
+		#		Also weighted by area (or not).
+		#		We also need to be able to do this on a field-by-field basis.
+		means = {} # Per-day means.
+		# Calculate the areas.
+		simple_areas = self.model.extract_field(AREA_FIELD, float)
+		areas = {} # patch: area
+		total_area = 0 # The total area.
+		# We assume that areas remain the same, so pick the first area.
+		for patch in simple_areas[0]:
+			area = int(simple_areas[0][patch])
+			areas[patch] = area
+			total_area += area
+		# Calculate the per-day values.
+		day = [] # Weighted values for a given day.
+		for index in values:
+			for patch in values[index]:
+				day.append(values[index][patch] * areas[patch])
+			means[index] = sum(day) / (len(day) * total_area)
+		self.values = means
+		
+		self.max = max(means.values())
+		self.min = min(means.values())
+		

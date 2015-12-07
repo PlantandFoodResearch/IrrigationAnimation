@@ -22,6 +22,7 @@ TEXT_COLOUR = (0, 0, 0) # The colour of any text.
 TEXT_AA = False # Whether or not to antialias the text.
 
 # Other:
+AREA_FIELD = "Manager_P.Script.Patch_area" # Field name for the patch areas.
 DATE_FIELD = "Clock.Today" # Field name for dates.
 PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
 
