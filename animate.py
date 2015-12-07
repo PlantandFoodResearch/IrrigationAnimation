@@ -127,8 +127,6 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 			# Render the map.
 			# The map size is shrunk to avoid clipping.
 			# We anchor to the top-right corner to leave room for the scale.
-			# TODO: It would be nicer if the map could be centered unless there
-			# wasn't any room for the scale.
 			map_size = (value_area[0] - (scale_rect.width + BORDER), \
 				value_area[1] - (desc_rect.height + BORDER))
 			map_rect = map.render(surface, index, \
