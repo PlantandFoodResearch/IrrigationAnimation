@@ -130,8 +130,9 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 				value_area[1] - (desc_rect.height + BORDER))
 			map_rect = map.render(surface, index, \
 				lambda size: (scale_rect.right + BORDER + \
-					((map_size[0] / 2) - (size[0] / 2)), \
-					desc_rect.bottom + BORDER), \
+						((map_size[0] / 2) - (size[0] / 2)), \
+					desc_rect.bottom + BORDER + \
+						(map_size[1] / 2) - (size[1] / 2))), \
 				map_size)
 				
 			dirty += [map_rect, desc_rect, scale_rect]
