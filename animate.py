@@ -117,7 +117,10 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 			
 			# Render the scale.
 			scale_rect = scale.render(surface, index, \
-				lambda size: (x_offset, desc_rect.bottom + BORDER), \
+				lambda size: (x_offset, \
+					desc_rect.bottom + BORDER + \
+						((value_area[1] - (desc_rect.height + BORDER) - \
+						size[1]) / 2)), \
 				(SCALE_WIDTH, min(value_area[0] - (BORDER + SCALE_WIDTH), \
 					value_area[1] - (desc_rect.height + BORDER))))
 
@@ -130,9 +133,9 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 				value_area[1] - (desc_rect.height + BORDER))
 			map_rect = map.render(surface, index, \
 				lambda size: (scale_rect.right + BORDER + \
-						((map_size[0] / 2) - (size[0] / 2)), \
+						((map_size[0] - size[0]) / 2), \
 					desc_rect.bottom + BORDER + \
-						(map_size[1] / 2) - (size[1] / 2))), \
+						((map_size[1] - size[1]) / 2)), \
 				map_size)
 				
 			dirty += [map_rect, desc_rect, scale_rect]
