@@ -110,25 +110,29 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 			# We use the maximum of desc_offset and x_offset to avoid clipping, if
 			# possible.
 			desc_rect = desc.render(surface, index, \
-				lambda size: (max(x_offset + (value_area[0] / 2) - (size[0] / 2), \
-					desc_offset), BORDER))
+				lambda size: (max(x_offset + (value_area[0] / 2) - \
+					(size[0] / 2), desc_offset), BORDER))
 			# Update the description offset.
 			desc_offset = desc_rect.right + BORDER
-					
-			# Render the map.
-			# The map size is shrunk by the description's height to avoid
-			# clipping.
-			map_size = (value_area[0], value_area[1] - (desc_rect.height + BORDER))
-			map_rect = map.render(surface, index, \
-				lambda size: (x_offset + (value_area[0] / 2) - (size[0] / 2), \
-					(desc_rect.bottom + BORDER + (map_size[1] / 2)) - \
-						(size[1] / 2)), \
-				map_size)
-				
+			
 			# Render the scale.
 			scale_rect = scale.render(surface, index, \
-				lambda size: (x_offset, surf_h - (BORDER + size[1])), \
-				(SCALE_WIDTH, surf_h / 3))
+				lambda size: (x_offset, desc_rect.bottom + BORDER), \
+				(SCALE_WIDTH, min(value_area[0] - (BORDER + SCALE_WIDTH), \
+					value_area[1] - (desc_rect.height + BORDER))))
+
+			# Render the map.
+			# The map size is shrunk to avoid clipping.
+			# We anchor to the top-right corner to leave room for the scale.
+			# TODO: It would be nicer if the map could be centered unless there
+			# wasn't any room for the scale.
+			map_size = (value_area[0] - (scale_rect.width + BORDER), \
+				value_area[1] - (desc_rect.height + BORDER))
+			map_rect = map.render(surface, index, \
+				lambda size: (scale_rect.right + BORDER + \
+					((map_size[0] / 2) - (size[0] / 2)), \
+					desc_rect.bottom + BORDER), \
+				map_size)
 				
 			dirty += [map_rect, desc_rect, scale_rect]
 		
