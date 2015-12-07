@@ -330,6 +330,8 @@ class GraphWidget():
 		
 		topleft = pos_func(size)
 		dirty = pygame.Rect(topleft, size)
+		
+		# TODO: We need a label of some kind somewhere.
 
 		# We start by rendering a scale...
 		scale_size = self.render_scale(surface, topleft, size)
@@ -338,9 +340,10 @@ class GraphWidget():
 		
 		# We render the lines.
 		# TODO: Actually render *lines*, plural.
-		# Get a subsurf.
+		# We use a subsurf, mostly because it simplifies the code elsewhere.
 		subsurf = surface.subsurface(pygame.Rect(topleft, size))
 		# Render the line.
+		# Define a conversion and scaling function.
 		def column2row(column, height):
 			""" Convert from a column (percentage) to a scaled value """
 			# Find the closest date for that point.
@@ -351,10 +354,13 @@ class GraphWidget():
 			return height * ((value - self.graphable.min) / \
 				(self.graphable.max - self.graphable.min))
 		# TODO: Render more than one line...
+		# TODO: We need some kind of text saying what the line is.
 		self.render_line(subsurf, column2row, TEXT_COLOUR)
 		
 		# TODO: There is probably some duplication here with a pure time
 		#		marker?
+		# TODO: It would be nice to be able to *see* the actual value at 
+		# 		that time for each line.
 		offset = ((float(time) / len(self.dates)) * size[0]) + \
 			topleft[0]
 		pygame.draw.line(surface, TEXT_COLOUR, (offset, topleft[1]), \
