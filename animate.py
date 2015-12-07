@@ -17,6 +17,7 @@
 		- Simple value marker (on scale, or just as a value)
 		- Time marker
 		- Realtime graphs
+	- Option to disable filepaths in the description/custom descriptions
 	- Pausing support for the dynamic viewer
 	- Avoiding lag with the dynamic viewer
 	- Different colours for the different values renderings
