@@ -6,7 +6,6 @@
 	- GUI tweaking
 	- Speed ups + profiling
 	- Code cleanups
-	- Some way to work around 'clipping' in the various widgets
 	- More transformation functions/options + combining transformations
 	- Work on making specifying custom transformations easier
 	- Documentation
@@ -121,12 +120,12 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 					desc_rect.bottom + BORDER + \
 						((value_area[1] - (desc_rect.height + BORDER) - \
 						size[1]) / 2)), \
-				(SCALE_WIDTH, min(value_area[0] - (BORDER + SCALE_WIDTH), \
+				(float('inf'), min(value_area[0] - (BORDER + SCALE_WIDTH), \
 					value_area[1] - (desc_rect.height + BORDER))))
 
 			# Render the map.
-			# The map size is shrunk to avoid clipping.
-			# We anchor to the top-right corner to leave room for the scale.
+			# The map size is shrunk to avoid clipping with either the scale or
+			# the description, and offsets are calculated accordingly.
 			map_size = (value_area[0] - (scale_rect.width + BORDER), \
 				value_area[1] - (desc_rect.height + BORDER))
 			map_rect = map.render(surface, index, \
