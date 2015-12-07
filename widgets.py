@@ -18,8 +18,8 @@
 """
 
 from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_TEXT_OFFSET, TEXT_AA, \
-	TEXT_COLOUR
+	SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_TEXT_OFFSET, SCALE_WIDTH, \
+	TEXT_AA, TEXT_COLOUR
 
 import pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
@@ -129,7 +129,8 @@ class ScaleWidget():
 					# Calculate the row to render the marker on.
 					row = (float(height) / (markers - 1)) * mark
 					# Calculate the value for that row.
-					value = str(round(self.row2value(row, height), \
+					fmt = '{:.' + str(SCALE_DECIMAL_PLACES) + 'f}'
+					value = fmt.format(round(self.row2value(row, height), \
 						SCALE_DECIMAL_PLACES))
 					# Add it to the map.
 					labels[row] = value
@@ -162,9 +163,10 @@ class ScaleWidget():
 			rows[row] = self.font.render(value, TEXT_AA, TEXT_COLOUR)
 			# Update the maximum text width.
 			max_text_width = max(rows[row].get_width(), max_text_width)
-			
+
 		# Calculate the maximum x border of the scale.
-		max_x = (min_x + size[0]) - (max_text_width + SCALE_TEXT_OFFSET)
+		max_x = min((min_x + size[0]) - (max_text_width + SCALE_TEXT_OFFSET), \
+			min_x + SCALE_WIDTH)
 
 		# Draw the scale.
 		for row in range(height + 1):
