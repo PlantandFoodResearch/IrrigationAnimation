@@ -6,11 +6,14 @@
 	- GUI tweaking
 	- Speed ups + profiling
 	- Code cleanups
-	- More transformation functions/options + combining transformations
-	- Work on making specifying custom transformations easier
+	- Transformations
+		- Add more by default (exponential/log/per-field)
+		- Add support for combining transformations
+		- Add support for specifying custom transformations
+		- Intergrate with the scale
 	- Documentation
 		- Design notes
-	- Additional widgets:
+	- Additional widgets
 		- Simple value marker (on scale, or just as a value)
 		- Time marker
 		- Realtime graphs
