@@ -269,8 +269,8 @@ class Graphable():
 			areas[patch] = area
 			total_area += area
 		# Calculate the per-day values.
-		day = [] # Weighted values for a given day.
 		for index in values:
+			day = [] # Weighted values for a given day.
 			for patch in values[index]:
 				day.append(values[index][patch] * areas[patch])
 			means[index] = sum(day) / (len(day) * total_area)
