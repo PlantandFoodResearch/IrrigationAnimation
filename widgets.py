@@ -357,7 +357,7 @@ class GraphWidget():
 		# Render the line.
 		# TODO: Render more than one line...
 		# TODO: We need some kind of text saying what the line is.
-		self.render_line(surface, TEXT_COLOUR, topleft, size)
+		self.render_line(surface, self.graphable, topleft, size)
 		
 		# TODO: There is probably some duplication here with a pure time
 		#		marker?
@@ -386,24 +386,23 @@ class GraphWidget():
 				
 		return 1, 1 # width, height
 
-	def render_line(self, surface, colour, topleft, size):
+	def render_line(self, surface, graph, topleft, size):
 		""" Render a line onto the given surface """
 		
 		# Define a helper function to find the y-coord.
-		# This scales and offsets that value as required.
+		# This scales and offsets the given value as required.
 		y = lambda value: topleft[1] + size[1] - \
-			(size[1] * ((value - self.graphable.min) / \
-				self.graphable.max - self.graphable.min))
+			(size[1] * ((value - graph.min) / \
+				graph.max - graph.min))
 
-		old = self.graphable.values[0] # The prior value to draw from.
+		old = (topleft[0], y(graph.values[0])) # The prior value to draw from.
 		for i in range(size[0]):
-			# Find the current value.
+			# Find the current position to draw to.
 			date = int(float(i * len(self.dates)) / size[0])
-			cur = self.graphable.values[date]
+			cur = (topleft[0] + i, y(graph.values[date]))
 			# Draw a line between the old and new points.
-			x = topleft[0] + i
-			pygame.draw.aaline(surface, colour, (x - 1, y(old)), (x, y(cur)))
-			# Save the current value.
+			pygame.draw.aaline(surface, graph.colour, old, cur)
+			# Save the current position.
 			old = cur
 			
 

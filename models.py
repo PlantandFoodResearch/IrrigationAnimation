@@ -243,11 +243,12 @@ class Graphable():
 		not tied to a specific patch.
 	"""
 	
-	def __init__(self, model, field):
+	def __init__(self, model, field, colour):
 		""" Initialise self """
 		
 		self.model = model
 		self.field = field
+		self.colour = colour
 		# We assume floating point values for now.
 		# TODO: Explore supporting other data types?
 		values = self.model.extract_field(self.field, float)

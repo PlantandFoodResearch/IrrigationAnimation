@@ -68,7 +68,8 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 		scales.append(ScaleWidget(i, font))
 		descriptions.append(TextWidget(i.description(), font))
 		# TODO: In reality, we may not always want a graph...
-		graphs.append(GraphWidget(Graphable(i.model, i.field), dates))
+		# TODO: The colour should either be configurable or automatic.
+		graphs.append(GraphWidget(Graphable(i.model, i.field, (0, 0, 255)), dates))
 	label = TextWidget(header, font)
 	date = DynamicTextWidget(lambda time: dates[time], font)
 	
