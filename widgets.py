@@ -324,8 +324,13 @@ class ValuesWidget():
 				end = len(shape.points)
 			else:
 				end = shape.parts[num + 1]
-			dirty.append(pygame.draw.polygon(surface, colour,
-				[transform(point) for point in shape.points[part:end]], width))
+			if width != 1:
+				dirty.append(pygame.draw.polygon(surface, colour,
+					[transform(point) for point in shape.points[part:end]], width))
+			else:
+				# Use aalines instead (smoothed lines).
+				dirty.append(pygame.draw.aalines(surface, colour, True,
+					[transform(point) for point in shape.points[part:end]], width))
 				
 		return dirty
 		
