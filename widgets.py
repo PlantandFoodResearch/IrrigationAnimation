@@ -214,10 +214,30 @@ class ValuesWidget():
 		self.edge_render = edge_render
 		
 		# Find the bounding box, center, and size for the patches.
-		bbox = bounding_box((self.model.patches[patch]['shape'] \
-			for patch in self.model.patches))
+		bbox = self.bounding_box()
 		self.center = [((bbox[i] + bbox[i+2]) / 2) for i in range(2)]
 		self.actual_size = [(bbox[i+2] - bbox[i]) for i in range(2)]
+		
+	def bounding_box(self):
+		""" Return the bounding box of self's patches """
+		
+		# TODO: This should potentially be moved in Model, as it is only
+		# 		dependent on the model in use.
+		
+		mins = [float('inf'), float('inf')]
+		maxs = [-float('inf'), -float('inf')]
+
+		for patch in self.model.patches:
+			shape = self.model.patches[patch]['shape']
+			min_pos = [min(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
+			max_pos = [max(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
+			for i in range(2):
+				if min_pos[i] < mins[i]:
+					mins[i] = min_pos[i]
+				if max_pos[i] > maxs[i]:
+					maxs[i] = max_pos[i]
+
+		return [mins[0], mins[1], maxs[0], maxs[1]]
 		
 	def gen_transform(self, pos_func, size):
 		""" Generate a transformation function to adjust the points in the model """
@@ -334,8 +354,6 @@ class GraphWidget():
 		
 		# We render the lines.
 		# TODO: Actually render *lines*, plural.
-		# We use a subsurf, mostly because it simplifies the code elsewhere.
-		subsurf = surface.subsurface(pygame.Rect(topleft, size))
 		# Render the line.
 		# Define a conversion and scaling function.
 		def column2row(column, height):
@@ -349,7 +367,7 @@ class GraphWidget():
 				(self.graphable.max - self.graphable.min))
 		# TODO: Render more than one line...
 		# TODO: We need some kind of text saying what the line is.
-		self.render_line(subsurf, column2row, TEXT_COLOUR)
+		self.render_line(surface, column2row, TEXT_COLOUR, topleft, size)
 		
 		# TODO: There is probably some duplication here with a pure time
 		#		marker?
@@ -369,24 +387,28 @@ class GraphWidget():
 		# TODO: There will be some duplication here with ScaleWidget; try to
 		# 		figure out how to remove that.
 		# TODO: Add some styling (arrows?)
-		pygame.draw.aalines(surface, TEXT_COLOUR, False, \
+		# We don't want to draw right off the end, so we take one off the given
+		# size.
+		pygame.draw.lines(surface, TEXT_COLOUR, False, \
 			[topleft, \
-				(topleft[0], topleft[1] + size[1]), \
-				(topleft[0] + size[0], topleft[1] + size[1])])
+				(topleft[0], topleft[1] + (size[1] - 1)), \
+				(topleft[0] + (size[0] - 1), topleft[1] + (size[1] - 1))])
 				
 		return 1, 1 # width, height
 
-	def render_line(self, surface, column2row, colour):
+	def render_line(self, surface, column2row, colour, topleft, size):
 		""" Render a line onto the given surface """
-		
-		width, height = surface.get_size()
-		old = column2row(0, height) # The prior value to draw from.
-		for i in range(width):
+
+		old = column2row(0, size[1]) # The prior value to draw from.
+		for i in range(size[0]):
 			# Calculate the current height.
-			current = column2row(float(i) / width, height - 1)
+			# TODO: Magic shift
+			current = column2row(float(i) / size[0], size[1])
 			# Draw a line between the old and new points.
+			# TODO: Magic shift
 			pygame.draw.aaline(surface, TEXT_COLOUR, \
-				(i - 1, height - old), (i, height - current))
+				(topleft[0] + i - 1, topleft[1] + size[1] - old), \
+				(topleft[0] + i, topleft[1] + size[1] - current))
 			old = current
 			
 
@@ -401,19 +423,3 @@ def merge_rects(dirty):
 	first = dirty[0]
 	return first.unionall(dirty[1:])
 	
-def bounding_box(shapes):
-	""" Returns the bounding box for all of the given shapes """
-
-	mins = [float('inf'), float('inf')]
-	maxs = [-float('inf'), -float('inf')]
-
-	for shape in shapes:
-		min_pos = [min(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
-		max_pos = [max(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
-		for i in range(2):
-			if min_pos[i] < mins[i]:
-				mins[i] = min_pos[i]
-			if max_pos[i] > maxs[i]:
-				maxs[i] = max_pos[i]
-
-	return [mins[0], mins[1], maxs[0], maxs[1]]
