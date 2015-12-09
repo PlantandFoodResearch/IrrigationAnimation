@@ -355,19 +355,9 @@ class GraphWidget():
 		# We render the lines.
 		# TODO: Actually render *lines*, plural.
 		# Render the line.
-		# Define a conversion and scaling function.
-		def column2row(column, height):
-			""" Convert from a column (percentage) to a scaled value """
-			# Find the closest date for that point.
-			date = int(column * len(self.dates))
-			# Find the value associated with that date.
-			value = self.graphable.values[date]
-			# Return a compensated height.
-			return height * ((value - self.graphable.min) / \
-				(self.graphable.max - self.graphable.min))
 		# TODO: Render more than one line...
 		# TODO: We need some kind of text saying what the line is.
-		self.render_line(surface, column2row, TEXT_COLOUR, topleft, size)
+		self.render_line(surface, TEXT_COLOUR, topleft, size)
 		
 		# TODO: There is probably some duplication here with a pure time
 		#		marker?
@@ -396,18 +386,25 @@ class GraphWidget():
 				
 		return 1, 1 # width, height
 
-	def render_line(self, surface, column2row, colour, topleft, size):
+	def render_line(self, surface, colour, topleft, size):
 		""" Render a line onto the given surface """
+		
+		# Define a helper function to find the y-coord.
+		# This scales and offsets that value as required.
+		y = lambda value: topleft[1] + size[1] - \
+			(size[1] * ((value - self.graphable.min) / \
+				self.graphable.max - self.graphable.min))
 
-		old = column2row(0, size[1]) # The prior value to draw from.
+		old = self.graphable.values[0] # The prior value to draw from.
 		for i in range(size[0]):
-			# Calculate the current height.
-			current = column2row(float(i) / size[0], size[1])
+			# Find the current value.
+			date = int(float(i * len(self.dates)) / size[0])
+			cur = self.graphable.values[date]
 			# Draw a line between the old and new points.
-			pygame.draw.aaline(surface, TEXT_COLOUR, \
-				(topleft[0] + i - 1, topleft[1] + size[1] - old), \
-				(topleft[0] + i, topleft[1] + size[1] - current))
-			old = current
+			x = topleft[0] + i
+			pygame.draw.aaline(surface, colour, (x - 1, y(old)), (x, y(cur)))
+			# Save the current value.
+			old = cur
 			
 
 def merge_rects(dirty):
