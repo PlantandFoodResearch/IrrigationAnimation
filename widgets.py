@@ -402,10 +402,8 @@ class GraphWidget():
 		old = column2row(0, size[1]) # The prior value to draw from.
 		for i in range(size[0]):
 			# Calculate the current height.
-			# TODO: Magic shift
 			current = column2row(float(i) / size[0], size[1])
 			# Draw a line between the old and new points.
-			# TODO: Magic shift
 			pygame.draw.aaline(surface, TEXT_COLOUR, \
 				(topleft[0] + i - 1, topleft[1] + size[1] - old), \
 				(topleft[0] + i, topleft[1] + size[1] - current))
