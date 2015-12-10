@@ -280,3 +280,10 @@ class Graphable():
 		self.max = max(means.values())
 		self.min = min(means.values())
 		
+	def __getitem__(self, date):
+		""" Returns self's value on the given date.
+			If it is a tuple, then it represents a range of values.
+		"""
+		
+		return self.values[date]
+		

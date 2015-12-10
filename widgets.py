@@ -453,7 +453,6 @@ class GraphWidget():
 		placement, overlap = place((-30, graph_width + 30), \
 			{row: text.get_width() for row, text in rows.items()})
 		# Finally, blit the text onto the scale.
-		# TODO: Render the anchor marks.
 		for row, text in rows.items():
 			x = topleft[0] + width + row
 			surface.blit(text, (x - (text.get_width() / 2), \
@@ -482,7 +481,7 @@ class GraphWidget():
 		old = (topleft[0], y(graph.values[0]))
 		for i in range(size[0]):
 			# Find the current position to draw to.
-			cur = (topleft[0] + i, y(graph.values[row2date(i)]))
+			cur = (topleft[0] + i, y(graph[row2date(i)]))
 			# Draw a line between the old and new points.
 			pygame.draw.aaline(surface, graph.colour, old, cur)
 			# Save the current position.
