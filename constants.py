@@ -9,6 +9,7 @@ BROKEN_COLOUR = (0, 0, 255) # Colour for patches missing data.
 DEFAULT_COLOUR = (255, 255, 255)
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
+GRAPH_ALPHA = 150 # Alpha of shading on the graph.
 MAX_FPS = 24 # Maximum allowed FPS
 MIN_FPS = 1 # Minimum allowed FPS
 MAX_FRAMES_PER_DAY = 5 # Maximum number of frames per day

@@ -18,7 +18,7 @@
 """
 
 from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_SPACING, \
+	GRAPH_ALPHA, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_SPACING, \
 	SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
 
 import pygame, pygame.draw # We currently render using pygame...
@@ -366,15 +366,11 @@ class GraphWidget():
 		topleft = (topleft[0] + scale_size[0], topleft[1])
 		
 		# We render the lines.
-		# TODO: Actually render *lines*, plural.
 		# Render the line.
-		# TODO: Render more than one line...
 		# TODO: We need some kind of text saying what the line is.
 		for graph in self.graphable:
 			self.render_line(surface, graph, topleft, size, row2date)
 		
-		# TODO: There is probably some duplication here with a pure time
-		#		marker?
 		# TODO: It would be nice to be able to *see* the actual value at 
 		# 		that time for each line.
 		# TODO: The offset is not calculated accurately at the moment
@@ -478,12 +474,23 @@ class GraphWidget():
 		y = lambda value: topleft[1] + size[1] - \
 			(size[1] * ((value - graph.min) / (graph.max - graph.min)))
 
-		old = (topleft[0], y(graph.values[0]))
+		old = graph[0]
 		for i in range(size[0]):
 			# Find the current position to draw to.
-			cur = (topleft[0] + i, y(graph[row2date(i)]))
-			# Draw a line between the old and new points.
-			pygame.draw.aaline(surface, graph.colour, old, cur)
+			cur = graph[row2date(i)]
+			# Draw the lines.
+			x = topleft[0] + i
+			for index in range(len(cur)):
+				pygame.draw.aaline(surface, graph.colour, \
+					(x - 1, y(old[index])), \
+					(x, y(cur[index])))
+			# Add sub shading, if required.
+			# TODO: Currently this does not work, because the pygame.draw
+			#		functions do not do alpha blending.
+			if len(cur) > 1 and False:
+				colour = list(graph.colour) + [GRAPH_ALPHA]
+				pygame.draw.line(surface, colour, (x, y(cur[0])), \
+					(x, y(cur[-1])))
 			# Save the current position.
 			old = cur
 			

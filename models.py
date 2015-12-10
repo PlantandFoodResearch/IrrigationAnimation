@@ -285,5 +285,5 @@ class Graphable():
 			If it is a tuple, then it represents a range of values.
 		"""
 		
-		return self.values[date]
+		return [self.values[date]]
 		
