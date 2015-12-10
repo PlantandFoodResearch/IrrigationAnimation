@@ -274,8 +274,8 @@ class Graphable():
 			day = [] # Weighted values for a given day.
 			for patch in values[index]:
 				day.append(values[index][patch] * areas[patch])
-			means[index] = sum(day) / (len(day) * total_area)
-		self.values = means
+			means[index] = sum(day) / total_area
+			self.values = means
 		
 		self.max = max(means.values())
 		self.min = min(means.values())
