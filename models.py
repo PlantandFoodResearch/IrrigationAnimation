@@ -3,7 +3,8 @@
 	Author: Alastair Hughes
 """
 
-from constants import AREA_FIELD, DATE_FIELD, PATCH_NUMBER_FIELD
+from constants import AREA_FIELD, DATE_FIELD, FIELD_NO_FIELD, \
+	PATCH_NUMBER_FIELD
 from transforms import transformations
 # colorsys is used for the gradients
 import colorsys
@@ -50,7 +51,7 @@ class Model():
 				elif date != dates[index][patch]:
 					raise ValueError("For some CSV files ({}, index = {}), the dates are not on equal rows!".format(csv, index))
 			self.dates[index] = date
-			
+
 	def extract_field(self, field, process=lambda v: v):
 		""" Extract a single field from the loaded data, and optionally
 			apply a function 'process' to each piece of data.
@@ -60,20 +61,21 @@ class Model():
 		for index in self.data:
 			result[index] = {}
 			for patch in self.data[index]:
-				result[index][patch] = process(self.data[index][patch][field].strip())
+				result[index][patch] = process(self.data[index][patch][field])
 	
 		return result
-		
+
 	def fields(self):
 		""" Return a list of possible fields """
+		
 		fields = set()
 		for index in self.data:
 			for patch in self.data[index]:
 				for field in self.data[index][patch].keys():
 					if field not in fields:
-						fields.add(field.strip())
+						fields.add(field)
 		return fields
-		
+
 def find_patch_files(dir):
 	""" Generates a dict mapping from patch numbers to absolute filenames """
 	
@@ -110,13 +112,15 @@ def raw_patches(files):
 				# Insert the values into the dict.
 				patches[patch_no][index] = row
 	
-	# Turn the resulting data into a index[patch[value]] format.
+	# Turn the resulting data into a index[patch[value]] format, and strip the
+	# data.
 	result = {} # index: {patch: values}
 	for patch in patches:
 		for index in patches[patch]:
 			if index not in result:
 				result[index] = {}
-			result[index][patch] = patches[patch][index]
+			result[index][patch] = {field: value.strip() \
+				for field, value in patches[patch][index].items()}
 			
 	return result
 	
@@ -243,18 +247,46 @@ class Graphable():
 		not tied to a specific patch.
 	"""
 	
-	def __init__(self, model, field, colour, statistics = ['min', 'mean']):
+	def __init__(self, model, field, colour, label, field_nos = None, \
+		statistics = ['min', 'mean', 'max']):
 		""" Initialise self """
 		
 		self.model = model
 		self.field = field
 		self.colour = colour
-		# We assume floating point values for now.
-		# TODO: Explore supporting other data types?
-		values = self.model.extract_field(self.field, float)
+		self.label = label
+		
+		# Create a helper loading function.
+		if field_nos == None:
+			# TODO: Explore supporting other data types?
+			load_field = lambda field: self.model.extract_field(field, float)
+		else:
+			# TODO: I'd like to make this filtering more generic (so that it
+			#		can be applied elsewhere).
+			# We are only interested in specific fields.
+			fields = self.model.extract_field(FIELD_NO_FIELD, \
+				lambda v: int(float(v)))
+			# Get a list of patches that are in the right field.
+			# We assume that the field nos remain the same.
+			patches = []
+			for patch in fields[0]:
+				if fields[0][patch] in field_nos:
+					patches.append(patch)
+			# Define the helper function.
+			def load_field(field):
+				values = self.model.extract_field(field, float)
+				filtered = {}
+				for day in values:
+					filtered[day] = {}
+					for patch in patches:
+						filtered[day][patch] = values[day][patch]
+				return filtered
+		
+		# Load the values.
+		values = load_field(self.field)
 		
 		# Get the areas and total area.
-		simple_areas = self.model.extract_field(AREA_FIELD, float)
+		simple_areas = load_field(AREA_FIELD)
 		self.areas = {} # patch: area
 		self.total_area = 0 # The total area.
 		# We assume that areas remain the same, so pick the first area.
@@ -265,38 +297,33 @@ class Graphable():
 			self.total_area += area
 			
 		# Calculate the requested statistics.
-		# TODO: We currently only support a mean, weighted by area.
-		#		We should at least be able to do a mean, minimum, maximum, sum,
-		#		and possibly something custom.
-		#		Also weighted by area (or not).
-		#		We also need to be able to do this on a field-by-field basis.
+		# TODO: We should support weighting by area and not weighting by area,
+		# 		and also running the functions on a per-field basis.
 		self.values = []
 		for stat in statistics:
 			if stat == 'mean':
-				self.values.append(self.calculate_mean(values))
+				def day_func(index):
+					""" Calculate the weighted mean for the given day """
+					day = 0 # Weighted values for a given day.
+					for patch in values[index]:
+						day += values[index][patch] * self.areas[patch]
+					return day / self.total_area
 			elif stat == 'min':
-				day_min = lambda day: min((values[day][patch] \
+				day_func = lambda day: min((values[day][patch] \
 					for patch in values[day]))
-				self.values.append({index: day_min(index) for index in values})
+			elif stat == 'max':
+				day_func = lambda day: max((values[day][patch] \
+					for patch in values[day]))
+			elif stat == 'sum':
+				day_func = lambda day: sum((values[day][patch] \
+					for patch in values[day]))
 			else:
 				raise ValueError("Unknown statistic {}!".format(stat))
+			self.values.append({day: day_func(day) for day in values})
 				
 		# Calculate the maximums and minimums.
 		self.max = max([max(stat.values()) for stat in self.values])
 		self.min = min([min(stat.values()) for stat in self.values])
-		
-	def calculate_mean(self, values):
-		""" Calculate the weighted mean for the given values """
-		
-		means = {} # Per-day means.
-		# Calculate the per-day values.
-		for index in values:
-			day = 0 # Weighted values for a given day.
-			for patch in values[index]:
-				day += values[index][patch] * self.areas[patch]
-			means[index] = day / self.total_area
-			
-		return means
 		
 	def __getitem__(self, date):
 		""" Returns self's value on the given date.

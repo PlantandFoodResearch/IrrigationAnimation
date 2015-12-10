@@ -70,7 +70,18 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 		descriptions.append(TextWidget(i.description(), font))
 		# TODO: In reality, we may not always want a graph...
 		# TODO: The colour should either be configurable or automatic.
-		graphs.append(GraphWidget([Graphable(i.model, i.field, (0, 255, 0))], \
+		# TODO: Whether or not we do multiple fields should be configurable or
+		#		automatic.
+		# TODO: The statistics should be configurable or automatic.
+		# TODO: Labelling should be more sophisticated.
+		graphs.append(GraphWidget([Graphable(i.model, i.field, (0, 255, 0), \
+					"1", field_nos = [1], statistics = ['mean']), \
+				Graphable(i.model, i.field, (255, 0, 0), "2", \
+					field_nos = [2], statistics = ['mean']), \
+				Graphable(i.model, i.field, (0, 255, 255), "3", \
+					field_nos = [3], statistics = ['mean']), \
+				Graphable(i.model, i.field, (0, 0, 255), "4", \
+					field_nos = [4], statistics = ['mean'])], \
 			dates, small_font))
 	label = TextWidget(header, font)
 	date = DynamicTextWidget(lambda time: dates[time], font)
@@ -168,12 +179,12 @@ if __name__ == "__main__":
 	model = Model("H:/My Documents/vis/gis/MediumPatches", \
 		"H:/My Documents/vis/csv/dry")
 	# Create the values.
-	values = [Values(model, "SWTotal", transform='basic'),
-		Values(model, "wheat.SWStress.Photo", transform='basic')]
-		
+	values = [Values(model, "Wheat.Zadok.Stage", transform='basic'),
+		Values(model, "Wheat.AboveGround.Wt", transform='basic')]
+	
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
-	timewarp = 'delta' # Time warp method used
+	timewarp = 'basic' # Time warp method used
 	edge_render = True # Whether or not to render edges (plot edges, terrain).
 	fonts = [(None, 25), (None, 15)] # A (name, size) tuple for each font.
 	render_frame, frames = gen_render_frame(values, fonts, header, timewarp, \

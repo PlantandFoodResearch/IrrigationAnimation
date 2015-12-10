@@ -18,8 +18,8 @@
 """
 
 from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	GRAPH_ALPHA, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_SPACING, \
-	SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
+	GRAPH_ALPHA, KEY_LABEL, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, \
+	SCALE_SPACING, SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
 
 import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
@@ -391,7 +391,7 @@ class GraphWidget():
 		
 		# We start by generating and rendering some labels.
 		line_space = self.font.get_linesize()
-		date_height = line_space + SCALE_TEXT_OFFSET
+		date_height = line_space * 3 + SCALE_TEXT_OFFSET
 		height = size[1] - (date_height + line_space)
 		anchors = gen_labelling(height - 1, line_space, line_space)
 		# We then render the labels.
@@ -452,7 +452,7 @@ class GraphWidget():
 		for row, text in rows.items():
 			x = topleft[0] + width + row
 			surface.blit(text, (x - (text.get_width() / 2), \
-				topleft[1] + size[1] - text.get_height()))
+				topleft[1] + height + SCALE_TEXT_OFFSET))
 			pygame.draw.line(surface, TEXT_COLOUR, (x, topleft[1] + height), \
 				(x, topleft[1] + height + SCALE_MARKER_SIZE))
 		
@@ -464,6 +464,20 @@ class GraphWidget():
 				(x_offset, topleft[1] + (height - 1)), \
 				(topleft[0] + (size[0] - 1), topleft[1] + (height - 1))])
 				
+		# Draw the key underneath, if required.
+		if len(self.graphable) > 1:
+			# Render the key label.
+			y = topleft[1] + size[1]
+			label = self.font.render(KEY_LABEL, TEXT_AA, TEXT_COLOUR)
+			rect = surface.blit(label, (topleft[0], y - label.get_height()))
+			offset = rect.right + SCALE_SPACING
+			for graph in self.graphable:
+				# TODO: Make this configurable.
+				# TODO: Render this using 'place'.
+				label = self.font.render(graph.label, TEXT_AA, graph.colour)
+				surface.blit(label, (offset, y - label.get_height()))
+				offset += label.get_width() + SCALE_SPACING
+	
 		return row2date, width + 1, size[1] - (height - 1)
 
 	def render_line(self, surface, graph, topleft, size, row2date):

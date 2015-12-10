@@ -10,6 +10,7 @@ DEFAULT_COLOUR = (255, 255, 255)
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
 GRAPH_ALPHA = 150 # Alpha of shading on the graph.
+KEY_LABEL = "Key:" # Label on the key for the graph.
 MAX_FPS = 24 # Maximum allowed FPS
 MIN_FPS = 1 # Minimum allowed FPS
 MAX_FRAMES_PER_DAY = 5 # Maximum number of frames per day
@@ -26,9 +27,9 @@ TEXT_AA = True # Whether or not to antialias the text.
 # Other:
 AREA_FIELD = "Manager_P.Script.Patch_area" # Field name for the patch areas.
 DATE_FIELD = "Clock.Today" # Field name for dates.
+FIELD_NO_FIELD = "Manager_P.Script.This_field_no" # Field name for the field.
 PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
 
 # Temporary constants:
 # TODO: Make these configurable.
 SCALE_DECIMAL_PLACES = 4 # Decimal places to display on the scale.
-
