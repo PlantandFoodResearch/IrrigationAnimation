@@ -18,7 +18,7 @@
 """
 
 from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	GRAPH_ALPHA, KEY_LABEL, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, \
+	GRAPH_ALPHA, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, \
 	SCALE_SPACING, SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
 
 import pygame, pygame.draw # We currently render using pygame...
@@ -336,15 +336,16 @@ class ValuesWidget():
 		return dirty
 		
 class GraphWidget():
-	""" Widget for realtime graphs of a given Graphable """
+	""" Widget for realtime graphs of a list of given Graphables """
 	
-	def __init__(self, graphable, dates, font):
+	def __init__(self, graphable, dates, font, label):
 		""" Initialise self """
 		
 		self.graphable = graphable
 		self.dates = dates
 		self.size = None
 		self.font = font
+		self.label = label
 		
 		# The 'global' minimum and maximum.
 		self.min = min([g.min for g in self.graphable])
@@ -391,7 +392,7 @@ class GraphWidget():
 		
 		# We start by generating and rendering some labels.
 		line_space = self.font.get_linesize()
-		date_height = line_space * 3 + SCALE_TEXT_OFFSET
+		date_height = line_space + SCALE_TEXT_OFFSET
 		height = size[1] - (date_height + line_space)
 		anchors = gen_labelling(height - 1, line_space, line_space)
 		# We then render the labels.
@@ -465,18 +466,17 @@ class GraphWidget():
 				(topleft[0] + (size[0] - 1), topleft[1] + (height - 1))])
 				
 		# Draw the key underneath, if required.
-		if len(self.graphable) > 1:
-			# Render the key label.
-			y = topleft[1] + size[1]
-			label = self.font.render(KEY_LABEL, TEXT_AA, TEXT_COLOUR)
-			rect = surface.blit(label, (topleft[0], y - label.get_height()))
-			offset = rect.right + SCALE_SPACING
-			for graph in self.graphable:
-				# TODO: Make this configurable.
-				# TODO: Render this using 'place'.
-				label = self.font.render(graph.label, TEXT_AA, graph.colour)
-				surface.blit(label, (offset, y - label.get_height()))
-				offset += label.get_width() + SCALE_SPACING
+		y = topleft[1] + size[1]
+		label = self.font.render(self.label, TEXT_AA, TEXT_COLOUR)
+		rect = surface.blit(label, (topleft[0], y - label.get_height()))
+		# Render the labels for the individual graphs.
+		offset = rect.right + SCALE_SPACING
+		for graph in self.graphable:
+			# TODO: Make this configurable.
+			# TODO: Render this using 'place'.
+			label = self.font.render(graph.label, TEXT_AA, graph.colour)
+			surface.blit(label, (offset, y - label.get_height()))
+			offset += label.get_width() + SCALE_SPACING
 	
 		return row2date, width + 1, size[1] - (height - 1)
 
