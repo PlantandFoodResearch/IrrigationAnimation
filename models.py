@@ -247,13 +247,12 @@ class Graphable():
 		not tied to a specific patch.
 	"""
 	
-	def __init__(self, model, field, colour, label, field_nos = None, \
+	def __init__(self, model, field, label, field_nos = None, \
 		statistics = ['min', 'mean', 'max']):
 		""" Initialise self """
 		
 		self.model = model
 		self.field = field
-		self.colour = colour
 		self.label = label
 		
 		# Create a helper loading function.
@@ -297,8 +296,7 @@ class Graphable():
 			self.total_area += area
 			
 		# Calculate the requested statistics.
-		# TODO: We should support weighting by area and not weighting by area,
-		# 		and also running the functions on a per-field basis.
+		# TODO: We should support weighting by area and not weighting by area.
 		self.values = []
 		for stat in statistics:
 			if stat == 'mean':

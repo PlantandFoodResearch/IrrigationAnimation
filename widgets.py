@@ -341,6 +341,10 @@ class GraphWidget():
 	def __init__(self, graphable, dates, font, label):
 		""" Initialise self """
 		
+		# Check that we have enough colours defined.
+		if len(graphable) > len(GRAPH_COLOUR_LIST):
+			raise ValueError("To many lines specified; not enough colours!")
+		
 		self.graphable = graphable
 		self.dates = dates
 		self.size = None
@@ -369,8 +373,9 @@ class GraphWidget():
 		# We render the lines.
 		# Render the line.
 		# TODO: We need some kind of text saying what the line is.
-		for graph in self.graphable:
-			self.render_line(surface, graph, topleft, size, row2date)
+		for index, graph in enumerate(self.graphable):
+			self.render_line(surface, graph, GRAPH_COLOUR_LIST[index], \
+				topleft, size, row2date)
 		
 		# TODO: It would be nice to be able to *see* the actual value at 
 		# 		that time for each line.
@@ -480,7 +485,7 @@ class GraphWidget():
 	
 		return row2date, width + 1, size[1] - (height - 1)
 
-	def render_line(self, surface, graph, topleft, size, row2date):
+	def render_line(self, surface, graph, colour, topleft, size, row2date):
 		""" Render a line onto the given surface """
 		
 		# Define a helper function to find the y-coord.
@@ -495,16 +500,9 @@ class GraphWidget():
 			# Draw the lines.
 			x = topleft[0] + i
 			for index in range(len(cur)):
-				pygame.draw.aaline(surface, graph.colour, \
+				pygame.draw.aaline(surface, colour, \
 					(x - 1, y(old[index])), \
 					(x, y(cur[index])))
-			# Add sub shading, if required.
-			# TODO: Currently this does not work, because the pygame.draw
-			#		functions do not do alpha blending.
-			if len(cur) > 1 and False:
-				colour = list(graph.colour) + [GRAPH_ALPHA]
-				pygame.draw.line(surface, colour, (x, y(cur[0])), \
-					(x, y(cur[-1])))
 			# Save the current position.
 			old = cur
 			

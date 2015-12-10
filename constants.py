@@ -10,6 +10,14 @@ DEFAULT_COLOUR = (255, 255, 255)
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
 GRAPH_ALPHA = 150 # Alpha of shading on the graph.
+GRAPH_COLOUR_LIST = ((255, 0, 0), # A list of colours to choose from.
+	(0, 255, 0),
+	(0, 0, 255),
+	(100, 100, 0),
+	(100, 0, 100),
+	(0, 100, 100),
+	(100, 100, 100),
+	(0, 0, 0))
 GRAPH_RATIO = .5 # Height to width ratio for the graph.
 GRAPH_MAX_HEIGHT = .3 # Maximum height, as a ratio of graph/screen height.
 MAX_FPS = 24 # Maximum allowed FPS
