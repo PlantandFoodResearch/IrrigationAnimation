@@ -18,8 +18,8 @@
 """
 
 from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_TEXT_OFFSET, SCALE_WIDTH, \
-	TEXT_AA, TEXT_COLOUR
+	SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, SCALE_SPACING, \
+	SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
 
 import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
@@ -105,29 +105,24 @@ class ScaleWidget():
 			
 			If None is passed for either functions, the default will be used.
 		"""
-		# NOTE: We currently do not always render '0.0'. Unfortunately, this
+		# TODO: We currently do not always render '0.0'. Unfortunately, this
 		#		is fairly difficult to remedy; we would really need a value2row
-		#		function as well. If we did have that function, we should be
-		#		able to work backwards and position the remaining positive and
-		#		negative values, if applicable, and figure out where they
-		#		should all go.
+		#		function as well, and gen_labelling would have to be adjusted
+		#		to handle being given a list of extra labels to always add.
 		
 		if row2value == None:
 			row2value = lambda row, height: (float(row) / height) * \
 				(self.values.max - self.values.min) + self.values.min
 		if labelling == None:
-			# We use the font linespace as the minimum gap between markers.
 			def labelling(height):
-				# Labels to be added.
-				labels = {}
-
-				# Calculate the number of markers required.
-				# We always render at least two markers.
-				markers = max(int(height / (2 * font.get_linesize())) + 1, 2)
+				# Generate a labelling (list of rows to put the marker on)
+				# We use the font linespace as the minimum gap between markers.
+				label_size = font.get_linesize()
+				markers = gen_labelling(height, label_size, label_size)
 				
-				for mark in range(markers):
-					# Calculate the row to render the marker on.
-					row = (float(height) / (markers - 1)) * mark
+				# Add the values to a map of labels.
+				labels = {} # rows: values
+				for row in markers:
 					# Calculate the value for that row.
 					fmt = '{:.' + str(SCALE_DECIMAL_PLACES) + 'f}'
 					value = fmt.format(round(self.row2value(row, height), \
@@ -182,19 +177,25 @@ class ScaleWidget():
 			max_x - min_x, height)]
 
 		# Blit the rendered text onto the scale.
-		# NOTE: Text rendered here may overlap. Unfortunately, fixing that is
-		#		tricky, especially as there may not be enough space, and
-		# 		the scale height may have to be resized if the text needs to be
-		#		shifted too much.
-		#		A simple bottom-up algorithm unfortunately won't do a very good
-		# 		job for those reasons...
-		#		Fixing this might allow simpler labelling algorithms, though.
+		# We start by using 'place' to generate a list of placements for the
+		# labels so that they do not overlap.
+		# placement is a map from anchors (rows) to actual placement points.
+		label_area = (-(self.font.get_linesize() / 2), \
+			height + (self.font.get_linesize() / 2))
+		placement, overlap = place(label_area, \
+			{row: text.get_height() for row, text in rows.items()})
+		# Deal with overlap.
+		if overlap:
+			print("WARNING: Some labels overlap!")
+		# Now we actually blit the text onto the scale.
 		for row, text in rows.items():
-			# Calculate the y offset.
-			y = base_height - row
+			# Calculate the y offset for the label.
+			y = base_height - placement[row] - (text.get_height() / 2)
 			# Blit the text onto the surface.
 			dirty.append(surface.blit(text, \
-				(max_x + SCALE_TEXT_OFFSET, y - (text.get_height() / 2))))
+				(max_x + SCALE_TEXT_OFFSET, y)))
+			# Calculate the y offset for the marker.
+			y = base_height - row
 			# Draw a marker.
 			pygame.draw.line(surface, TEXT_COLOUR, (min_x, y), \
 				(max_x + SCALE_MARKER_SIZE, y))
@@ -337,12 +338,17 @@ class ValuesWidget():
 class GraphWidget():
 	""" Widget for realtime graphs of a given Graphable """
 	
-	def __init__(self, graphable, dates):
+	def __init__(self, graphable, dates, font):
 		""" Initialise self """
 		
 		self.graphable = graphable
 		self.dates = dates
 		self.size = None
+		self.font = font
+		
+		# The 'global' minimum and maximum.
+		self.min = self.graphable.min
+		self.max = self.graphable.max
 		
 	def render(self, surface, time, pos_func, size):
 		""" Render the given graphable class onto a surface """
@@ -353,7 +359,9 @@ class GraphWidget():
 		# TODO: We need a label of some kind somewhere.
 
 		# We start by rendering a scale...
-		scale_size = self.render_scale(surface, topleft, size)
+		scale_size = [0, 0]
+		row2date, scale_size[0], scale_size[1] = \
+			self.render_scale(surface, topleft, size)
 		size = [size[i] - scale_size[i] for i in range(2)]
 		topleft = (topleft[0] + scale_size[0], topleft[1])
 		
@@ -362,13 +370,13 @@ class GraphWidget():
 		# Render the line.
 		# TODO: Render more than one line...
 		# TODO: We need some kind of text saying what the line is.
-		self.render_line(surface, self.graphable, topleft, size)
+		self.render_line(surface, self.graphable, topleft, size, row2date)
 		
 		# TODO: There is probably some duplication here with a pure time
 		#		marker?
 		# TODO: It would be nice to be able to *see* the actual value at 
 		# 		that time for each line.
-		offset = ((float(time) / len(self.dates)) * size[0]) + \
+		offset = ((float(time) / (len(self.dates) - 1)) * size[0]) + \
 			topleft[0]
 		pygame.draw.line(surface, TEXT_COLOUR, (offset, topleft[1]), \
 			(offset, topleft[1] + size[1]))
@@ -378,38 +386,158 @@ class GraphWidget():
 	def render_scale(self, surface, topleft, size):
 		""" Render the scale """
 		
-		# TODO: Render some text as well, and offset appropriately.
-		# TODO: There will be some duplication here with ScaleWidget; try to
-		# 		figure out how to remove that.
-		# TODO: Add some styling (arrows?)
+		# TODO: There is quite a bit of duplication here, with ScaleWidget and
+		# 		within the labelling routines. It would be nice if I could
+		#		figure out how to remove that.
+		
+		# We start by generating and rendering some labels.
+		line_space = self.font.get_linesize()
+		date_height = line_space + SCALE_TEXT_OFFSET
+		height = size[1] - (date_height + line_space)
+		anchors = gen_labelling(height - 1, line_space, line_space)
+		# We then render the labels.
+		rows = {} # The rendered text (row: text)
+		max_text_width = 0 # Record the maximum text width for future reference.
+		for row in anchors:
+			# Render and save.
+			fmt = '{:.' + str(SCALE_DECIMAL_PLACES) + 'f}'
+			value = fmt.format(round((float(row) / height) * \
+					(self.max - self.min) + self.min, \
+				SCALE_DECIMAL_PLACES))
+			rows[row] = self.font.render(value, TEXT_AA, TEXT_COLOUR)
+			# Update the maximum text width.
+			max_text_width = max(rows[row].get_width(), max_text_width)
+		# Figure out the vertical scale line location (we use it for rendering
+		# markers).
+		width = SCALE_TEXT_OFFSET + max_text_width
+		x_offset = topleft[0] + width
+		# We generate a list of placements for the labels so that they do not
+		# overlap.
+		# placement is a map from anchors (rows) to actual placement points.
+		# We ignore any overlap for now.
+		label_area = (-(line_space / 2), height + (line_space / 2))
+		placement, overlap = place(label_area, \
+			{row: text.get_height() for row, text in rows.items()})
+		# Now we actually blit the text onto the scale.
+		for row, text in rows.items():
+			# Calculate the y offset for the label.
+			y = topleft[1] + height - placement[row] - (text.get_height() / 2)
+			# Blit the text onto the surface.
+			surface.blit(text, (topleft[0], y))
+			# Calculate the y offset for the marker.
+			y = topleft[1] + height - 1 - row
+			# Draw a marker.
+			pygame.draw.line(surface, TEXT_COLOUR, \
+				(x_offset - SCALE_MARKER_SIZE, y), (x_offset, y))
+		
+		# Generate a row2date function (reused elsewhere).
+		graph_width = size[0] - width
+		row2date = lambda row: int(float(row * (len(self.dates) - 1)) / graph_width)
+				
+		# Render the dates.
+		# First, generate the anchor locations.
+		anchors = gen_labelling(graph_width - 1, \
+			self.font.render(self.dates[0], TEXT_AA, TEXT_COLOUR).get_width(), \
+			SCALE_SPACING, label_count=len(self.dates))
+		# Render the text at those points.
+		rows = {}
+		for row in anchors:
+			rows[row] = self.font.render(self.dates[row2date(row)], TEXT_AA, \
+				TEXT_COLOUR)
+		# Then, generate a map of placements (anchors: placement map)
+		# Ignore the overlap for now.
+		# TODO: Remove the area hack... once place is actually implemented.
+		placement, overlap = place((-30, graph_width + 30), \
+			{row: text.get_width() for row, text in rows.items()})
+		# Finally, blit the text onto the scale.
+		# TODO: Render the anchor marks.
+		for row, text in rows.items():
+			x = topleft[0] + width + row
+			surface.blit(text, (x - (text.get_width() / 2), \
+				topleft[1] + size[1] - text.get_height()))
+			pygame.draw.line(surface, TEXT_COLOUR, (x, topleft[1] + height), \
+				(x, topleft[1] + height + SCALE_MARKER_SIZE))
+		
+		# Draw the scale lines.
 		# We don't want to draw right off the end, so we take one off the given
 		# size.
 		pygame.draw.lines(surface, TEXT_COLOUR, False, \
-			[topleft, \
-				(topleft[0], topleft[1] + (size[1] - 1)), \
-				(topleft[0] + (size[0] - 1), topleft[1] + (size[1] - 1))])
+			[(x_offset, topleft[1]), \
+				(x_offset, topleft[1] + (height - 1)), \
+				(topleft[0] + (size[0] - 1), topleft[1] + (height - 1))])
 				
-		return 1, 1 # width, height
+		return row2date, width + 1, size[1] - (height - 1)
 
-	def render_line(self, surface, graph, topleft, size):
+	def render_line(self, surface, graph, topleft, size, row2date):
 		""" Render a line onto the given surface """
 		
 		# Define a helper function to find the y-coord.
 		# This scales and offsets the given value as required.
 		y = lambda value: topleft[1] + size[1] - \
-			(size[1] * ((value - graph.min) / \
-				graph.max - graph.min))
+			(size[1] * ((value - graph.min) / (graph.max - graph.min)))
 
-		old = (topleft[0], y(graph.values[0])) # The prior value to draw from.
+		old = (topleft[0], y(graph.values[0]))
 		for i in range(size[0]):
 			# Find the current position to draw to.
-			date = int(float(i * len(self.dates)) / size[0])
-			cur = (topleft[0] + i, y(graph.values[date]))
+			cur = (topleft[0] + i, y(graph.values[row2date(i)]))
 			# Draw a line between the old and new points.
 			pygame.draw.aaline(surface, graph.colour, old, cur)
 			# Save the current position.
 			old = cur
 			
+def gen_labelling(size, label_size, spacing, label_count=float('inf')):
+	""" Generate a labelling for the given size linear area.
+		This returns a list of rows for placing the labels on.
+	"""
+	
+	# TODO: Allow specifiying which labels to render, to allow for adding 0.0 
+	#		and suchlike.
+
+	# Calculate the number of markers required.
+	# We always render at least two markers.
+	markers = max(int(size / (label_size + spacing)) + 1, 2)
+	
+	# Calculate the number of markers required.
+	# TODO: Do something special for the discrete case.
+	markers = max(int(size / (label_size + spacing)) + 1, 2)
+	
+	# We always render at least two markers.
+	markers = max(markers, 2)
+	
+	# Return an evenly spaced set of marks.
+	return ((float(size) / (markers-1)) * mark for mark in range(markers))
+	
+def place(size, labels):
+	""" Try to optimise the placement of a given set of labels so that they
+		are close to their anchor, but not overlapping and not outside of
+		the total area.
+		labels is assumed to be a map from anchors to sizes, where the anchors
+		are assumed to be in the centers of the given sizes.
+		The given size is assumed to be a range from the minimum to the maximum
+		pos.
+	"""
+	
+	# TODO: Actually implement...
+	# TODO: Even if implemented, this will be 1D only. Is that enough?
+	
+	# Init the placements for the labels.
+	placements = {anchor: anchor for anchor in labels.keys()}
+	
+	# Test for overlap.
+	overlap = False
+	space = [0 for i in range(size[0], size[1])]
+	for anchor, pos in placements.items():
+		pos = int(pos - (labels[anchor] / 2) - size[0])
+		for i in range(labels[anchor]):
+			if pos + i >= len(space) or pos < 0:
+				# Position is outside the space available.
+				overlap = True
+			elif space[pos + i] != 0:
+				overlap = True
+			else:
+				space[pos + i] = 1
+	
+	return placements, overlap
 
 def merge_rects(dirty):
 	""" Merges a list of rects into a single rect """

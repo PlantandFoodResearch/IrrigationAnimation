@@ -41,14 +41,17 @@ from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 # We use pygame for font rendering...
 import pygame.font
 
-def gen_render_frame(values, text_height, header, timewarp, edge_render):
+def gen_render_frame(values, text_height, small_text_height, header, timewarp, \
+	edge_render):
 	""" Given a list of values, return a render_frame function showing them,
 		and the number of frames.
 	"""
 
 	# Init the fonts.
+	# TODO: Add the ability to select the font.
 	pygame.font.init()
 	font = pygame.font.Font(None, text_height)
+	small_font = pygame.font.Font(None, small_text_height)
 	
 	# Combine the dates and check that they are the same for all the values.
 	dates = None
@@ -69,7 +72,8 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 		descriptions.append(TextWidget(i.description(), font))
 		# TODO: In reality, we may not always want a graph...
 		# TODO: The colour should either be configurable or automatic.
-		graphs.append(GraphWidget(Graphable(i.model, i.field, (0, 0, 255)), dates))
+		graphs.append(GraphWidget(Graphable(i.model, i.field, (0, 0, 255)), \
+			dates, small_font))
 	label = TextWidget(header, font)
 	date = DynamicTextWidget(lambda time: dates[time], font)
 	
@@ -163,19 +167,20 @@ def gen_render_frame(values, text_height, header, timewarp, edge_render):
 if __name__ == "__main__":
 
 	# Create a Model.
-	model = Model("H:/My Documents/vis/gis/SmallPatches", \
-		"H:/My Documents/vis/csv/small")
+	model = Model("H:/My Documents/vis/gis/MediumPatches", \
+		"H:/My Documents/vis/csv/dry")
 	# Create the values.
-	values = [Values(model, "Soil.SoilWater.Drainage", transform='field_delta'),
-		Values(model, "Soil.SoilWater.Drainage")]
+	values = [Values(model, "SWTotal", transform='basic'),
+		Values(model, "wheat.SWStress.Photo", transform='basic')]
 		
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
 	timewarp = 'delta' # Time warp method used
 	edge_render = True # Whether or not to render edges (plot edges, terrain).
 	text_height = 25 # The height for any fonts.
-	render_frame, frames = gen_render_frame(values, text_height, header, \
-		timewarp, edge_render)
+	small_text_height = 15 # The height for any smaller fonts
+	render_frame, frames = gen_render_frame(values, text_height, \
+		small_text_height, header, timewarp, edge_render)
 	
 	# Play the animation.
 	fps = 4 # Frames per second
