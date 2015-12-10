@@ -347,8 +347,8 @@ class GraphWidget():
 		self.font = font
 		
 		# The 'global' minimum and maximum.
-		self.min = self.graphable.min
-		self.max = self.graphable.max
+		self.min = min([g.min for g in self.graphable])
+		self.max = max([g.max for g in self.graphable])
 		
 	def render(self, surface, time, pos_func, size):
 		""" Render the given graphable class onto a surface """
@@ -370,12 +370,15 @@ class GraphWidget():
 		# Render the line.
 		# TODO: Render more than one line...
 		# TODO: We need some kind of text saying what the line is.
-		self.render_line(surface, self.graphable, topleft, size, row2date)
+		for graph in self.graphable:
+			self.render_line(surface, graph, topleft, size, row2date)
 		
 		# TODO: There is probably some duplication here with a pure time
 		#		marker?
 		# TODO: It would be nice to be able to *see* the actual value at 
 		# 		that time for each line.
+		# TODO: The offset is not calculated accurately at the moment
+		#		(slightly off).
 		offset = ((float(time) / (len(self.dates) - 1)) * size[0]) + \
 			topleft[0]
 		pygame.draw.line(surface, TEXT_COLOUR, (offset, topleft[1]), \
@@ -492,6 +495,8 @@ def gen_labelling(size, label_size, spacing, label_count=float('inf')):
 	
 	# TODO: Allow specifiying which labels to render, to allow for adding 0.0 
 	#		and suchlike.
+	# TODO: This should also support having a reduced area to place labels
+	#		within, eg a smaller area for the labels, but not for the markers.
 
 	# Calculate the number of markers required.
 	# We always render at least two markers.
