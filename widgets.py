@@ -18,7 +18,7 @@
 """
 
 from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	GRAPH_ALPHA, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, \
+	GRAPH_ALPHA, GRAPH_COLOUR_LIST, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, \
 	SCALE_SPACING, SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
 
 import pygame, pygame.draw # We currently render using pygame...
@@ -476,10 +476,10 @@ class GraphWidget():
 		rect = surface.blit(label, (topleft[0], y - label.get_height()))
 		# Render the labels for the individual graphs.
 		offset = rect.right + SCALE_SPACING
-		for graph in self.graphable:
-			# TODO: Make this configurable.
+		for index, graph in enumerate(self.graphable):
 			# TODO: Render this using 'place'.
-			label = self.font.render(graph.label, TEXT_AA, graph.colour)
+			label = self.font.render(graph.label, TEXT_AA, \
+				GRAPH_COLOUR_LIST[index])
 			surface.blit(label, (offset, y - label.get_height()))
 			offset += label.get_width() + SCALE_SPACING
 	

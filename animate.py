@@ -35,7 +35,7 @@
 from display import preview
 from transforms import times
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
-	GRAPH_MAX_HEIGHT
+	GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST
 from models import Model, Values, Graphable
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 	GraphWidget
@@ -202,17 +202,29 @@ if __name__ == "__main__":
 	model = Model("H:/My Documents/vis/gis/MediumPatches", \
 		"H:/My Documents/vis/csv/slow")
 	# Create the values.
-	panel1 = {'values': Values(model, "SWTotal")}
-	panel2 = {'values': Values(model, "NO3Total")}
+	values = [Values(model, "Wheat.AboveGround.Wt", transform='field_delta', \
+			colour_range = MAP_COLOUR_LIST[0]),
+		Values(model, "NO3Total", transform='field_delta', \
+			colour_range = MAP_COLOUR_LIST[1])]
 	# Create the graphs.
-	# TODO: The colour should either be configurable or automatic.
-	# TODO: Whether or not we do multiple fields should be configurable or
-	#		automatic.
-	# TODO: The statistics should be configurable or automatic.
-	# TODO: Actually create some graphs here...
-	graphs = [None, None]
-	# Save the panels.
-	panels = [panel1, panel2]
+	graphs = [[Graphable(values[0].model, values[0].field, \
+				values[0].field + " (min, mean, max)", \
+				statistics = ['min', 'mean', 'max'])
+		],
+		[Graphable(values[1].model, values[1].field, 'Field #1', \
+				statistics = ['mean'], field_nos = [1]),
+			Graphable(values[1].model, values[1].field, 'Field #2', \
+				statistics = ['mean'], field_nos = [2]),
+			Graphable(values[1].model, values[1].field, 'Field #3', \
+				statistics = ['mean'], field_nos = [3]),
+			Graphable(values[1].model, values[1].field, 'Field #4', \
+				statistics = ['mean'], field_nos = [4])
+		]
+	]
+	# Create and save the panels.
+	panels = []
+	for value, graph in zip(values, graphs):
+		panels.append({'values': value, 'graphs': graph})
 	
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed

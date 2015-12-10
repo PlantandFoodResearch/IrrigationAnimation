@@ -26,7 +26,8 @@
 from display import preview, render
 from animate import gen_render_frame
 from models import Model, Values
-from constants import MAX_FPS, MIN_FPS, MAX_TEXT_HEIGHT, MIN_TEXT_HEIGHT
+from constants import MAP_COLOUR_LIST, MAX_FPS, MIN_FPS, MAX_TEXT_HEIGHT, \
+	MIN_TEXT_HEIGHT
 import transforms
 
 # Tkinter imports
@@ -424,7 +425,7 @@ class Main(ttk.Frame):
 		# Don't bother with early caching for this; rendering takes quite a bit
 		# longer anyway...
 		self.values = ThreadedDict(lambda name: Values(self.models[name[0]], \
-			name[1], transform = name[2]))
+			name[1], transform = name[2], colour_range = name[3]))
 		
 		# Create the widgets...
 		self.create_buttons()
@@ -465,7 +466,7 @@ class Main(ttk.Frame):
 			
 			try:
 				values = []
-				for config in self.value_list:
+				for index, config in enumerate(self.value_list):
 					model_values = self.model_list[config['Model'].get()]
 					gis = model_values['GIS files'].get()
 					csv = model_values['CSV directory'].get()
@@ -473,7 +474,7 @@ class Main(ttk.Frame):
 					transform = config['Value transform'].get()
 					# TODO: Add graph support.
 					values.append({'values': self.values[((gis, csv), field, \
-						transform)]})
+						transform, MAP_COLOUR_LIST[index])]})
 
 				render_frame, frames = gen_render_frame(values, \
 					(None, self.options.get('Text size')), \

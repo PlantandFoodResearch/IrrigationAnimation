@@ -169,7 +169,8 @@ def load_shapes(shape_file):
 class Values():
 	""" Wrapper class to contain transformed data from a specific model """
 	
-	def __init__(self, model, field, data_type='float', transform='basic'):
+	def __init__(self, model, field, data_type='float', transform='basic', \
+		colour_range = [0.0, 1.0/4]):
 		""" Initialise self """
 		
 		self.model = model
@@ -210,7 +211,9 @@ class Values():
 		# Create the colour mapping function.
 		def value2colour(value):
 			""" Convert from a given value to a colour """
-			# Using this: http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855	
+			# Using this: 
+			# http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855	
+			# We scale to a specific colour range.
 			# Convert to something in the range of 0 to 120 degrees, fed into
 			# the colorsys function (red..green in HSV)
 			# TODO: Would it make more sense to use a single colour?
@@ -218,7 +221,10 @@ class Values():
 				hue = ((value - self.min) / (self.max - self.min)) # 0-1
 			except ZeroDivisionError:
 				hue = 0
-			return [int(i*255) for i in colorsys.hsv_to_rgb(hue / 3, 1.0, 1.0)]
+			# Convert the hue into something in the given range.
+			value = hue * (colour_range[1] - colour_range[0]) + colour_range[0]
+			# Return a RGB version of that colour.
+			return [int(i*255) for i in colorsys.hsv_to_rgb(value, 1.0, 1.0)]
 		
 		self.value2colour = value2colour
 		

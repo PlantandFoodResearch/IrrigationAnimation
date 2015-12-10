@@ -5,9 +5,9 @@
 
 # Display constants:
 BORDER = 20 # Empty space around the image, in pixels.
-BROKEN_COLOUR = (0, 0, 255) # Colour for patches missing data.
-DEFAULT_COLOUR = (255, 255, 255)
-EDGE_COLOUR = (0, 0, 0)
+BROKEN_COLOUR = (255, 255, 255) # Colour for patches missing data.
+DEFAULT_COLOUR = (255, 255, 255) # Background colour.
+EDGE_COLOUR = (0, 0, 0) # Colour for the edges.
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
 GRAPH_ALPHA = 150 # Alpha of shading on the graph.
 GRAPH_COLOUR_LIST = ((255, 0, 0), # A list of colours to choose from.
@@ -20,6 +20,9 @@ GRAPH_COLOUR_LIST = ((255, 0, 0), # A list of colours to choose from.
 	(0, 0, 0))
 GRAPH_RATIO = .5 # Height to width ratio for the graph.
 GRAPH_MAX_HEIGHT = .3 # Maximum height, as a ratio of graph/screen height.
+MAP_COLOUR_LIST = ((0.02, 0.24), # A list of HSV colour ranges to choose from.
+	(0.36, 0.63),
+	(0.7, 0.95))
 MAX_FPS = 24 # Maximum allowed FPS
 MIN_FPS = 1 # Minimum allowed FPS
 MAX_FRAMES_PER_DAY = 5 # Maximum number of frames per day
