@@ -34,7 +34,7 @@
 # Import the other modules...
 from display import preview
 from transforms import times
-from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH
+from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_HEIGHT
 from models import Model, Values, Graphable
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 	GraphWidget
@@ -141,13 +141,14 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 			scale_rect = scale.render(surface, index, \
 				lambda size: (x_offset, desc_rect.bottom + BORDER), \
 				(float('inf'), min(value_area[0] - (BORDER + SCALE_WIDTH), \
-					value_area[1] - (desc_rect.height + BORDER))))
+					value_area[1] - (desc_rect.height + BORDER * 2 + \
+						GRAPH_HEIGHT))))
 
 			# Render the map.
-			# The map size is shrunk to avoid clipping with either the scale or
-			# the description, and offsets are calculated accordingly.
+			# The map size is shrunk to avoid clipping with anything, and
+			# offsets are calculated accordingly.
 			map_size = (value_area[0] - (scale_rect.width + BORDER), \
-				value_area[1] - (desc_rect.height + BORDER))
+				value_area[1] - (desc_rect.height + BORDER * 2 + GRAPH_HEIGHT))
 			map_rect = map.render(surface, index, \
 				lambda size: (scale_rect.right + BORDER + \
 						((map_size[0] - size[0]) / 2), \

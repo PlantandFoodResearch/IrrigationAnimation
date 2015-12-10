@@ -31,5 +31,6 @@ FIELD_NO_FIELD = "Manager_P.Script.This_field_no" # Field name for the field.
 PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
 
 # Temporary constants:
-# TODO: Make these configurable.
+# TODO: Make these configurable, or find ways to make them automatic.
 SCALE_DECIMAL_PLACES = 4 # Decimal places to display on the scale.
+GRAPH_HEIGHT = 100 # Space to leave for the graph.
