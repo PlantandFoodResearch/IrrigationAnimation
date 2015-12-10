@@ -277,7 +277,7 @@ class ValuesWidget():
 			try:
 				value = self.values.values[time][patch]
 			except KeyError:
-				print("WARNING: Failed to get data for patch {} for time {}!".format(patch, time))
+				# We currently ignore this, to avoid spamming the console.
 				value = BROKEN_COLOUR
 			# Render the filled patch.
 			dirty += self.render_shape(surface, trans, \
