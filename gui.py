@@ -471,11 +471,12 @@ class Main(ttk.Frame):
 					csv = model_values['CSV directory'].get()
 					field = config['Field'].get()
 					transform = config['Value transform'].get()
-					values.append(self.values[((gis, csv), field, transform)])
+					# TODO: Add graph support.
+					values.append({'values': self.values[((gis, csv), field, \
+						transform)]})
 
 				render_frame, frames = gen_render_frame(values, \
-					[(None, self.options.get('Text size')), \
-						(None, self.options.get('Small text size'))], \
+					(None, self.options.get('Text size')), \
 					self.options.get('Title'), self.options.get('Timewarp'), \
 					self.options.get('Edge render') == "True")
 
@@ -545,8 +546,6 @@ class Main(ttk.Frame):
 		self.options.add_raw_option("Dimensions", \
 			tk.StringVar(value = "1280x1024"), check_size)
 		self.options.add_raw_option("Text size", tk.IntVar(value = 30), \
-			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
-		self.options.add_raw_option("Small text size", tk.IntVar(value = 20), \
 			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
 		# Add the listbox options.
 		self.options.add_combobox_option("Timewarp", \

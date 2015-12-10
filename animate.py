@@ -42,19 +42,19 @@ from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 # We use pygame for font rendering...
 import pygame.font
 
-def gen_render_frame(values, fonts, header, timewarp, edge_render):
-	""" Given a list of values, return a render_frame function showing them,
+def gen_render_frame(panels, font, header, timewarp, edge_render):
+	""" Given a list of panels, return a render_frame function showing them,
 		and the number of frames.
 	"""
 
 	# Init the fonts.
 	pygame.font.init()
-	font = pygame.font.Font(*fonts[0])
-	small_font = pygame.font.Font(*fonts[1])
+	font = pygame.font.Font(*font)
 	
 	# Combine the dates and check that they are the same for all the values.
 	dates = None
-	for value in values:
+	for panel in panels:
+		value = panel['values']
 		if dates == None:
 			dates = value.model.dates
 		elif dates != value.model.dates:
@@ -65,33 +65,30 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 	scales = []
 	descriptions = []
 	graphs = []
-	for i in values:
-		maps.append(ValuesWidget(i, edge_render))
-		scales.append(ScaleWidget(i, font))
-		descriptions.append(TextWidget(i.description(), font))
-		# TODO: In reality, we may not always want a graph...
-		#		This is currently achieved by appending None to graphs.
-		# TODO: The colour should either be configurable or automatic.
-		# TODO: Whether or not we do multiple fields should be configurable or
-		#		automatic.
-		# TODO: The statistics should be configurable or automatic.
+	for panel in panels:
+	
+		# Add the normal items.
+		value = panel['values']
+		maps.append(ValuesWidget(value, edge_render))
+		scales.append(ScaleWidget(value, font))
+		descriptions.append(TextWidget(value.description(), font))
 		# TODO: Labelling should be more sophisticated.
-
-		graphs.append(GraphWidget([Graphable(i.model, i.field, (0, 255, 0), \
-					"1", field_nos = [1], statistics = ['mean']), \
-				Graphable(i.model, i.field, (255, 0, 0), "2", \
-					field_nos = [2], statistics = ['mean']), \
-				Graphable(i.model, i.field, (0, 255, 255), "3", \
-					field_nos = [3], statistics = ['mean']), \
-				Graphable(i.model, i.field, (0, 0, 255), "4", \
-					field_nos = [4], statistics = ['mean'])], \
-			dates, small_font, "Key: "))
+		
+		# Add the graph.
+		g = panel.get('graphs', None)
+		# TODO: The label default should be a constant?
+		label = panel.get('graph_label', "Key: ")
+		if g != None:
+			graphs.append(GraphWidget(g, dates, font, label))
+		else:
+			# No graph.
+			graphs.append(None)
 
 	label = TextWidget(header, font)
 	date = DynamicTextWidget(lambda time: dates[time], font)
 	
 	# Generate the render_frame function.
-	frame_map = times[timewarp](values)
+	frame_map = times[timewarp]((panel['values'] for panel in panels))
 	def render_frame(surface, frame):
 		""" Render a frame """
 		
@@ -125,7 +122,7 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 		# denominator is the number of values.
 		value_area = [i - (2 * BORDER) for i in (surf_w / len(maps), surf_h)]
 		# Iterate through the values and render them.
-		for i in range(len(values)):
+		for i in range(len(panels)):
 			map, scale, desc, graph = maps[i], scales[i], descriptions[i], \
 				graphs[i]
 			
@@ -205,17 +202,25 @@ if __name__ == "__main__":
 	model = Model("H:/My Documents/vis/gis/MediumPatches", \
 		"H:/My Documents/vis/csv/slow")
 	# Create the values.
-	values = [Values(model, "SWTotal", transform='basic'),
-		Values(model, "Wheat.AboveGround.Wt", transform='basic')]
-	
+	panel1 = {'values': Values(model, "SWTotal")}
+	panel2 = {'values': Values(model, "NO3Total")}
+	# Create the graphs.
+	# TODO: The colour should either be configurable or automatic.
+	# TODO: Whether or not we do multiple fields should be configurable or
+	#		automatic.
+	# TODO: The statistics should be configurable or automatic.
+	# TODO: Actually create some graphs here...
+	graphs = [None, None]
+	# Save the panels.
+	panels = [panel1, panel2]
 	
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
 	timewarp = 'basic' # Time warp method used
 	edge_render = True # Whether or not to render edges (plot edges, terrain).
-	fonts = [(None, 25), (None, 25)] # A (name, size) tuple for each font.
-	render_frame, frames = gen_render_frame(values, fonts, header, timewarp, \
-		edge_render)
+	font = (None, 25) # A (name, size) tuple for the font.
+	render_frame, frames = gen_render_frame(panels, font, \
+		header, timewarp, edge_render)
 	
 	# Play the animation.
 	fps = 4 # Frames per second
