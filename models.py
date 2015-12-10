@@ -243,7 +243,7 @@ class Graphable():
 		not tied to a specific patch.
 	"""
 	
-	def __init__(self, model, field, colour):
+	def __init__(self, model, field, colour, statistics = ['mean']):
 		""" Initialise self """
 		
 		self.model = model
@@ -252,38 +252,52 @@ class Graphable():
 		# We assume floating point values for now.
 		# TODO: Explore supporting other data types?
 		values = self.model.extract_field(self.field, float)
-	
-		# Calculate the statistic in question.
-		# TODO: We currently hardcode a mean, weighted by area.
+		
+		# Get the areas and total area.
+		simple_areas = self.model.extract_field(AREA_FIELD, float)
+		self.areas = {} # patch: area
+		self.total_area = 0 # The total area.
+		# We assume that areas remain the same, so pick the first area.
+		# TODO: Add some checks for that.
+		for patch in simple_areas[0]:
+			area = int(simple_areas[0][patch])
+			self.areas[patch] = area
+			self.total_area += area
+			
+		# Calculate the requested statistics.
+		# TODO: We currently only support a mean, weighted by area.
 		#		We should at least be able to do a mean, minimum, maximum, sum,
 		#		and possibly something custom.
 		#		Also weighted by area (or not).
 		#		We also need to be able to do this on a field-by-field basis.
+		self.values = []
+		for stat in statistics:
+			if stat == 'mean':
+				self.values.append(self.calculate_mean(values))
+			else:
+				raise ValueError("Unknown statistic {}!".format(stat))
+				
+		# Calculate the maximums and minimums.
+		self.max = max([max(stat.values()) for stat in self.values])
+		self.min = min([min(stat.values()) for stat in self.values])
+		
+	def calculate_mean(self, values):
+		""" Calculate the weighted mean for the given values """
+		
 		means = {} # Per-day means.
-		# Calculate the areas.
-		simple_areas = self.model.extract_field(AREA_FIELD, float)
-		areas = {} # patch: area
-		total_area = 0 # The total area.
-		# We assume that areas remain the same, so pick the first area.
-		for patch in simple_areas[0]:
-			area = int(simple_areas[0][patch])
-			areas[patch] = area
-			total_area += area
 		# Calculate the per-day values.
 		for index in values:
-			day = [] # Weighted values for a given day.
+			day = 0 # Weighted values for a given day.
 			for patch in values[index]:
-				day.append(values[index][patch] * areas[patch])
-			means[index] = sum(day) / total_area
-			self.values = means
-		
-		self.max = max(means.values())
-		self.min = min(means.values())
+				day += values[index][patch] * self.areas[patch]
+			means[index] = day / self.total_area
+			
+		return means
 		
 	def __getitem__(self, date):
 		""" Returns self's value on the given date.
 			If it is a tuple, then it represents a range of values.
 		"""
 		
-		return [self.values[date]]
+		return [stat[date] for stat in self.values]
 		
