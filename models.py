@@ -243,7 +243,7 @@ class Graphable():
 		not tied to a specific patch.
 	"""
 	
-	def __init__(self, model, field, colour, statistics = ['mean']):
+	def __init__(self, model, field, colour, statistics = ['min', 'mean']):
 		""" Initialise self """
 		
 		self.model = model
@@ -274,6 +274,10 @@ class Graphable():
 		for stat in statistics:
 			if stat == 'mean':
 				self.values.append(self.calculate_mean(values))
+			elif stat == 'min':
+				day_min = lambda day: min((values[day][patch] \
+					for patch in values[day]))
+				self.values.append({index: day_min(index) for index in values})
 			else:
 				raise ValueError("Unknown statistic {}!".format(stat))
 				
