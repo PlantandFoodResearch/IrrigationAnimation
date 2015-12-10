@@ -41,17 +41,15 @@ from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 # We use pygame for font rendering...
 import pygame.font
 
-def gen_render_frame(values, text_height, small_text_height, header, timewarp, \
-	edge_render):
+def gen_render_frame(values, fonts, header, timewarp, edge_render):
 	""" Given a list of values, return a render_frame function showing them,
 		and the number of frames.
 	"""
 
 	# Init the fonts.
-	# TODO: Add the ability to select the font.
 	pygame.font.init()
-	font = pygame.font.Font(None, text_height)
-	small_font = pygame.font.Font(None, small_text_height)
+	font = pygame.font.Font(*fonts[0])
+	small_font = pygame.font.Font(*fonts[1])
 	
 	# Combine the dates and check that they are the same for all the values.
 	dates = None
@@ -177,10 +175,9 @@ if __name__ == "__main__":
 	header = "Model render" # Header displayed
 	timewarp = 'delta' # Time warp method used
 	edge_render = True # Whether or not to render edges (plot edges, terrain).
-	text_height = 25 # The height for any fonts.
-	small_text_height = 15 # The height for any smaller fonts
-	render_frame, frames = gen_render_frame(values, text_height, \
-		small_text_height, header, timewarp, edge_render)
+	fonts = [(None, 25), (None, 15)] # A (name, size) tuple for each font.
+	render_frame, frames = gen_render_frame(values, fonts, header, timewarp, \
+		edge_render)
 	
 	# Play the animation.
 	fps = 4 # Frames per second
