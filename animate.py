@@ -34,7 +34,8 @@
 # Import the other modules...
 from display import preview
 from transforms import times
-from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_HEIGHT
+from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
+	GRAPH_MAX_HEIGHT
 from models import Model, Values, Graphable
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 	GraphWidget
@@ -69,6 +70,7 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 		scales.append(ScaleWidget(i, font))
 		descriptions.append(TextWidget(i.description(), font))
 		# TODO: In reality, we may not always want a graph...
+		#		This is currently achieved by appending None to graphs.
 		# TODO: The colour should either be configurable or automatic.
 		# TODO: Whether or not we do multiple fields should be configurable or
 		#		automatic.
@@ -82,7 +84,7 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 					field_nos = [3], statistics = ['mean']), \
 				Graphable(i.model, i.field, (0, 0, 255), "4", \
 					field_nos = [4], statistics = ['mean'])], \
-			dates, small_font))
+			dates, small_font, "Key: "))
 	label = TextWidget(header, font)
 	date = DynamicTextWidget(lambda time: dates[time], font)
 	
@@ -137,18 +139,25 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 			# Update the description offset.
 			desc_offset = desc_rect.right + BORDER
 			
+			# Figure out the graph height.
+			if graph == None:
+				graph_height = 0
+			else:
+				graph_height = int(min(value_area[0] * GRAPH_RATIO, \
+					surf_h * GRAPH_MAX_HEIGHT))
+			
 			# Render the scale.
 			scale_rect = scale.render(surface, index, \
 				lambda size: (x_offset, desc_rect.bottom + BORDER), \
 				(float('inf'), min(value_area[0] - (BORDER + SCALE_WIDTH), \
 					value_area[1] - (desc_rect.height + BORDER * 2 + \
-						GRAPH_HEIGHT))))
+						graph_height))))
 
 			# Render the map.
 			# The map size is shrunk to avoid clipping with anything, and
 			# offsets are calculated accordingly.
 			map_size = (value_area[0] - (scale_rect.width + BORDER), \
-				value_area[1] - (desc_rect.height + BORDER * 2 + GRAPH_HEIGHT))
+				value_area[1] - (desc_rect.height + BORDER * 2 + graph_height))
 			map_rect = map.render(surface, index, \
 				lambda size: (scale_rect.right + BORDER + \
 						((map_size[0] - size[0]) / 2), \
@@ -159,7 +168,8 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 			lowest = max(map_rect.bottom, scale_rect.bottom)
 			graph_rect = graph.render(surface, index, \
 				lambda size: (x_offset, lowest + BORDER), \
-				(value_area[0], surf_h - (lowest + (BORDER * 2))))
+				(value_area[0], max(surf_h - (lowest + (BORDER * 2)), \
+					graph_height)))
 				
 			dirty += [map_rect, desc_rect, scale_rect, graph_rect]
 		
@@ -178,16 +188,16 @@ if __name__ == "__main__":
 
 	# Create a Model.
 	model = Model("H:/My Documents/vis/gis/MediumPatches", \
-		"H:/My Documents/vis/csv/dry")
+		"H:/My Documents/vis/csv/slow")
 	# Create the values.
-	values = [Values(model, "Wheat.Zadok.Stage", transform='basic'),
+	values = [Values(model, "SWTotal", transform='basic'),
 		Values(model, "Wheat.AboveGround.Wt", transform='basic')]
 	
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
 	timewarp = 'basic' # Time warp method used
 	edge_render = True # Whether or not to render edges (plot edges, terrain).
-	fonts = [(None, 25), (None, 15)] # A (name, size) tuple for each font.
+	fonts = [(None, 25), (None, 25)] # A (name, size) tuple for each font.
 	render_frame, frames = gen_render_frame(values, fonts, header, timewarp, \
 		edge_render)
 	

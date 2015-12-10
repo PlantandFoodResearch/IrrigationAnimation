@@ -10,7 +10,8 @@ DEFAULT_COLOUR = (255, 255, 255)
 EDGE_COLOUR = (0, 0, 0)
 EDGE_THICKNESS = 1 # Some integer greater than or equal to one.
 GRAPH_ALPHA = 150 # Alpha of shading on the graph.
-KEY_LABEL = "Key:" # Label on the key for the graph.
+GRAPH_RATIO = .5 # Height to width ratio for the graph.
+GRAPH_MAX_HEIGHT = .3 # Maximum height, as a ratio of graph/screen height.
 MAX_FPS = 24 # Maximum allowed FPS
 MIN_FPS = 1 # Minimum allowed FPS
 MAX_FRAMES_PER_DAY = 5 # Maximum number of frames per day
@@ -33,4 +34,3 @@ PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
 # Temporary constants:
 # TODO: Make these configurable, or find ways to make them automatic.
 SCALE_DECIMAL_PLACES = 4 # Decimal places to display on the scale.
-GRAPH_HEIGHT = 100 # Space to leave for the graph.
