@@ -76,6 +76,7 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 		#		automatic.
 		# TODO: The statistics should be configurable or automatic.
 		# TODO: Labelling should be more sophisticated.
+
 		graphs.append(GraphWidget([Graphable(i.model, i.field, (0, 255, 0), \
 					"1", field_nos = [1], statistics = ['mean']), \
 				Graphable(i.model, i.field, (255, 0, 0), "2", \
@@ -85,6 +86,7 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 				Graphable(i.model, i.field, (0, 0, 255), "4", \
 					field_nos = [4], statistics = ['mean'])], \
 			dates, small_font, "Key: "))
+
 	label = TextWidget(header, font)
 	date = DynamicTextWidget(lambda time: dates[time], font)
 	
@@ -138,6 +140,8 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 					(size[0] / 2), desc_offset), BORDER))
 			# Update the description offset.
 			desc_offset = desc_rect.right + BORDER
+			# Add the rects.
+			dirty.append(desc_rect)
 			
 			# Figure out the graph height.
 			if graph == None:
@@ -146,32 +150,43 @@ def gen_render_frame(values, fonts, header, timewarp, edge_render):
 				graph_height = int(min(value_area[0] * GRAPH_RATIO, \
 					surf_h * GRAPH_MAX_HEIGHT))
 			
-			# Render the scale.
-			scale_rect = scale.render(surface, index, \
-				lambda size: (x_offset, desc_rect.bottom + BORDER), \
-				(float('inf'), min(value_area[0] - (BORDER + SCALE_WIDTH), \
-					value_area[1] - (desc_rect.height + BORDER * 2 + \
-						graph_height))))
+			if scale != None and map != None:
+				# TODO: Center these properly if there is no graph.
+				# Render the scale.
+				scale_rect = scale.render(surface, index, \
+					lambda size: (x_offset, desc_rect.bottom + BORDER), \
+					(float('inf'), min(value_area[0] - (BORDER + SCALE_WIDTH), \
+						value_area[1] - (desc_rect.height + BORDER * 2 + \
+							graph_height))))
 
-			# Render the map.
-			# The map size is shrunk to avoid clipping with anything, and
-			# offsets are calculated accordingly.
-			map_size = (value_area[0] - (scale_rect.width + BORDER), \
-				value_area[1] - (desc_rect.height + BORDER * 2 + graph_height))
-			map_rect = map.render(surface, index, \
-				lambda size: (scale_rect.right + BORDER + \
-						((map_size[0] - size[0]) / 2), \
-					desc_rect.bottom + BORDER), \
-				map_size)
+				# Render the map.
+				# The map size is shrunk to avoid clipping with anything, and
+				# offsets are calculated accordingly.
+				map_size = (value_area[0] - (scale_rect.width + BORDER), \
+					value_area[1] - (desc_rect.height + BORDER * 2 + \
+					graph_height))
+				map_rect = map.render(surface, index, \
+					lambda size: (scale_rect.right + BORDER + \
+							((map_size[0] - size[0]) / 2), \
+						desc_rect.bottom + BORDER), \
+					map_size)
 				
-			# Render the graph.
-			lowest = max(map_rect.bottom, scale_rect.bottom)
-			graph_rect = graph.render(surface, index, \
-				lambda size: (x_offset, lowest + BORDER), \
-				(value_area[0], max(surf_h - (lowest + (BORDER * 2)), \
-					graph_height)))
+				# Find the lowest point.
+				lowest = max(map_rect.bottom, scale_rect.bottom)
+				# Add the rects.
+				dirty.append(map_rect)
+				dirty.append(scale_rect)
+			else:
+				# Find the lowest point.
+				lowest = desc_rect.bottom
 				
-			dirty += [map_rect, desc_rect, scale_rect, graph_rect]
+			# Render the graph, if it is defined.
+			if graph != None:
+				graph_rect = graph.render(surface, index, \
+					lambda size: (x_offset, lowest + BORDER), \
+					(value_area[0], max(surf_h - (lowest + (BORDER * 2)), \
+						graph_height)))
+				dirty.append(graph_rect)
 		
 		# Check for intersections, and print a warning if any are found.
 		if len(dirty) != 0:
@@ -192,6 +207,7 @@ if __name__ == "__main__":
 	# Create the values.
 	values = [Values(model, "SWTotal", transform='basic'),
 		Values(model, "Wheat.AboveGround.Wt", transform='basic')]
+	
 	
 	# Create the render_frame function and frame count.
 	header = "Model render" # Header displayed
