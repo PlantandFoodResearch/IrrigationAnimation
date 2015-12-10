@@ -119,7 +119,7 @@ def raw_patches(files):
 		for index in patches[patch]:
 			if index not in result:
 				result[index] = {}
-			result[index][patch] = {field: value.strip() \
+			result[index][patch] = {field.strip(): value.strip() \
 				for field, value in patches[patch][index].items()}
 			
 	return result
