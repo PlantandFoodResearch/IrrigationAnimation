@@ -14,6 +14,7 @@
 	- The whole split model/values thing is broken; the two should be combined
 	  to reduce the number of bugs.
 	- There are *lots* of bugs...
+	- Not all of the configurables are wrapped.
 
 	Future:
 	- Saving existing setups.
