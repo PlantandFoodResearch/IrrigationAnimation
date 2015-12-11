@@ -294,7 +294,6 @@ class Graphable():
 		self.areas = {} # patch: area
 		self.total_area = 0 # The total area.
 		# We assume that areas remain the same, so pick the first area.
-		# TODO: Add some checks for that.
 		for patch in simple_areas[0]:
 			area = int(simple_areas[0][patch])
 			self.areas[patch] = area
