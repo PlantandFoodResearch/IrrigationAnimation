@@ -2,25 +2,25 @@
 	a semi-elegant form.
 
 	Future improvements:
-	- Removing all of the TODO's...
-	- GUI tweaking
-	- Speed ups + profiling
-	- Code cleanups
+	- GUI tweaking (1)
 	- Transformations
+		- Add per-field filters/transformations (2)
 		- Add more by default (exponential/log/per-field)
 		- Add support for combining transformations
 		- Add support for specifying custom transformations
 		- Intergrate with the scale
+	- Code cleanups (3)
+	- Removing all of the TODO's... (3)
+	- Speed ups + profiling
+	- Weather integration (4)
+	- Render an irrigator
 	- Documentation
-		- Design notes
+		- Design notes/walk through
 	- Additional widgets
-		- Simple value marker (on scale, or just as a value)
-		- Time marker
-		- Realtime graphs
+		- Simple value marker/s (on scale, or just as a value)
 	- Option to disable filepaths in the description/custom descriptions
 	- Pausing support for the dynamic viewer
 	- Avoiding lag with the dynamic viewer
-	- Different colours for the different values renderings
 	
 	Stretch goals:
 	- Packaging?

@@ -22,7 +22,7 @@ GRAPH_COLOUR_LIST = ((255, 0, 0), # A list of colours to choose from.
 	(0, 0, 0))
 GRAPH_RATIO = .5 # Height to width ratio for the graph.
 GRAPH_MAX_HEIGHT = .3 # Maximum height, as a ratio of graph/screen height.
-ITERATION_MULTIPLIER = 1.3 # Multiplier for iteration; the larger the value,
+ITERATION_MULTIPLIER = 2 # Multiplier for iteration; the larger the value,
 						   # the quicker the place algorithm finishes.
 MAP_COLOUR_LIST = ((0.02, 0.24), # A list of HSV colour ranges to choose from.
 	(0.36, 0.63),

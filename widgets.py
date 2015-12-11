@@ -538,6 +538,9 @@ def place(size, labels):
 		pos.
 	"""
 	
+	# TODO: Add 'spacing' for the labels to avoid cludgy workarounds at the
+	#		edges.
+	
 	# Init the placements for the labels.
 	placements = {anchor: anchor for anchor in labels.keys()}
 	
