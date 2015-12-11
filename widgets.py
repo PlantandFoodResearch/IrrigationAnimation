@@ -184,11 +184,8 @@ class ScaleWidget():
 		# placement is a map from anchors (rows) to actual placement points.
 		label_area = (-(self.font.get_linesize() / 2), \
 			height + (self.font.get_linesize() / 2))
-		placement, overlap = place(label_area, \
+		placement = place(label_area, \
 			{row: text.get_height() for row, text in rows.items()})
-		# Deal with overlap.
-		if overlap:
-			print("WARNING: Some labels overlap!")
 		# Now we actually blit the text onto the scale.
 		for row, text in rows.items():
 			# Calculate the y offset for the label.
@@ -421,9 +418,8 @@ class GraphWidget():
 		# We generate a list of placements for the labels so that they do not
 		# overlap.
 		# placement is a map from anchors (rows) to actual placement points.
-		# We ignore any overlap for now.
 		label_area = (-(line_space / 2), height + (line_space / 2))
-		placement, overlap = place(label_area, \
+		placement = place(label_area, \
 			{row: text.get_height() for row, text in rows.items()})
 		# Now we actually blit the text onto the scale.
 		for row, text in rows.items():
@@ -452,10 +448,8 @@ class GraphWidget():
 			rows[row] = self.font.render(self.dates[row2date(row)], TEXT_AA, \
 				TEXT_COLOUR)
 		# Then, generate a map of placements (anchors: placement map)
-		# Ignore the overlap for now.
-		placement, overlap = place((-(SCALE_SPACING / 2), \
-			graph_width + (SCALE_SPACING / 2)), \
-			{row: text.get_width() + SCALE_SPACING \
+		placement = place((-(SCALE_SPACING / 2), graph_width + \
+			(SCALE_SPACING / 2)), {row: text.get_width() + SCALE_SPACING \
 				for row, text in rows.items()})
 		# Finally, blit the text onto the scale.
 		for row, text in rows.items():
@@ -587,21 +581,7 @@ def place(size, labels):
 		# Increment the iteration.
 		iter *= ITERATION_MULTIPLIER
 	
-	# Test for overlap.
-	overlap = False
-	space = [0 for i in range(size[0], size[1])]
-	for anchor, pos in placements.items():
-		pos = int(pos - (labels[anchor] / 2) - size[0])
-		for i in range(labels[anchor]):
-			if pos + i >= len(space) or pos < 0:
-				# Position is outside the space available.
-				overlap = True
-			elif space[pos + i] != 0:
-				overlap = True
-			else:
-				space[pos + i] = 1
-	
-	return placements, overlap
+	return placements
 
 def merge_rects(dirty):
 	""" Merges a list of rects into a single rect """
