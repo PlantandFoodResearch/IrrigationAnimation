@@ -50,4 +50,4 @@ PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
 
 # Temporary constants:
 # TODO: Make these configurable, or find ways to make them automatic.
-SCALE_DECIMAL_PLACES = 4 # Decimal places to display on the scale.
+SCALE_SF = 4 # Decimal places to display on the scale.

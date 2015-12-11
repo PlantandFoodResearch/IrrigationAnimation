@@ -19,12 +19,24 @@
 
 from constants import ANCHOR_FORCE, BROKEN_COLOUR, EDGE_COLOUR, \
 	EDGE_THICKNESS, GRAPH_ALPHA, GRAPH_COLOUR_LIST, ITERATION_MULTIPLIER, \
-	PLACEMENT_CONSTANT, OVERLAP_FORCE, SCALE_DECIMAL_PLACES, \
-	SCALE_MARKER_SIZE, SCALE_SPACING, SCALE_TEXT_OFFSET, SCALE_WIDTH, \
-	TEXT_AA, TEXT_COLOUR
+	PLACEMENT_CONSTANT, OVERLAP_FORCE, SCALE_SF, SCALE_MARKER_SIZE, \
+	SCALE_SPACING, SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
 
 import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
+
+# We define a helper function to round to n significant digits:
+# This is from: http://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python
+from math import floor, log10
+def round_sf(v, n):
+	if v == 0:
+		return int(0)
+	else:
+		rounded = round(v, -int(floor(log10(abs(v)))) + (n - 1))
+		if rounded % 1 == 0:
+			return int(rounded)
+		return rounded
+
 
 class TextWidget():
 	""" A static, left aligned text widget """
@@ -126,9 +138,8 @@ class ScaleWidget():
 				labels = {} # rows: values
 				for row in markers:
 					# Calculate the value for that row.
-					fmt = '{:.' + str(SCALE_DECIMAL_PLACES) + 'f}'
-					value = fmt.format(round(self.row2value(row, height), \
-						SCALE_DECIMAL_PLACES))
+					value = str(round_sf(self.row2value(row, height), \
+						SCALE_SF))
 					# Add it to the map.
 					labels[row] = value
 
@@ -404,10 +415,8 @@ class GraphWidget():
 		max_text_width = 0 # Record the maximum text width for future reference.
 		for row in anchors:
 			# Render and save.
-			fmt = '{:.' + str(SCALE_DECIMAL_PLACES) + 'f}'
-			value = fmt.format(round((float(row) / height) * \
-					(self.max - self.min) + self.min, \
-				SCALE_DECIMAL_PLACES))
+			value = str(round_sf((float(row) / height) * \
+					(self.max - self.min) + self.min, SCALE_SF))
 			rows[row] = self.font.render(value, TEXT_AA, TEXT_COLOUR)
 			# Update the maximum text width.
 			max_text_width = max(rows[row].get_width(), max_text_width)
