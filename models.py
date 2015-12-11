@@ -216,7 +216,6 @@ class Values():
 			# We scale to a specific colour range.
 			# Convert to something in the range of 0 to 120 degrees, fed into
 			# the colorsys function (red..green in HSV)
-			# TODO: Would it make more sense to use a single colour?
 			try:
 				hue = ((value - self.min) / (self.max - self.min)) # 0-1
 			except ZeroDivisionError:
