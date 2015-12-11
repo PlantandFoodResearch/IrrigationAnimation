@@ -301,13 +301,12 @@ class Graphable():
 			self.total_area += area
 			
 		# Calculate the requested statistics.
-		# TODO: We should support weighting by area and not weighting by area.
 		self.values = []
 		for stat in statistics:
 			if stat == 'mean':
 				def day_func(index):
 					""" Calculate the weighted mean for the given day """
-					day = 0 # Weighted values for a given day.
+					day = 0
 					for patch in values[index]:
 						day += values[index][patch] * self.areas[patch]
 					return day / self.total_area
