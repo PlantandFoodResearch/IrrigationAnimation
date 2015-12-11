@@ -17,9 +17,11 @@
 	Author: Alastair Hughes
 """
 
-from constants import BROKEN_COLOUR, EDGE_COLOUR, EDGE_THICKNESS, \
-	GRAPH_ALPHA, GRAPH_COLOUR_LIST, SCALE_DECIMAL_PLACES, SCALE_MARKER_SIZE, \
-	SCALE_SPACING, SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
+from constants import ANCHOR_FORCE, BROKEN_COLOUR, EDGE_COLOUR, \
+	EDGE_THICKNESS, GRAPH_ALPHA, GRAPH_COLOUR_LIST, ITERATION_MULTIPLIER, \
+	PLACEMENT_CONSTANT, OVERLAP_FORCE, SCALE_DECIMAL_PLACES, \
+	SCALE_MARKER_SIZE, SCALE_SPACING, SCALE_TEXT_OFFSET, SCALE_WIDTH, \
+	TEXT_AA, TEXT_COLOUR
 
 import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
@@ -451,16 +453,18 @@ class GraphWidget():
 				TEXT_COLOUR)
 		# Then, generate a map of placements (anchors: placement map)
 		# Ignore the overlap for now.
-		# TODO: Remove the area hack... once place is actually implemented.
-		placement, overlap = place((-30, graph_width + 30), \
-			{row: text.get_width() for row, text in rows.items()})
+		placement, overlap = place((-(SCALE_SPACING / 2), \
+			graph_width + (SCALE_SPACING / 2)), \
+			{row: text.get_width() + SCALE_SPACING \
+				for row, text in rows.items()})
 		# Finally, blit the text onto the scale.
 		for row, text in rows.items():
-			x = topleft[0] + width + row
-			surface.blit(text, (x - (text.get_width() / 2), \
+			x = topleft[0] + width
+			surface.blit(text, (x + placement[row] - (text.get_width() / 2), \
 				topleft[1] + height + SCALE_TEXT_OFFSET))
-			pygame.draw.line(surface, TEXT_COLOUR, (x, topleft[1] + height), \
-				(x, topleft[1] + height + SCALE_MARKER_SIZE))
+			pygame.draw.line(surface, TEXT_COLOUR, \
+				(x + row, topleft[1] + height), \
+				(x + row, topleft[1] + height + SCALE_MARKER_SIZE))
 		
 		# Draw the scale lines.
 		# We don't want to draw right off the end, so we take one off the given
@@ -540,11 +544,48 @@ def place(size, labels):
 		pos.
 	"""
 	
-	# TODO: Actually implement...
-	# TODO: Even if implemented, this will be 1D only. Is that enough?
-	
 	# Init the placements for the labels.
 	placements = {anchor: anchor for anchor in labels.keys()}
+	
+	# Init the forces.
+	forces = {anchor: PLACEMENT_CONSTANT for anchor in labels.keys()}
+	iter = 1 # The current iteration.
+	# Iterate until things settle.
+	while sum((abs(int(v)) for v in forces.values())) >= PLACEMENT_CONSTANT:
+		# Generate the forces for each label.
+		forces = {anchor: 0 for anchor in labels.keys()}
+		for anchor in placements:
+			# Pull back towards the anchors.
+			forces[anchor] += float(anchor - placements[anchor]) / ANCHOR_FORCE
+			# Apply forces due to overlapping edges.
+			if (placements[anchor] - (labels[anchor] / 2)) < size[0]:
+				forces[anchor] += (size[0] - (placements[anchor] - \
+					(labels[anchor] / 2)))
+			elif (placements[anchor] + (labels[anchor] / 2)) > size[1]:
+				forces[anchor] += (size[1] - (placements[anchor] + \
+					(labels[anchor] / 2)))
+			# Add forces from overlap.
+			for other in placements:
+				if anchor != other:
+					a_min = placements[anchor] - (labels[anchor] / 2)
+					a_max = placements[anchor] + (labels[anchor] / 2)
+					o_min = placements[other] - (labels[other] / 2)
+					o_max = placements[other] + (labels[other] / 2)
+					if a_min < o_min < a_max:
+						forces[anchor] += (o_min - a_max) / OVERLAP_FORCE
+					if a_min < o_max < a_max:
+						forces[anchor] += (o_max - a_min) / OVERLAP_FORCE
+						
+		# Decrease the forces as appropriate.
+		for anchor in forces:
+			forces[anchor] = forces[anchor] / iter
+		
+		# Apply the forces to the labels.
+		for anchor in placements:
+			placements[anchor] += forces[anchor]
+			
+		# Increment the iteration.
+		iter *= ITERATION_MULTIPLIER
 	
 	# Test for overlap.
 	overlap = False
