@@ -18,6 +18,7 @@
 		- Design notes/walk through
 	- Additional widgets
 		- Simple value marker/s (on scale, or just as a value)
+	- Labels on existing widgets (eg units for a scale)
 	- Option to disable filepaths in the description/custom descriptions
 	- Pausing support for the dynamic viewer
 	- Avoiding lag with the dynamic viewer
