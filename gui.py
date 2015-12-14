@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ User interface code for the animation renderer.
 
 	Current TODO's:
@@ -6,8 +7,8 @@
 	  messages.
 	- Clicking on 'model' currently cans the field.
 	- There are *lots* of TODO's.
-	- Hanging without any indications is still broken (my progress bar starter
-	  does not work...)
+	- Hanging without any indications is still broken
+	- We should clear any invalid fields at render time
 	- The open file/dir dialogs do not have any customisation.
 	- We currently happily overwrite existing videos without any kind of
 	  warning.
