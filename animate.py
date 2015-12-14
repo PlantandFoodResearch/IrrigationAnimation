@@ -89,7 +89,7 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
 	date = DynamicTextWidget(lambda time: dates[time], font)
 	
 	# Generate the render_frame function.
-	frame_map = times[timewarp]((panel['values'] for panel in panels))
+	frame_map = times[timewarp]([panel['values'] for panel in panels])
 	def render_frame(surface, frame):
 		""" Render a frame """
 		
