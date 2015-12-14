@@ -14,6 +14,7 @@
 	- Speed ups + profiling
 	- Weather integration (4)
 	- Render an irrigator
+	- Render the description text using 'place'
 	- Documentation
 		- Design notes/walk through
 	- Additional widgets

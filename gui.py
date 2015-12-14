@@ -26,9 +26,9 @@
 # Local imports.
 from display import preview, render
 from animate import gen_render_frame
-from models import Model, Values
+from models import Model, Values, Graphable
 from constants import MAP_COLOUR_LIST, MAX_FPS, MIN_FPS, MAX_TEXT_HEIGHT, \
-	MIN_TEXT_HEIGHT
+	MIN_TEXT_HEIGHT, FIELD_NO_FIELD
 import transforms
 
 # Tkinter imports
@@ -465,18 +465,54 @@ class Main(ttk.Frame):
 					self.master.after(100, check_ended)
 			
 			try:
-				values = []
-				for index, config in enumerate(self.value_list):
-					model_values = self.model_list[config['Model'].get()]
-					gis = model_values['GIS files'].get()
-					csv = model_values['CSV directory'].get()
+				# Create and save the panels.
+				panels = []
+				for index, config in enumerate(self.panel_list):
+					gis = config['GIS files'].get()
+					csv = config['CSV directory'].get()
 					field = config['Field'].get()
 					transform = config['Value transform'].get()
-					# TODO: Add graph support.
-					values.append({'values': self.values[((gis, csv), field, \
-						transform, MAP_COLOUR_LIST[index])]})
+					graph = config["Graph statistics"].get()
+					per_field = config["Per-field"].get()
+					# TODO: Add full graph support.
+					# TODO: Should we use the panel name anywhere?
+					value = self.values[((gis, csv), field, \
+						transform, MAP_COLOUR_LIST[index])]
+					panel = {'values': value}
+					if graph != 'None':
+						graphs = []
+					
+						# Generate a list of statistics.
+						statistics = []
+						for stat in graph.split("+"):
+							statistics.append(stat.strip().lower())
+						stat_name = " (" + ", ".join(statistics) + ")"
+							
+						if per_field == 'False':
+							# Just one graph.
+							graphs.append(Graphable(value.model, field, field + \
+								stat_name), \
+								statistics = statistics))
+						else:
+							# Multiple, per-field graphs.
+							# Figure out the available fields.
+							fields = value.model.extract_field(FIELD_NO_FIELD, \
+								lambda v: int(float(v)))
+							# Generate a graph for each field.
+							for field_no in set(fields[0].values()):
+								graphs.append(Graphable(value.model, field, \
+									str(field_no), field_nos = [field_no], \
+									statistics = statistics))
+							# Set the graph label.
+							panel['graph_label'] = "Fields" + stat_name)
+						
+						# Add the graph to the panel.
+						panel['graphs'] = graphs
 
-				render_frame, frames = gen_render_frame(values, \
+					panels.append(panel)
+				
+				# Generate the render_frame function and frame count
+				render_frame, frames = gen_render_frame(panels, \
 					(None, self.options.get('Text size')), \
 					self.options.get('Title'), self.options.get('Timewarp'), \
 					self.options.get('Edge render') == "True")
@@ -508,24 +544,31 @@ class Main(ttk.Frame):
 		render_button.pack(side='right')
 		
 		# Create the progress bar (shares the same frame).
+		self.create_progressbar(lower)
+		
+	def create_progressbar(self, frame):
+		""" Create self's progress bar """
+
 		# Do not pack; that will happen as required.
-		bar = ttk.Progressbar(lower, mode = 'indeterminate')
+		bar = ttk.Progressbar(frame, mode = 'indeterminate')
 		# Create the control variable.
-		self.bar_running = tk.IntVar(value = False)
-		# Create the callback function.
-		def bar_callback(*args):
-			""" Pack, start, and stop, the bar as required """
-			value = self.bar_running.get()
-			if value == 0:
-				bar.stop()
-				bar.pack_forget()
-			elif value > 0:
+		self.bar_running = 0
+		# Create the two helper functions.
+		def bar_start():
+			""" Start the progress bar """
+			if self.bar_running == 0:
 				bar.start()
 				bar.pack()
-			else:
-				print("WARNING: Progress bar has a value of {}!".format(value))
-		# Add it.
-		self.bar_running.trace("w", bar_callback)
+			self.bar_running += 1
+		def bar_stop():
+			""" Stop the progress bar """
+			self.bar_running -= 1
+			if self.bar_running <= 0:
+				bar.stop()
+				bar.pack_forget()
+		# Add the functions to self.
+		self.bar_start = bar_start
+		self.bar_stop = bar_stop
 		
 	def create_options(self):
 		""" Create self's options """
@@ -546,7 +589,7 @@ class Main(ttk.Frame):
 			return int(x), int(y)
 		self.options.add_raw_option("Dimensions", \
 			tk.StringVar(value = "1280x1024"), check_size)
-		self.options.add_raw_option("Text size", tk.IntVar(value = 30), \
+		self.options.add_raw_option("Text size", tk.IntVar(value = 25), \
 			lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
 		# Add the listbox options.
 		self.options.add_combobox_option("Timewarp", \
@@ -560,49 +603,12 @@ class Main(ttk.Frame):
 	def create_lists(self):
 		""" Create the lists """
 		
-		# Create a dummy value_list.
-		self.value_list = None
-		
-		# Create a callback for when things are renamed so that any values
-		# using the name of the model are also updated.
-		# TODO: I *should* be able to get rid of this? (shared StringVar)
-		def renamecallback(original, name):
-			""" Deal with a model being renamed by updating all of the values
-				that refer to that model.
-				We ignore the active item, as this will be called in the middle
-				of updating the current dynamic textboxes, so there is no
-				'active' item.
-			"""
-			
-			for item in self.value_list:
-				current = item['Model'].get()
-				if original == current:
-					item['Model'].set(name)
-		
-		# Create a deleteable callback for model_list.
-		def deleteable(active):
-			""" Helper function, returning true if the current active item is
-				deleteable.
-			"""
-			for item_values in self.value_list:
-				if item_values['Model'].get() == active:
-					return False
-					used = True
-			return True
-		
 		# Create the actual model_list.
-		def model_options(master, active, values):
+		def panel_options(master, active, values):
 			""" Create the additional options for a specified value """
 			
 			def cache_model():
 				""" Cache the given model (async) """
-				# TODO: This can still hang things...
-				#		Potential fixes include 'fixing' the ThreadedDict
-				#		implementation so that caching does nothing if there
-				#		is already a lock on the given name, changing this
-				#		so that it doesn't cache so early, or fixing the
-				#		defaults so that there is nothing to cache initially
-				#		(the main problem here).
 				try:
 					self.models.cache((values['GIS files'].get(), \
 						values['CSV directory'].get()))
@@ -613,123 +619,51 @@ class Main(ttk.Frame):
 				if name not in values:
 					values[name] = tk.StringVar(value = default)
 					values[name].trace("w", lambda *args: cache_model())
-					cache_model() # Pre-cache default the model.
 				master.add_file_option(name, values[name], *args)
-			
-			add_file("GIS files", "H:/My Documents/vis/gis/MediumPatches", \
-				tkFileDialog.askopenfilename)
-			add_file("CSV directory", "H:/My Documents/vis/csv/medium", \
-				tkFileDialog.askdirectory)
-
-		self.model_list = ItemList(self, "Models", model_options, \
-			renamecallback = renamecallback, deleteable = deleteable)
-		self.model_list.pack(expand = True, fill = 'both')
-		
-		# Generate the function for the value_list.
-		def value_options(master, active, values):
-			""" Create the additional options for a specified value """
-			
+				
 			def add_combo(name, options, default, **kargs):
 				if name not in values:
 					values[name] = tk.StringVar(value = default)
 				master.add_combobox_option(name, values[name], options, \
 					**kargs)
-					
-			def update_model_callback(old, new):
-				""" Update the delete button and the field """
-				self.model_list.update_deleteable()
-				# Reset the field value (it may now be invalid).
-				values['Field'].set("")
-				# TODO: We should really edit the field box so that there are
-				# 		no valid values, at least until someone selects the
-				#		drop down, to prevent copy-pasting invalid values.
-
-			def post_model(box):
-				""" Callback function for updating the list of models """
-				box['values'] = sorted(list(self.model_list.items.keys()))
 
 			def post_field(box):
 				""" Callback function for updating the list of fields """
 				try:
-					model_values = self.model_list[values['Model'].get()]
-					fields = self.models[(model_values['GIS files'].get(), \
-						model_values['CSV directory'].get())].fields()
+					fields = self.models[(values['GIS files'].get(), \
+						values['CSV directory'].get())].fields()
 				except KeyError:
 					fields = []
 				box['values'] = sorted(list(fields))
-			
-			add_combo("Model", [], "", \
-				callback = update_model_callback, postcommand = post_model)
+				
+			add_file("GIS files", "", \
+				tkFileDialog.askopenfilename)
+			add_file("CSV directory", "", \
+				tkFileDialog.askdirectory)
 			add_combo("Value transform", transforms.transformations.keys(), \
 				'basic')
 			add_combo("Field", [], "", postcommand = post_field)
-		
-		# Create the actual Values list. 
-		self.value_list = ItemList(self, "Values", value_options, \
-			deletecallback = lambda name: self.model_list.update_deleteable())
-		self.value_list.pack(expand = True, fill = 'both')
-	
-	def bar_start(self):
-		""" Start the progress bar """
-		self.bar_running.set(self.bar_running.get() + 1)
-		
-	def bar_stop(self):
-		""" Stop the progress bar """
-		self.bar_running.set(self.bar_running.get() - 1)
-		
-class WrappedLock(object):
-	""" Wrapping around a Lock with start and end callbacks for blocking
-		acquires.
-	"""
-	
-	def __init__(self, start, end, *args, **kargs):
-		""" Init self """
-		
-		self.lock = Lock(*args, **kargs)
-		self.start = start
-		self.end = end
-		
-	def acquire(self, blocking = True):
-		""" Acquire the lock """
+			add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
+				"Min + Mean + Max", "Sum", "None"], "None")
+			add_combo("Per-field", ['True', 'False'], 'False')
 
-		if blocking:
-			# Try to acquire the lock without blocking first.
-			if not self.lock.acquire(False):
-				print("WARNING: Waiting for lock...")
-				try:
-					# Defend against problems here resulting in deadlock.
-					self.start()
-				finally:
-					self.lock.acquire()
-				self.end()
-		else:
-			return self.lock.acquire(False)
-			
-	def release(self):
-		""" Release the lock """
-		
-		self.lock.release()
-		
-	def __enter__(self):
-		self.acquire()
-		
-	def __exit__(self, exc_type, exc_val, exc_tb):
-		self.release()
-		
+		self.panel_list = ItemList(self, "Panels", panel_options)
+		self.panel_list.pack(expand = True, fill = 'both')
+
 class ThreadedDict(object):
 	""" A threaded, locking, load-from-disk dict """
 	
-	def __init__(self, load_func, start = lambda: None, end = lambda: None):
+	def __init__(self, load_func):
 		""" Initialise self.
 			load_func is the function to call to try to load a value.
 			start and end are callbacks passed to the lock wrapper to provide
 			a means of giving user feedback.
 		"""
-				
+	
 		# Global dict lock.
 		# TODO: Consider using a lock protecting a value->lock dict.
 		#		Is there any use case/performance improvements?
-		self.lock = WrappedLock(start, end)
+		self.lock = Lock()
 		# Self's dict.
 		self.dict = {}
 		# The load function takes a name, and returns the corresponding value.
@@ -755,7 +689,7 @@ class ThreadedDict(object):
 		# If it doesn't, we need to cache it, so run the caching job.
 		if not exists:
 			# We don't lock here, or the job will not be able to continue!
-			job = ThreadedJob(self.lock.lock, self.load_func, name)
+			job = ThreadedJob(self.lock, self.load_func, name)
 			job.start()
 	
 class ThreadedJob(Thread):
@@ -765,6 +699,7 @@ class ThreadedJob(Thread):
 		""" Initialise self """
 		
 		Thread.__init__(self)
+		self.daemon = True # This is a daemon thread...
 		self.lock = lock
 		self.function = function
 		self.args = args
@@ -775,11 +710,15 @@ class ThreadedJob(Thread):
 		
 		# TODO: Currently, if this fails, the exception is not passed out to
 		#		the caller.
-		with self.lock:
+		self.lock.acquire()
+		try:
 			self.function(*self.args, **self.kargs)
+		except Exception as e:
+			print("Exception {} occured in helper thread!".format(e))
+		finally:
+			self.lock.release()
 
 if __name__ == "__main__":
-	root = tk.Tk()
-	ui = Main(root, width=600, height=600)
+	ui = Main(tk.Tk(), width=600, height=600)
 	ui.mainloop()
 	

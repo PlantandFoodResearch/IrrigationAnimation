@@ -359,7 +359,7 @@ class GraphWidget():
 		self.dates = dates
 		self.size = None
 		self.font = font
-		self.label = label
+		self.label = label + ": "
 		
 		# The 'global' minimum and maximum.
 		self.min = min([g.min for g in self.graphable])
