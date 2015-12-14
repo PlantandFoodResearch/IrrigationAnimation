@@ -420,8 +420,7 @@ class Main(ttk.Frame):
 		self.pack(expand = True, fill = 'both')
 		
 		# Models.
-		self.models = ThreadedDict(lambda name: Model(*name), \
-			start = lambda: self.bar_start(), end = lambda: self.bar_stop())
+		self.models = ThreadedDict(lambda name: Model(*name))
 		# Values.
 		# Don't bother with early caching for this; rendering takes quite a bit
 		# longer anyway...
