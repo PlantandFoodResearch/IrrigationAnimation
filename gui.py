@@ -515,9 +515,14 @@ class Main(ttk.Frame):
 					(None, self.options.get('Text size')), \
 					self.options.get('Title'), self.options.get('Timewarp'), \
 					self.options.get('Edge render') == "True")
+					
+				# Create a job wrapper to hold the lock.
+				def wrap_render(*args, **kargs):
+					with lock:
+						func(*args, **kargs)
 
 				# Create and start the job.
-				job = ThreadedJob(lock, func, render_frame, frames, \
+				job = ThreadedJob(wrap_render, render_frame, frames, \
 					*[self.options.get(arg) for arg in args])
 				job.start()
 			finally:
@@ -658,48 +663,58 @@ class ThreadedDict(object):
 			start and end are callbacks passed to the lock wrapper to provide
 			a means of giving user feedback.
 		"""
-	
-		# Global dict lock.
-		# TODO: Consider using a lock protecting a value->lock dict.
-		#		Is there any use case/performance improvements?
+		
+		# The dict of loading jobs. (name: job)
+		self.job_dict = {}
+		# The lock protecting self's dict.
 		self.lock = Lock()
 		# Self's dict.
 		self.dict = {}
 		# The load function takes a name, and returns the corresponding value.
 		def wrapper(name):
-			self.dict[name] = load_func(name)
+			value = load_func(name)
+			with self.lock:
+				self.dict[name] = value
 		self.load_func = wrapper
 		
 	def __getitem__(self, name):
 		""" Try to get the given item """
 		
-		# Ensure that the value is cached.
+		# See whether the value is cached.
+		with self.lock:
+			if name in self.dict:
+				# It is cached; return it!
+				return self.dict[name]
+		
+		# Otherwise, cache it, wait for the job to finish, and then return.
 		self.cache(name)
+		# Wait for the job to finish.
+		self.job_dict[name].join()
 		# Now we lock, retrieve the value, and return.
 		with self.lock:
 			return self.dict[name]
 		
 	def cache(self, name):
-		""" Cache the given item, if required. """
+		""" Cache the given item, if required """
 		
-		# We get the lock to check whether or not the item exists.
-		with self.lock:
-			exists = name in self.dict
-		# If it doesn't, we need to cache it, so run the caching job.
-		if not exists:
-			# We don't lock here, or the job will not be able to continue!
-			job = ThreadedJob(self.lock, self.load_func, name)
-			job.start()
+		# Check wether or not the item is in the process of being cached.
+		if name in self.job_dict:
+			# The item is cached or being cached; return.
+			return
+				
+		# Otherwise, start loading it and return.
+		job = ThreadedJob(self.load_func, name)
+		self.job_dict[name] = job
+		job.start()
 	
 class ThreadedJob(Thread):
 	""" Threaded job class """
 	
-	def __init__(self, lock, function, *args, **kargs):
+	def __init__(self, function, *args, **kargs):
 		""" Initialise self """
 		
 		Thread.__init__(self)
 		self.daemon = True # This is a daemon thread...
-		self.lock = lock
 		self.function = function
 		self.args = args
 		self.kargs = kargs
@@ -709,13 +724,8 @@ class ThreadedJob(Thread):
 		
 		# TODO: Currently, if this fails, the exception is not passed out to
 		#		the caller.
-		self.lock.acquire()
-		try:
-			self.function(*self.args, **self.kargs)
-		except Exception as e:
-			print("Exception {} occured in helper thread!".format(e))
-		finally:
-			self.lock.release()
+		self.function(*self.args, **self.kargs)
+
 
 if __name__ == "__main__":
 	ui = Main(tk.Tk(), width=600, height=600)
