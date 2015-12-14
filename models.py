@@ -216,7 +216,6 @@ class Values():
 			# We scale to a specific colour range.
 			# Convert to something in the range of 0 to 120 degrees, fed into
 			# the colorsys function (red..green in HSV)
-			# TODO: Would it make more sense to use a single colour?
 			try:
 				hue = ((value - self.min) / (self.max - self.min)) # 0-1
 			except ZeroDivisionError:
@@ -295,20 +294,18 @@ class Graphable():
 		self.areas = {} # patch: area
 		self.total_area = 0 # The total area.
 		# We assume that areas remain the same, so pick the first area.
-		# TODO: Add some checks for that.
 		for patch in simple_areas[0]:
 			area = int(simple_areas[0][patch])
 			self.areas[patch] = area
 			self.total_area += area
 			
 		# Calculate the requested statistics.
-		# TODO: We should support weighting by area and not weighting by area.
 		self.values = []
 		for stat in statistics:
 			if stat == 'mean':
 				def day_func(index):
 					""" Calculate the weighted mean for the given day """
-					day = 0 # Weighted values for a given day.
+					day = 0
 					for patch in values[index]:
 						day += values[index][patch] * self.areas[patch]
 					return day / self.total_area
