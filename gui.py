@@ -491,8 +491,7 @@ class Main(ttk.Frame):
 						if per_field == 'False':
 							# Just one graph.
 							graphs.append(Graphable(value.model, field, field + \
-								stat_name), \
-								statistics = statistics))
+								stat_name, statistics = statistics))
 						else:
 							# Multiple, per-field graphs.
 							# Figure out the available fields.
@@ -504,7 +503,7 @@ class Main(ttk.Frame):
 									str(field_no), field_nos = [field_no], \
 									statistics = statistics))
 							# Set the graph label.
-							panel['graph_label'] = "Fields" + stat_name)
+							panel['graph_label'] = "Fields" + stat_name
 						
 						# Add the graph to the panel.
 						panel['graphs'] = graphs
