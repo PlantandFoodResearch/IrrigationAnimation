@@ -8,10 +8,14 @@ Currently, we have two interfaces; a tkinter GUI, and the builtin pygame UI.
 
 Run gui.py for the Tkinter GUI, which should be largely self-explanatory.
 
+  $ python gui.py
+
 ### Pygame UI ###
 
 Edit animate.py to adjust the configurables, number of Values, etc.
 Running animate.py should bring up the pygame previewer.
+
+  $ python animate.py
 
 The pygame previewer has a few keybindings:
 - Up: Skip forward 10 frames
