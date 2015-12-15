@@ -201,8 +201,8 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
 if __name__ == "__main__":
 
 	# Create a Model.
-	model = Model("H:/My Documents/vis/gis/MediumPatches", \
-		"H:/My Documents/vis/csv/dry")
+	model = Model("H:/My Documents/vis/gis/SmallPatches", \
+		"H:/My Documents/vis/csv/small")
 	# Create the values.
 	values = [Values(model, "Wheat.AboveGround.Wt", \
 			colour_range = MAP_COLOUR_LIST[0]),
