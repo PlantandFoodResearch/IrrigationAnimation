@@ -1,4 +1,4 @@
-# animate #
+# IrrigationAnimation #
 
 ## Using ##
 
@@ -6,7 +6,7 @@ Currently, we have two interfaces; a tkinter GUI, and the builtin pygame UI.
 
 ### Tkinter GUI ###
 
-Run ui.py for the Tkinter GUI, which should be largely self-explanatory.
+Run gui.py for the Tkinter GUI, which should be largely self-explanatory.
 
 ### Pygame UI ###
 
