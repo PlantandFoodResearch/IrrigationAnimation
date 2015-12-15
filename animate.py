@@ -201,8 +201,8 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
 if __name__ == "__main__":
 
 	# Create a Model.
-	model = Model("H:/My Documents/vis/gis/SmallPatches", \
-		"H:/My Documents/vis/csv/small")
+	model = Model("H:/My Documents/vis/gis/MediumPatches", \
+		"H:/My Documents/vis/csv/slow")
 	# Create the values.
 	values = [Values(model, "Wheat.AboveGround.Wt", \
 			colour_range = MAP_COLOUR_LIST[0]),
@@ -239,5 +239,5 @@ if __name__ == "__main__":
 	# Play the animation.
 	fps = 4 # Frames per second
 	display_size = (1280, 1024) # Default size.
-	preview(render_frame, frames, fps, display_size, header)
+	#preview(render_frame, frames, fps, display_size, header)
 	
