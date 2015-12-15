@@ -49,9 +49,13 @@ class ThreadedGroup:
 	def wait(self):
 		""" Wait until all of the jobs are finished """
 		
+		print("Waiting for jobs to finish...")
+		
 		while self.job_count != 0:
 			# Block until another job ends.
 			self.semaphore.acquire()
+			
+		print("Jobs finished!")
 			
 
 class ThreadedDict(object):
@@ -96,6 +100,8 @@ class ThreadedDict(object):
 		
 	def cache(self, name):
 		""" Cache the given item, if required """
+		
+		print("Caching {}".format(name))
 		
 		# Check wether or not the item is in the process of being cached.
 		if name in self.job_dict:

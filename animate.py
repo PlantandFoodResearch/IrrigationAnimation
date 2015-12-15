@@ -21,8 +21,7 @@
 	- Additional widgets
 		- Simple value marker/s (on scale, or just as a value)
 	- Labels on existing widgets (eg units for a scale)
-	- Option to disable filepaths in the description/custom descriptions
-	- Pausing support for the dynamic viewer
+=	- Pausing support for the dynamic viewer
 	- Avoiding lag with the dynamic viewer
 	
 	Stretch goals:
@@ -45,7 +44,7 @@ from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 # We use pygame for font rendering...
 import pygame.font
 
-def gen_render_frame(panels, font, header, timewarp, edge_render):
+def gen_render_frame(panels, font, header, timewarp, edge_render, desc_format):
 	""" Given a list of panels, return a render_frame function showing them,
 		and the number of frames.
 	"""
@@ -74,7 +73,9 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
 		value = panel['values']
 		maps.append(ValuesWidget(value, edge_render))
 		scales.append(ScaleWidget(value, font))
-		descriptions.append(TextWidget(value.description(), font))
+		desc = desc_format.format(field=value.field, csv=value.model.csv, \
+			gis=value.model.gis, transform=value.transform)
+		descriptions.append(TextWidget(desc, font))
 		# TODO: Labelling should be more sophisticated.
 		
 		# Add the graph.
@@ -233,8 +234,14 @@ if __name__ == "__main__":
 	timewarp = 'basic' # Time warp method used
 	edge_render = True # Whether or not to render edges (plot edges, terrain).
 	font = (None, 25) # A (name, size) tuple for the font.
-	render_frame, frames = gen_render_frame(panels, font, \
-		header, timewarp, edge_render)
+	# Description format string.
+	desc_format = """Field of interest: {field}
+CSV: {csv}
+GIS: {gis}
+Transform: {transform}"""
+	# Actually run gen_render_frame.
+	render_frame, frames = gen_render_frame(panels, font, header, timewarp, \
+		edge_render, desc_format)
 	
 	# Play the animation.
 	fps = 4 # Frames per second

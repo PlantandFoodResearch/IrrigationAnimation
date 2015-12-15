@@ -93,6 +93,23 @@ class Options(ttk.Frame):
 		# Add the option to the options array.
 		self.options[name] = (entry, get)
 		
+	def add_text_option(self, name, default):
+		""" Add a textbox option """
+		
+		row = self.grid_size()[1]
+		
+		# Create a label.
+		label = ttk.Label(self, text = name + ':')
+		label.grid(row = row, column = 1, sticky = 'w')
+		
+		# Create a textbox.
+		text = tk.Text(self)
+		text.insert('0.0', default)
+		text.grid(row = self.grid_size()[1], column = 2, sticky = 'e')
+		
+		# Add the option.
+		self.options[name] = (text, lambda: text.get('0.0', "end"))
+		
 	def add_combobox_option(self, name, var, options, \
 		callback = lambda old, new: None, \
 		postcommand = lambda box: None):
@@ -516,7 +533,8 @@ class Main(ttk.Frame):
 				render_frame, frames = gen_render_frame(panels, \
 					(None, self.options.get('Text size')), \
 					self.options.get('Title'), self.options.get('Timewarp'), \
-					self.options.get('Edge render') == "True")
+					self.options.get('Edge render') == "True", \
+					self.options.get("Description string"))
 					
 				# Create a job wrapper to hold the lock.
 				def wrap_render(*args, **kargs):
@@ -605,6 +623,8 @@ class Main(ttk.Frame):
 		# Add the file option.
 		movie_filename = tk.StringVar(value = "H:/My Documents/vis/movies/movie.mp4")
 		self.options.add_file_option("Movie filename", movie_filename)
+		# Add a description string option.
+		self.options.add_text_option("Description string", "{field}, {transform}")
 		
 	def create_lists(self):
 		""" Create the lists """
