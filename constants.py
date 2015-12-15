@@ -47,6 +47,7 @@ AREA_FIELD = "Manager_P.Script.Patch_area" # Field name for the patch areas.
 DATE_FIELD = "Clock.Today" # Field name for dates.
 FIELD_NO_FIELD = "Manager_P.Script.This_field_no" # Field name for the field.
 PATCH_NUMBER_FIELD = 'PN' # Field name for patch numbers (in the GIS files).
+THREAD_COUNT = 8 # The number of parallel threads to use to load the CSV files.
 
 # Temporary constants:
 # TODO: Make these configurable, or find ways to make them automatic.

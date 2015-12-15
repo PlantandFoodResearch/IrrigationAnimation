@@ -202,7 +202,7 @@ if __name__ == "__main__":
 
 	# Create a Model.
 	model = Model("H:/My Documents/vis/gis/MediumPatches", \
-		"H:/My Documents/vis/csv/slow")
+		"H:/My Documents/vis/csv/dry")
 	# Create the values.
 	values = [Values(model, "Wheat.AboveGround.Wt", \
 			colour_range = MAP_COLOUR_LIST[0]),

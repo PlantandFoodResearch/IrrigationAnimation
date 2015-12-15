@@ -31,6 +31,7 @@ from models import Model, Values, Graphable
 from constants import MAP_COLOUR_LIST, MAX_FPS, MIN_FPS, MAX_TEXT_HEIGHT, \
 	MIN_TEXT_HEIGHT, FIELD_NO_FIELD
 import transforms
+from helpers import Job, ThreadedDict
 
 # Tkinter imports
 import Tkinter as tk
@@ -523,7 +524,7 @@ class Main(ttk.Frame):
 						func(*args, **kargs)
 
 				# Create and start the job.
-				job = ThreadedJob(wrap_render, render_frame, frames, \
+				job = Job(wrap_render, render_frame, frames, \
 					*[self.options.get(arg) for arg in args])
 				job.start()
 			finally:
@@ -654,78 +655,6 @@ class Main(ttk.Frame):
 
 		self.panel_list = ItemList(self, "Panels", panel_options)
 		self.panel_list.pack(expand = True, fill = 'both')
-
-class ThreadedDict(object):
-	""" A threaded, locking, load-from-disk dict """
-	
-	def __init__(self, load_func):
-		""" Initialise self.
-			load_func is the function to call to try to load a value.
-			start and end are callbacks passed to the lock wrapper to provide
-			a means of giving user feedback.
-		"""
-		
-		# The dict of loading jobs. (name: job)
-		self.job_dict = {}
-		# The lock protecting self's dict.
-		self.lock = Lock()
-		# Self's dict.
-		self.dict = {}
-		# The load function takes a name, and returns the corresponding value.
-		def wrapper(name):
-			value = load_func(name)
-			with self.lock:
-				self.dict[name] = value
-		self.load_func = wrapper
-		
-	def __getitem__(self, name):
-		""" Try to get the given item """
-		
-		# See whether the value is cached.
-		with self.lock:
-			if name in self.dict:
-				# It is cached; return it!
-				return self.dict[name]
-		
-		# Otherwise, cache it, wait for the job to finish, and then return.
-		self.cache(name)
-		# Wait for the job to finish.
-		self.job_dict[name].join()
-		# Now we lock, retrieve the value, and return.
-		with self.lock:
-			return self.dict[name]
-		
-	def cache(self, name):
-		""" Cache the given item, if required """
-		
-		# Check wether or not the item is in the process of being cached.
-		if name in self.job_dict:
-			# The item is cached or being cached; return.
-			return
-				
-		# Otherwise, start loading it and return.
-		job = ThreadedJob(self.load_func, name)
-		self.job_dict[name] = job
-		job.start()
-	
-class ThreadedJob(Thread):
-	""" Threaded job class """
-	
-	def __init__(self, function, *args, **kargs):
-		""" Initialise self """
-		
-		Thread.__init__(self)
-		self.daemon = True # This is a daemon thread...
-		self.function = function
-		self.args = args
-		self.kargs = kargs
-		
-	def run(self):
-		""" Run the function """
-		
-		# TODO: Currently, if this fails, the exception is not passed out to
-		#		the caller.
-		self.function(*self.args, **self.kargs)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from os import listdir
 import os.path
 import re
 import csv
+from helpers import ThreadedGroup, cache
 
 # shapefile is used to open the GIS files.
 import shapefile
@@ -38,7 +39,6 @@ class Model():
 		self.csv = csv
 		patch_files = find_patch_files(self.csv)
 		self.data = raw_patches(patch_files)
-		self.field_cache = {} # Initialise the field cache.
 		dates = self.extract_field(DATE_FIELD)
 		
 		# Verify the dates, and compress into a row: date mapping.
@@ -53,26 +53,23 @@ class Model():
 					raise ValueError("For some CSV files ({}, index = {}), the dates are not on equal rows!".format(csv, index))
 			self.dates[index] = date
 
+	# This function is cached, which provides a small speedup. 
+	# TODO: Ideally, I would refactor so this function was never called
+	#		multiple times with the same arguments anyway...
+	@cache
 	def extract_field(self, field, process=lambda v: v):
 		""" Extract a single field from the loaded data, and optionally
 			apply a function 'process' to each piece of data.
 		"""
 		
-		# We try to cache data... this provides a small speedup.
-		# TODO: Ideally, I would refactor so this function was never called
-		#		multiple times with the same arguments anyway...
-		try:
-			return self.field_cache[(field, process)]
-		except KeyError:
-			# Not in the cache :(
-			result = {}
-			for index in self.data:
-				result[index] = {}
-				for patch in self.data[index]:
-					result[index][patch] = process(self.data[index][patch][field])
-			# Save the result and return.
-			self.field_cache[(field, process)] = result
-			return result
+		result = {}
+		for index in self.data:
+			result[index] = {}
+			for patch in self.data[index]:
+				result[index][patch] = \
+					process(self.data[index][patch][field].strip())
+
+		return result
 
 	def fields(self):
 		""" Return a list of possible fields """
@@ -107,19 +104,28 @@ def find_patch_files(dir):
 			print("Ignoring file in patch directory '%s'!" %file)
 	
 	return patches
+
 	
 def raw_patches(files):
 	""" Open the given patch files and extract all of the data """
 	
-	# Open and load each patch file.
+	# Create the processing group.
+	group = ThreadedGroup()
+	# Create the wrapper function to load a patch file.
+	def load_patch(patch_dict, file_name):
+		# Parse the patch file.
+		with open(file_name) as patch:
+			for index, row in enumerate(csv.DictReader(patch)):
+				# Insert the values into the dict.
+				patch_dict[index] = row
+	# Create the patch dict and load into it.
 	patches = {} # patch: {index: value}
 	for patch_no in files:
 		patches[patch_no] = {}
-		# Parse the patch file.
-		with open(files[patch_no]) as patch:
-			for index, row in enumerate(csv.DictReader(patch)):
-				# Insert the values into the dict.
-				patches[patch_no][index] = row
+		# Start a job loading another patch file.
+		group.start(load_patch, patches[patch_no], files[patch_no])
+	# Wait for the jobs to finish.
+	group.wait()
 	
 	# Turn the resulting data into a index[patch[value]] format, and strip the
 	# data.
@@ -128,7 +134,7 @@ def raw_patches(files):
 		for index in patches[patch]:
 			if index not in result:
 				result[index] = {}
-			result[index][patch] = {field.strip(): value.strip() \
+			result[index][patch] = {field.strip(): value \
 				for field, value in patches[patch][index].items()}
 			
 	return result
