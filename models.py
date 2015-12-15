@@ -38,6 +38,7 @@ class Model():
 		self.csv = csv
 		patch_files = find_patch_files(self.csv)
 		self.data = raw_patches(patch_files)
+		self.field_cache = {} # Initialise the field cache.
 		dates = self.extract_field(DATE_FIELD)
 		
 		# Verify the dates, and compress into a row: date mapping.
@@ -56,14 +57,22 @@ class Model():
 		""" Extract a single field from the loaded data, and optionally
 			apply a function 'process' to each piece of data.
 		"""
-	
-		result = {}
-		for index in self.data:
-			result[index] = {}
-			for patch in self.data[index]:
-				result[index][patch] = process(self.data[index][patch][field])
-	
-		return result
+		
+		# We try to cache data... this provides a small speedup.
+		# TODO: Ideally, I would refactor so this function was never called
+		#		multiple times with the same arguments anyway...
+		try:
+			return self.field_cache[(field, process)]
+		except KeyError:
+			# Not in the cache :(
+			result = {}
+			for index in self.data:
+				result[index] = {}
+				for patch in self.data[index]:
+					result[index][patch] = process(self.data[index][patch][field])
+			# Save the result and return.
+			self.field_cache[(field, process)] = result
+			return result
 
 	def fields(self):
 		""" Return a list of possible fields """
