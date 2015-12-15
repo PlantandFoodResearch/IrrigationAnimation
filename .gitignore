@@ -1,4 +1,4 @@
-gis
-csv
 *.mp4
 *.pyc
+gis/Medium*
+csv/*
