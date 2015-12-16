@@ -621,7 +621,7 @@ class Main(ttk.Frame):
         self.options.add_combobox_option("Edge render", \
             tk.StringVar(value = "True"), ["True", "False"])
         # Add the file option.
-        movie_filename = tk.StringVar(value = "H:/My Documents/vis/movies/movie.mp4")
+        movie_filename = tk.StringVar(value = "movies/movie.mp4")
         self.options.add_file_option("Movie filename", movie_filename)
         # Add a description string option.
         self.options.add_text_option("Description string", "{field}, {transform}")
