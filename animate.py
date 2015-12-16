@@ -7,7 +7,6 @@
     - Transformations
         - Add per-field filters/transformations (2)
         - Add more by default (exponential/log/per-field)
-        - Add support for combining transformations
         - Add support for specifying custom transformations
         - Intergrate with the scale
     - Code cleanups (3)
