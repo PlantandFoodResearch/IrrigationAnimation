@@ -201,9 +201,9 @@ def gen_render_frame(panels, font, header, timewarp, edge_render, desc_format):
 
 
 if __name__ == "__main__":
-        localpath = os.path.dirname(__file__)
+    localpath = os.path.dirname(__file__)
 
-        # Create a Model.
+    # Create a Model.
     model = Model(os.path.join(localpath, "gis/SmallPatches"), \
         os.path.join(localpath, "csv/small"))
     # Create the values.
