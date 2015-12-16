@@ -206,8 +206,9 @@ if __name__ == "__main__":
     model = Model(os.path.join(localpath, "gis/SmallPatches"), \
         os.path.join(localpath, "csv/small"))
     # Create the values.
-    values = [Values(model, "Wheat.AboveGround.Wt", \
-            colour_range = MAP_COLOUR_LIST[0]),
+    values = [Values(model, "NO3Total", \
+            colour_range = MAP_COLOUR_LIST[0], \
+            transforms = ('basic', 'basic')),
         Values(model, "NO3Total", \
             colour_range = MAP_COLOUR_LIST[1])]
     # Create the graphs.
