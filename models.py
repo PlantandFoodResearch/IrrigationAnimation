@@ -184,12 +184,12 @@ def load_shapes(shape_file):
 class Values():
     """ Wrapper class to contain transformed data from a specific model """
     
-    def __init__(self, model, field, data_type='float', transform='basic', \
+    def __init__(self, model, field, data_type='float', transforms=(), \
         colour_range = [0.0, 1.0/4]):
         """ Initialise self """
         
         self.model = model
-        self.transform = transform
+        self.transforms = transforms
         
         if data_type == 'float':
             process = float
@@ -204,13 +204,10 @@ class Values():
             
         self.field = field
         orig_values = self.model.extract_field(self.field, process)
-        # Transform the values with the given transformation function.
-        transformation = transformations[transform]
-        new_values = {}
-        for index in orig_values:
-            new_values[index] = {}
-            for patch in orig_values[index]:
-                new_values[index][patch] = transformation(orig_values, index, patch)
+        # Apply the transformations.
+        new_values = orig_values
+        for transform in transforms:
+            new_values = transformations[transform](new_values)
             
         # Find the minimum and maximum values.
         self.min = float("inf")

@@ -9,22 +9,36 @@
 from constants import MAX_FRAMES_PER_DAY, MIN_FRAMES_PER_DAY
 
 # Transformation functions:
+# These accept a map 'values' of the form values[row index][patch no], and
+# returns another map 'values' suitably transformed.
 # These are applied to the data as preprocessing. For instance, change_value
 # returns the delta between the current and previous value. Other useful
 # functions might scale the data, or remove anomalies.
-basic_value = lambda values, index, patch: values[index][patch]
+basic_value = lambda values: values # No transform.
 # Time delta uses the delta between a value and the previous day's result.
-time_delta_value = lambda values, index, patch: values[index][patch] - \
-    values.get(index - 1, {patch: values[index][patch]})[patch]
+def time_delta_value(values):
+    new_values = {}
+    for index in values:
+        new_values[index] = {}
+        for patch in values[index]:
+            new_values[index][patch] = values[index][patch] - \
+                values.get(index - 1, {patch: values[index][patch]})[patch]
+    return new_values
 # Field delta uses the relative delta between a value and the maximum and
 # minimums on one specific day.
-# TODO: This is quite inefficient...
-def field_delta_value(values, index, patch):
-    min_day, max_day = min(values[index].values()), max(values[index].values())
-    try:
-        return ((values[index][patch] - min_day) / (max_day - min_day))
-    except ZeroDivisionError:
-        return 0
+def field_delta_value(values):
+    new_values = {}
+    for index in values:
+        new_values[index] = {}
+        min_day = min(values[index].values())
+        max_day = max(values[index].values())
+        for patch in values[index]:
+            try:
+                new_values[index][patch] = \
+                    ((values[index][patch] - min_day) / (max_day - min_day))
+            except ZeroDivisionError:
+                new_values[index][patch] = 0
+    return new_values
 
 # TODO: Other useful functions might be exponential decay based
 #       (with min as the baseline, max as the max)

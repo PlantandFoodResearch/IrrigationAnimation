@@ -75,7 +75,7 @@ def gen_render_frame(panels, font, header, timewarp, edge_render, desc_format):
         maps.append(ValuesWidget(value, edge_render))
         scales.append(ScaleWidget(value, font))
         desc = desc_format.format(field=value.field, csv=value.model.csv, \
-            gis=value.model.gis, transform=value.transform)
+            gis=value.model.gis, transform=value.transforms)
         descriptions.append(TextWidget(desc, font))
         # TODO: Labelling should be more sophisticated.
         

@@ -444,7 +444,7 @@ class Main(ttk.Frame):
         # Don't bother with early caching for this; rendering takes quite a bit
         # longer anyway...
         self.values = ThreadedDict(lambda name: Values(self.models[name[0]], \
-            name[1], transform = name[2], colour_range = name[3]))
+            name[1], transforms = [name[2]], colour_range = name[3]))
         
         # Create the widgets...
         self.create_buttons()
