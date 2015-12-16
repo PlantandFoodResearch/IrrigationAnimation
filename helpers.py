@@ -18,7 +18,7 @@ class ThreadedGroup:
     def __init__(self):
         """ Initialise self """
         
-        self.job_count = 0 # The number of active jobs.
+        self._job_count = 0 # The number of active jobs.
         self.lock = Lock() # Lock protecting job_count...
         self.semaphore = BoundedSemaphore(THREAD_COUNT)
         
@@ -34,16 +34,16 @@ class ThreadedGroup:
             try:
                 func(*args, **kargs)
             finally:
-                self.semaphore.release()
                 with self.lock:
-                    self.job_count -= 1
+                    self._job_count -= 1
+                self.semaphore.release()
         
         # Create the job.
         job = Job(job_wrapper)
         # Acquire the semaphore and start.
         self.semaphore.acquire()
         with self.lock:
-            self.job_count += 1
+            self._job_count += 1
         job.start()
         
     def wait(self):
@@ -51,12 +51,18 @@ class ThreadedGroup:
         
         print("Waiting for jobs to finish...")
         
-        while self.job_count != 0:
+        while self.get_job_count() != 0:
             # Block until another job ends.
             self.semaphore.acquire()
             
         print("Jobs finished!")
-            
+
+    def get_job_count(self):
+        """ Return the current job count """
+
+        with self.lock:
+            return self._job_count
+           
 
 class ThreadedDict(object):
     """ A threaded, locking, load-from-disk dict """
