@@ -5,17 +5,16 @@
     - Error reporting is broken/non-existant.
     - There is no validation before trying to render, so no nice error
       messages.
-    - Clicking on 'model' currently cans the field.
     - There are *lots* of TODO's.
     - Hanging without any indications is still broken
     - We should clear any invalid fields at render time
     - The open file/dir dialogs do not have any customisation.
     - We currently happily overwrite existing videos without any kind of
       warning.
-    - The whole split model/values thing is broken; the two should be combined
-      to reduce the number of bugs.
     - There are *lots* of bugs...
     - Not all of the configurables are wrapped.
+    - Chaining transformations and per-field transformations is not implemented
+      in the GUI yet.
 
     Future:
     - Saving existing setups.
