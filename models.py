@@ -52,6 +52,8 @@ class Model():
                     raise ValueError("For some CSV files ({}, index = {}), the dates are not on equal rows!".format(csv, index))
             self.dates[index] = date
 
+        print("Finished loading the model")
+
     # This function is cached, which provides a small speedup. 
     # TODO: Ideally, I would refactor so this function was never called
     #       multiple times with the same arguments anyway...
