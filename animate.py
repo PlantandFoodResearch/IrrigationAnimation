@@ -226,9 +226,9 @@ if __name__ == "__main__":
         ]
     ]
     # Create the description format strings...
-    desc_format = """Field of interest: {{field}}
-CSV: {{csv}}
-GIS: {{gis}}
+    desc_format = """Field of interest: {field}
+CSV: {csv}
+GIS: {gis}
 Transform: {transform}"""
     descriptions = []
     for value, transform in zip(values, ["field_delta", "per_field"]):
