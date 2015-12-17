@@ -509,7 +509,10 @@ class Main(ttk.Frame):
                     per_field = config["Per-field"].get()
                     name = config["Name"].get()
                     # TODO: Add full graph support.
-                    # TODO: Should we use the panel name anywhere?
+                    # TODO: Add support for per-field transformations.
+                    # TODO: Add support for using the same colour and scale
+                    #       for values *if* the field and transformations are
+                    #       equal *but* the csv file is different.
                     value = self.values[((gis, csv), field, \
                         transform, MAP_COLOUR_LIST[index])]
                     panel = {'values': value}
@@ -529,10 +532,9 @@ class Main(ttk.Frame):
                         else:
                             # Multiple, per-field graphs.
                             # Figure out the available fields.
-                            fields = value.model.extract_field(FIELD_NO_FIELD, \
-                                lambda v: int(float(v)))
+                            fields = value.model.get_patch_fields().keys()
                             # Generate a graph for each field.
-                            for field_no in set(fields[0].values()):
+                            for field_no in fields:
                                 graphs.append(Graphable(value.model, field, \
                                     str(field_no), field_nos = [field_no], \
                                     statistics = statistics))
@@ -544,7 +546,7 @@ class Main(ttk.Frame):
                     # Add the description.
                     panel['desc'] = config["Description string"].get().format(\
                         name = name, field = field, csv = csv, gis = gis, \
-                        transform = config['Value transform'].get())
+                        transform = transform)
 
                     panels.append(panel)
                 
