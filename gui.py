@@ -12,11 +12,9 @@
     - We currently happily overwrite existing videos without any kind of
       warning.
     - There are *lots* of bugs...
-    - Not all of the configurables are wrapped.
     - Chaining transformations and per-field transformations is not implemented
       in the GUI yet.
     - Rendering tab/pane for controlling running render jobs.
-    - Add support for per-field transformations.
     - Add support for combining transformations.
     - Add support for using the same colour and scale for values *if* the
       field and transformations are equal *but* the csv file is different.
