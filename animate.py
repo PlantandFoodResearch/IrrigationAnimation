@@ -5,8 +5,8 @@
     Future improvements:
     - GUI tweaking (1)
     - Transformations
-        - Add per-field filters/transformations (2)
-        - Add more by default (exponential/log/per-field)
+        - Intergrate chaining/extra transformations with the GUI
+        - Add more by default (exponential/log)
         - Add support for specifying custom transformations
         - Intergrate with the scale
     - Code cleanups (3)
