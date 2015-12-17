@@ -16,6 +16,15 @@
     - Chaining transformations and per-field transformations is not implemented
       in the GUI yet.
     - Rendering tab/pane for controlling running render jobs.
+    - Add full graph support.
+    - Add support for per-field transformations.
+    - Add support for combining transformations.
+    - Add support for using the same colour and scale for values *if* the
+      field and transformations are equal *but* the csv file is different.
+      This would involve moving value2colour out of values into something
+      else, and making it accept a group of values instead, adjusting
+      ScaleWidget to accept a group of values instead, and doing a pre-pass on
+      the panels in the rendering code to determine which ones fit the criteria.
 
     Future:
     - Saving existing setups.
@@ -509,11 +518,6 @@ class Main(ttk.Frame):
                     graph = config["Graph statistics"].get()
                     per_field = config["Per-field"].get()
                     name = config["Name"].get()
-                    # TODO: Add full graph support.
-                    # TODO: Add support for per-field transformations.
-                    # TODO: Add support for using the same colour and scale
-                    #       for values *if* the field and transformations are
-                    #       equal *but* the csv file is different.
                     value = self.values[((gis, csv), field, \
                         transform, MAP_COLOUR_LIST[index])]
                     panel = {'values': value}
