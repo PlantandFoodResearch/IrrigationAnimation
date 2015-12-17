@@ -140,19 +140,17 @@ class Job(Thread):
 
 
 class FuncVar():
-    """ A 'variable' supporting custom getter and setters """
+    """ A stupid 'variable', supporting set and get methods """
 
-    def __init__(self, getter, setter = lambda v: None):
+    def __init__(self, value = None):
         """ Initialise self """
-
-        self.getter = getter
-        self.setter = setter
+        self.value = value
 
     def get(self):
-        return self.getter()
+        return self.value
 
-    def set(self, v):
-        self.setter(v)
+    def set(self, value):
+        self.value = value
         
 
 def cache(func):

@@ -93,7 +93,7 @@ class Options(ttk.Frame):
         # Add the option to the options array.
         self.options[name] = (entry, get)
         
-    def add_text_option(self, name, default):
+    def add_text_option(self, name, var):
         """ Add a textbox option """
         
         row = self.grid_size()[1]
@@ -104,11 +104,24 @@ class Options(ttk.Frame):
         
         # Create a textbox.
         text = tk.Text(self, width = 40, height = 5)
-        text.insert('0.0', default)
+        text.insert('0.0', var.get())
         text.grid(row = self.grid_size()[1], column = 2, sticky = 'e')
+        text.tk.call(text._w, 'edit', 'modified', 0) # Set the 'modified' flag.
+        # Define a callback to reset the modified variable.
+        self.text_option_modified = False
+        def modified_callback(event):
+            """ Changing the 'modified' flag triggers the callback... """
+            if self.text_option_modified == False:
+                var.set(text.get('0.0', 'end'))
+                # Reset the flag
+                self.text_option_modified = True
+                text.tk.call(text._w, 'edit', 'modified', 0)
+                self.text_option_modified = False
+        # Add the callback.
+        text.bind('<<Modified>>', modified_callback)
         
         # Add the option.
-        self.options[name] = (text, lambda: text.get('0.0', "end"))
+        self.options[name] = (text, lambda: text.get('0.0', 'end'))
         
     def add_combobox_option(self, name, var, options, \
         callback = lambda old, new: None, \
@@ -660,8 +673,8 @@ class Main(ttk.Frame):
 
             def add_text(name, default):
                 if name not in values:
-                    values[name] = FuncVar(lambda: master.get(name))
-                master.add_text_option(name, default)
+                    values[name] = FuncVar(value = default)
+                master.add_text_option(name, values[name])
 
             def post_field(box):
                 """ Callback function for updating the list of fields """
