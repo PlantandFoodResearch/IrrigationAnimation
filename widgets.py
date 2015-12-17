@@ -497,8 +497,12 @@ class GraphWidget():
         
         # Define a helper function to find the y-coord.
         # This scales and offsets the given value as required.
-        y = lambda value: topleft[1] + size[1] - \
-            (size[1] * ((value - graph.min) / (graph.max - graph.min)))
+        def y(value):
+            try:
+                perc = ((value - graph.min) / (graph.max - graph.min))
+            except ZeroDivisionError:
+                perc = 0
+            return topleft[1] + size[1] - (size[1] * perc)
 
         old = graph[0]
         for i in range(size[0]):
