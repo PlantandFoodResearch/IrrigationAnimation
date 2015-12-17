@@ -16,7 +16,6 @@
     - Chaining transformations and per-field transformations is not implemented
       in the GUI yet.
     - Rendering tab/pane for controlling running render jobs.
-    - Add full graph support.
     - Add support for per-field transformations.
     - Add support for combining transformations.
     - Add support for using the same colour and scale for values *if* the
