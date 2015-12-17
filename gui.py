@@ -15,6 +15,7 @@
     - Not all of the configurables are wrapped.
     - Chaining transformations and per-field transformations is not implemented
       in the GUI yet.
+    - Rendering tab/pane for controlling running render jobs.
 
     Future:
     - Saving existing setups.
