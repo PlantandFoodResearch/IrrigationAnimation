@@ -31,7 +31,7 @@ from models import Model, Values, Graphable
 from constants import MAP_COLOUR_LIST, MAX_FPS, MIN_FPS, MAX_TEXT_HEIGHT, \
     MIN_TEXT_HEIGHT, FIELD_NO_FIELD
 import transforms
-from helpers import Job, ThreadedDict
+from helpers import Job, ThreadedDict, FuncVar
 
 # Tkinter imports
 import Tkinter as tk
@@ -361,6 +361,7 @@ class ItemList(ttk.Frame):
         # Add a rename option.
         var = tk.StringVar(value = name)
         var.trace("w", lambda *args: self.rename_item(var.get(), index))
+        self.items[name]["Name"] = var
         self.context.add_raw_option("Name", var)
         
         # Add the custom buttons.
@@ -494,6 +495,7 @@ class Main(ttk.Frame):
                     transform = config['Value transform'].get()
                     graph = config["Graph statistics"].get()
                     per_field = config["Per-field"].get()
+                    name = config["Name"].get()
                     # TODO: Add full graph support.
                     # TODO: Should we use the panel name anywhere?
                     value = self.values[((gis, csv), field, \
@@ -527,6 +529,10 @@ class Main(ttk.Frame):
                         
                         # Add the graph to the panel.
                         panel['graphs'] = graphs
+                    # Add the description.
+                    panel['desc'] = config["Description string"].get().format(\
+                        name = name, field = field, csv = csv, gis = gis, \
+                        transform = config['Value transform'].get())
 
                     panels.append(panel)
                 
@@ -534,8 +540,7 @@ class Main(ttk.Frame):
                 render_frame, frames = gen_render_frame(panels, \
                     (None, self.options.get('Text size')), \
                     self.options.get('Title'), self.options.get('Timewarp'), \
-                    self.options.get('Edge render') == "True", \
-                    self.options.get("Description string"))
+                    self.options.get('Edge render') == "True")
                     
                 # Create a job wrapper to hold the lock.
                 def wrap_render(*args, **kargs):
@@ -624,8 +629,6 @@ class Main(ttk.Frame):
         # Add the file option.
         movie_filename = tk.StringVar(value = "movies/movie.mp4")
         self.options.add_file_option("Movie filename", movie_filename)
-        # Add a description string option.
-        self.options.add_text_option("Description string", "{field}, {transform}")
         
     def create_lists(self):
         """ Create the lists """
@@ -646,6 +649,7 @@ class Main(ttk.Frame):
                 if name not in values:
                     values[name] = tk.StringVar(value = default)
                     values[name].trace("w", lambda *args: cache_model())
+                    cache_model()
                 master.add_file_option(name, values[name], *args)
                 
             def add_combo(name, options, default, **kargs):
@@ -653,6 +657,11 @@ class Main(ttk.Frame):
                     values[name] = tk.StringVar(value = default)
                 master.add_combobox_option(name, values[name], options, \
                     **kargs)
+
+            def add_text(name, default):
+                if name not in values:
+                    values[name] = FuncVar(lambda: master.get(name))
+                master.add_text_option(name, default)
 
             def post_field(box):
                 """ Callback function for updating the list of fields """
@@ -663,9 +672,9 @@ class Main(ttk.Frame):
                     fields = []
                 box['values'] = sorted(list(fields))
                 
-            add_file("GIS files", "", \
+            add_file("GIS files", "gis/SmallPatches.shp", \
                 tkFileDialog.askopenfilename)
-            add_file("CSV directory", "", \
+            add_file("CSV directory", "csv/small", \
                 tkFileDialog.askdirectory)
             add_combo("Value transform", transforms.transformations.keys(), \
                 'basic')
@@ -673,6 +682,12 @@ class Main(ttk.Frame):
             add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
                 "Min + Mean + Max", "Sum", "None"], "None")
             add_combo("Per-field", ['True', 'False'], 'False')
+            # Add a description string option.
+            add_text("Description string", """{name}:
+    Field of interest: {field}
+    CSV: {csv}
+    GIS: {gis}
+    Transform: {transform}""")
 
         self.panel_list = ItemList(self, "Panels", panel_options)
         self.panel_list.pack(expand = True, fill = 'both')

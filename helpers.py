@@ -137,6 +137,22 @@ class Job(Thread):
         # TODO: Currently, if this fails, the exception is not passed out to
         #       the caller.
         self.function(*self.args, **self.kargs)
+
+
+class FuncVar():
+    """ A 'variable' supporting custom getter and setters """
+
+    def __init__(self, getter, setter = lambda v: None):
+        """ Initialise self """
+
+        self.getter = getter
+        self.setter = setter
+
+    def get(self):
+        return self.getter()
+
+    def set(self, v):
+        self.setter(v)
         
 
 def cache(func):

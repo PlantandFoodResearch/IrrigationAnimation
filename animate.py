@@ -44,7 +44,7 @@ from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 import pygame.font
 import os.path
 
-def gen_render_frame(panels, font, header, timewarp, edge_render, desc_format):
+def gen_render_frame(panels, font, header, timewarp, edge_render):
     """ Given a list of panels, return a render_frame function showing them,
         and the number of frames.
     """
@@ -73,10 +73,7 @@ def gen_render_frame(panels, font, header, timewarp, edge_render, desc_format):
         value = panel['values']
         maps.append(ValuesWidget(value, edge_render))
         scales.append(ScaleWidget(value, font))
-        desc = desc_format.format(field=value.field, csv=value.model.csv, \
-            gis=value.model.gis, transform=value.transforms)
-        descriptions.append(TextWidget(desc, font))
-        # TODO: Labelling should be more sophisticated.
+        descriptions.append(TextWidget(panel.get('desc', ""), font))
         
         # Add the graph.
         g = panel.get('graphs', None)
@@ -227,24 +224,29 @@ if __name__ == "__main__":
             statistics = ['mean'], field_nos = [4])
         ]
     ]
+    # Create the description format strings...
+    desc_format = """Field of interest: {{field}}
+CSV: {{csv}}
+GIS: {{gis}}
+Transform: {transform}"""
+    descriptions = []
+    for value, transform in zip(values, "time_delta + field_delta"):
+        descriptions.append(desc_format.format(field = values.field, \
+           csv = values.model.csv, gis = values.model.gis, \
+           transform = transform))
     # Create and save the panels.
     panels = []
-    for value, graph in zip(values, graphs):
-        panels.append({'values': value, 'graphs': graph})
+    for value, graph, desc in zip(values, graphs, descriptions):
+        panels.append({'values': value, 'graphs': graph, 'desc': desc})
     
     # Create the render_frame function and frame count.
     header = "Model render" # Header displayed
     timewarp = 'basic' # Time warp method used
     edge_render = True # Whether or not to render edges (plot edges, terrain).
     font = (None, 25) # A (name, size) tuple for the font.
-    # Description format string.
-    desc_format = """Field of interest: {field}
-CSV: {csv}
-GIS: {gis}
-Transform: {transform}"""
     # Actually run gen_render_frame.
     render_frame, frames = gen_render_frame(panels, font, header, timewarp, \
-        edge_render, desc_format)
+        edge_render)
     
     # Play the animation.
     fps = 4 # Frames per second
