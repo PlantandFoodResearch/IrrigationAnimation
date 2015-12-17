@@ -128,8 +128,8 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
             x_offset = (surf_w / len(maps)) * i + BORDER
             
             # Render the description.
-            # We use the maximum of desc_offset and x_offset to avoid clipping, if
-            # possible.
+            # We use the maximum of desc_offset and x_offset to avoid
+            # clipping, if possible.
             desc_rect = desc.render(surface, index, \
                 lambda size: (max(x_offset + (value_area[0] / 2) - \
                     (size[0] / 2), desc_offset), BORDER))
@@ -144,15 +144,20 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
             else:
                 graph_height = int(min(value_area[0] * GRAPH_RATIO, \
                     surf_h * GRAPH_MAX_HEIGHT))
+
+            # Update the lowest point.
+            lowest = desc_rect.bottom + BORDER
             
             if scale != None and map != None:
-                # TODO: Center these properly if there is no graph.
                 # Render the scale.
-                scale_rect = scale.render(surface, index, \
-                    lambda size: (x_offset, desc_rect.bottom + BORDER), \
-                    (float('inf'), min(value_area[0] - (BORDER + SCALE_WIDTH), \
+                scale_size = (float('inf'), \
+                    min(value_area[0] - (BORDER + SCALE_WIDTH), \
                         value_area[1] - (desc_rect.height + BORDER * 2 + \
-                            graph_height))))
+                        graph_height)))
+                scale_rect = scale.render(surface, index, \
+                    lambda size: (x_offset, (lowest + surf_h - \
+                        (BORDER + graph_height) - size[1]) / 2), \
+                    scale_size)
 
                 # Render the map.
                 # The map size is shrunk to avoid clipping with anything, and
@@ -163,23 +168,21 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
                 map_rect = map.render(surface, index, \
                     lambda size: (scale_rect.right + BORDER + \
                             ((map_size[0] - size[0]) / 2), \
-                        desc_rect.bottom + BORDER), \
+                        (lowest + surf_h - (BORDER + graph_height) - \
+                            size[1]) / 2), \
                     map_size)
                 
-                # Find the lowest point.
-                lowest = max(map_rect.bottom, scale_rect.bottom)
+                # Update the lowest point.
+                lowest = max(map_rect.bottom, scale_rect.bottom) + BORDER
                 # Add the rects.
                 dirty.append(map_rect)
                 dirty.append(scale_rect)
-            else:
-                # Find the lowest point.
-                lowest = desc_rect.bottom
                 
             # Render the graph, if it is defined.
             if graph != None:
                 graph_rect = graph.render(surface, index, \
-                    lambda size: (x_offset, lowest + BORDER), \
-                    (value_area[0], max(surf_h - (lowest + (BORDER * 2)), \
+                    lambda size: (x_offset, lowest), \
+                    (value_area[0], max(surf_h - (lowest + BORDER), \
                         graph_height)))
                 dirty.append(graph_rect)
     
