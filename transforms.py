@@ -39,6 +39,25 @@ def field_delta_value(values):
             except ZeroDivisionError:
                 new_values[index][patch] = 0
     return new_values
+# field_split is a "special" transformation which extracts a specific set of
+# patches from the given set of values.
+# It needs to be wrapped to be used.
+def field_split(values, patches):
+    new_values = {}
+    for index in values:
+        new_values[index] = {}
+        for patch in patches:
+            new_values[index][patch] = values[index][patch]
+    return new_values
+# time_split splits out a specific set of dates from the values.
+# It needs to be wrapped to be used.
+def time_split(values, times):
+    new_values = {}
+    for index in times:
+        new_values[index] = {}
+        for patch in values[index]:
+            new_values[index][patch] = values[index][patch]
+    return new_values
 
 # TODO: Other useful functions might be exponential decay based
 #       (with min as the baseline, max as the max)
