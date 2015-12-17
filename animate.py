@@ -34,7 +34,8 @@
 
 # Import the other modules...
 from display import preview
-from transforms import times, basic_value, time_delta_value, field_delta_value
+from transforms import times, basic_value, time_delta_value, \
+	field_delta_value, per_field_value
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
 from models import Model, Values, Graphable
@@ -205,10 +206,10 @@ if __name__ == "__main__":
     # Create the values.
     values = [Values(model, "NO3Total", \
             colour_range = MAP_COLOUR_LIST[0], \
-            transforms = [basic_value, time_delta_value, field_delta_value]),
+            transforms = [basic_value, field_delta_value]),
         Values(model, "NO3Total", \
             colour_range = MAP_COLOUR_LIST[1], \
-            transforms = [time_delta_value])]
+            transforms = [lambda v: per_field_value(v, model.get_patch_fields())])]
     # Create the graphs.
     graphs = [[Graphable(values[0].model, values[0].field, \
             values[0].field + " (min, mean, max)", \
@@ -230,9 +231,9 @@ CSV: {{csv}}
 GIS: {{gis}}
 Transform: {transform}"""
     descriptions = []
-    for value, transform in zip(values, "time_delta + field_delta"):
-        descriptions.append(desc_format.format(field = values.field, \
-           csv = values.model.csv, gis = values.model.gis, \
+    for value, transform in zip(values, ["field_delta", "per_field"]):
+        descriptions.append(desc_format.format(field = value.field, \
+           csv = value.model.csv, gis = value.model.gis, \
            transform = transform))
     # Create and save the panels.
     panels = []

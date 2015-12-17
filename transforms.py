@@ -39,6 +39,37 @@ def field_delta_value(values):
             except ZeroDivisionError:
                 new_values[index][patch] = 0
     return new_values
+# Per field normalises the data relative to specific fields.
+def per_field_value(values, fields):
+    """ This normalises all patches relative to their field.
+        'fields' is a map of field numbers to a list of patches in that field.
+    """
+
+    field_list = list(fields.values())
+
+    # We calculate the maximum and minimum values for each field.
+    maxs = [max((values[index][patch] for index in values \
+                for patch in field)) for field in field_list]
+    mins = [min((values[index][patch] for index in values \
+                for patch in field)) for field in field_list]
+
+    new_values = {}
+    for field_id, field in enumerate(field_list):
+        f_max = maxs[field_id]
+        f_min = mins[field_id]
+        for index in values:
+            if index not in new_values:
+                new_values[index] = {}
+            for patch in field:
+                try:
+                    scaled_value = float(values[index][patch] - f_min) / \
+                        (f_max - f_min)
+                except ZeroDivisionError:
+                    scaled_value = 0
+                new_values[index][patch] = scaled_value
+
+    return new_values
+
 # field_split is a "special" transformation which extracts a specific set of
 # patches from the given set of values.
 # It needs to be wrapped to be used.

@@ -81,6 +81,25 @@ class Model():
                         fields.add(field)
         return fields
 
+    @cache
+    def get_patch_fields(self):
+        """ Return a map of field numbers to a list of patches in that field.
+        """
+
+        # TODO: It would be nice if the methodology here could be made more
+        #       generic?
+
+        values = self.extract_field(FIELD_NO_FIELD, lambda v: int(float(v)))
+        fields = {}
+        # There should be at least one row...
+        for patch in values[0]:
+            if values[0][patch] not in fields:
+                fields[values[0][patch]] = []
+            fields[values[0][patch]].append(patch)
+        return fields
+
+
+
 def find_patch_files(dir):
     """ Generates a dict mapping from patch numbers to absolute filenames """
     
@@ -268,14 +287,10 @@ class Graphable():
             # TODO: I'd like to make this filtering more generic (so that it
             #       can be applied elsewhere).
             # We are only interested in specific fields.
-            fields = self.model.extract_field(FIELD_NO_FIELD, \
-                lambda v: int(float(v)))
-            # Get a list of patches that are in the right field.
-            # We assume that the field nos remain the same.
+            fields = self.model.get_patch_fields()
             patches = []
-            for patch in fields[0]:
-                if fields[0][patch] in field_nos:
-                    patches.append(patch)
+            for field in field_nos:
+                patches += fields[field]
             # Define the helper function.
             def load_field(field):
                 values = self.model.extract_field(field, float)
