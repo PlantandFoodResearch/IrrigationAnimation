@@ -103,7 +103,7 @@ class Options(ttk.Frame):
         label.grid(row = row, column = 1, sticky = 'w')
         
         # Create a textbox.
-        text = tk.Text(self)
+        text = tk.Text(self, width = 40, height = 5)
         text.insert('0.0', default)
         text.grid(row = self.grid_size()[1], column = 2, sticky = 'e')
         
