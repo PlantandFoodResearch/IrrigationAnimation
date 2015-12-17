@@ -7,6 +7,7 @@
 """
 
 from constants import MAX_FRAMES_PER_DAY, MIN_FRAMES_PER_DAY
+import math
 
 # Transformation functions:
 # These accept a map 'values' of the form values[row index][patch no], and
@@ -69,12 +70,31 @@ def per_field_value(values, fields):
                 new_values[index][patch] = scaled_value
 
     return new_values
+# Exponential scaling.
+def exponential_value(values, v = math.e):
+    new_values = {}
+    for index in values:
+        new_values[index] = {}
+        for patch in values[index]:
+            new_values[index][patch] = v**(values[index][patch])
+    return new_values
+# Logarithmic scaling.
+def log_value(values, v = math.e):
+    new_values = {}
+    for index in values:
+        new_values[index] = {}
+        for patch in values[index]:
+            new_values[index][patch] = math.log(values[index][patch], v)
+    return new_values
 
-# TODO: Other useful functions might be exponential decay based
-#       (with min as the baseline, max as the max)
+
+# TODO: Some functions might accept arguments, so cannot be currently listed
+#       here...
 transformations = {'basic': basic_value,
     'time_delta': time_delta_value,
     'field_delta': field_delta_value,
+    'exponential': exponential_value,
+    'log': log_value,
     }
 
 # Time mapping functions:
