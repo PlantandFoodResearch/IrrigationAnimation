@@ -5,13 +5,11 @@
     Future improvements:
     - GUI tweaking (1)
     - Transformations
-        - Add more by default (exponential/log)
-        - Add support for specifying custom transformations
         - Intergrate with the scale
-    - Code cleanups (3)
-    - Removing all of the TODO's... (3)
+    - Code cleanups (2)
+    - Removing all of the TODO's... (2)
     - Speed ups + profiling
-    - Weather integration (4)
+    - Weather integration (3)
     - Render an irrigator
     - Render the description text using 'place'
     - Documentation
