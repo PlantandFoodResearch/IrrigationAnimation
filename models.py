@@ -5,7 +5,6 @@
 
 from constants import AREA_FIELD, DATE_FIELD, FIELD_NO_FIELD, \
     PATCH_NUMBER_FIELD
-from transforms import transformations
 # colorsys is used for the gradients
 import colorsys
 
@@ -207,7 +206,7 @@ class Values():
         # Apply the transformations.
         new_values = orig_values
         for transform in transforms:
-            new_values = transformations[transform](new_values)
+            new_values = transform(new_values)
             
         # Find the minimum and maximum values.
         self.min = float("inf")

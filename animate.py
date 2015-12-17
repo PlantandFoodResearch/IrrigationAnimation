@@ -34,7 +34,7 @@
 
 # Import the other modules...
 from display import preview
-from transforms import times
+from transforms import times, basic_value, time_delta_value, field_delta_value
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
 from models import Model, Values, Graphable
@@ -208,9 +208,10 @@ if __name__ == "__main__":
     # Create the values.
     values = [Values(model, "NO3Total", \
             colour_range = MAP_COLOUR_LIST[0], \
-            transforms = ('basic', 'basic')),
+            transforms = [basic_value, time_delta_value, field_delta_value]),
         Values(model, "NO3Total", \
-            colour_range = MAP_COLOUR_LIST[1])]
+            colour_range = MAP_COLOUR_LIST[1], \
+            transforms = [time_delta_value])]
     # Create the graphs.
     graphs = [[Graphable(values[0].model, values[0].field, \
             values[0].field + " (min, mean, max)", \
