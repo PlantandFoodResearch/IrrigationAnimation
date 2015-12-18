@@ -464,8 +464,7 @@ class Main(ttk.Frame):
         # Don't bother with early caching for this; rendering takes quite a bit
         # longer anyway...
         self.values = ThreadedDict(lambda name: Values(self.models[name[0]], \
-            name[1], transforms = [transforms.transformations[name[2]]], \
-            colour_range = name[3]))
+            name[1], transforms = [transforms.transformations[name[2]]]))
         
         # Create the widgets...
         self.create_buttons()
@@ -515,8 +514,7 @@ class Main(ttk.Frame):
                     graph = config["Graph statistics"].get()
                     per_field = config["Per-field"].get()
                     name = config["Name"].get()
-                    value = self.values[((gis, csv), field, \
-                        transform, MAP_COLOUR_LIST[index])]
+                    value = self.values[((gis, csv), field, transform)]
                     panel = {'values': value}
                     if graph != 'None':
                         graphs = []
