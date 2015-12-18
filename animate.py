@@ -40,7 +40,7 @@ from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
     GraphWidget, gen_value2colour
 # We use pygame for font rendering...
 import pygame.font
-import os.path
+
 
 def combined_dates(date_list):
     """ Combine the given dates """
@@ -52,6 +52,32 @@ def combined_dates(date_list):
         elif date != dates:
             raise ValueError("All models must have the same set of dates!")
     return dates
+
+def gen_widgets(panels, dates, font, edge_render):
+    """ Generate the widgets from the given panels """
+
+    widgets = []
+    for i, panel in enumerate(panels):
+
+        widget_dict = {}
+
+        # Add the normal items.
+        value = panel['values']
+        value2colour = gen_value2colour(value, MAP_COLOUR_LIST[i])
+        widget_dict['map'] = ValuesWidget(value, value2colour, edge_render)
+        widget_dict['scale'] = ScaleWidget(value, value2colour, font)
+        widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
+        
+        # Add the graph.
+        if 'graphs' in panel:
+            widget_dict['graph'] = GraphWidget(panel['graphs'], dates, font, \
+                panel.get('graph_label', DEFAULT_LABEL))
+
+        # Save the widgets.
+        widgets.append(widget_dict)
+    
+    return widgets
+
 
 def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
     """ Given a list of panels, return a render_frame function showing them,
@@ -66,28 +92,7 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
     dates = combined_dates([panel['values'].model.dates for panel in panels])
     
     # Init the widgets.
-    maps = []
-    scales = []
-    descriptions = []
-    graphs = []
-    for i, panel in enumerate(panels):
-    
-        # Add the normal items.
-        value = panel['values']
-        value2colour = gen_value2colour(value, MAP_COLOUR_LIST[i])
-        maps.append(ValuesWidget(value, value2colour, edge_render))
-        scales.append(ScaleWidget(value, value2colour, font))
-        descriptions.append(TextWidget(panel.get('desc', ""), font))
-        
-        # Add the graph.
-        g = panel.get('graphs', None)
-        label = panel.get('graph_label', DEFAULT_LABEL)
-        if g != None:
-            graphs.append(GraphWidget(g, dates, font, label))
-        else:
-            # No graph.
-            graphs.append(None)
-
+    widgets = gen_widgets(panels, dates, font, edge_render)
     label = TextWidget(header, font)
     date = DynamicTextWidget(lambda time: dates[time], font)
     
@@ -124,14 +129,14 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
         # value_area is the area dedicated to a specific map/scale/description.
         # It is calculated as a fraction of the space available, where the
         # denominator is the number of values.
-        value_area = [i - (2 * BORDER) for i in (surf_w / len(maps), surf_h)]
+        value_area = [i - (2 * BORDER) for i in (surf_w / len(widgets), surf_h)]
         # Iterate through the values and render them.
         for i in range(len(panels)):
-            map, scale, desc, graph = maps[i], scales[i], descriptions[i], \
-                graphs[i]
+            map, scale, desc, graph = widgets[i]['map'], widgets[i]['scale'], \
+                widgets[i]['desc'], widgets[i].get('graph', None)
             
             # The x offset is the leftmost start point for an item.
-            x_offset = (surf_w / len(maps)) * i + BORDER
+            x_offset = (surf_w / len(widgets)) * i + BORDER
             
             # Render the description.
             # We use the maximum of desc_offset and x_offset to avoid
@@ -204,6 +209,7 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
 
 
 if __name__ == "__main__":
+    import os.path
     localpath = os.path.dirname(__file__)
 
     # Create a couple of Models.
