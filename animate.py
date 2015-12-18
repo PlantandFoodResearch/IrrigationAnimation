@@ -35,7 +35,7 @@ from transforms import times, basic_value, time_delta_value, \
 	field_delta_value, per_field_value
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
-from models import Model, Values, CombinedValues, Graphable
+from models import Model, Values, Combination, Graphable
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
     GraphWidget, gen_value2colour
 # We use pygame for font rendering...
@@ -71,7 +71,7 @@ def gen_widgets(panels, dates, font, edge_render):
     i = 0 
     for panels in groups.values():
         # Create a value2colour for the group.
-        combined_value = CombinedValues([panel['values'] for panel in panels])
+        combined_value = Combination([panel['values'] for panel in panels])
         value2colour = gen_value2colour(combined_value, MAP_COLOUR_LIST[i])
         i += 1
         for panel in panels:
