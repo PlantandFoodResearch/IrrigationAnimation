@@ -44,7 +44,6 @@ import pygame.font
 
 def combined_dates(date_list):
     """ Combine the given dates """
-    # Combine the dates and check that they are all the same.
     dates = None
     for date in date_list:
         if dates == None:
