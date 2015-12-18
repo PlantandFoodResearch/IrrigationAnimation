@@ -246,8 +246,8 @@ class CombinedValues():
         self.value_list = value_list
 
         # Generate the shared maximums and minimums.
-        self.min = min((value.min for value in values))
-        self.max = max((value.max for value in values))
+        self.min = min((value.min for value in value_list))
+        self.max = max((value.max for value in value_list))
 
 
 class Graphable():

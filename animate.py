@@ -35,7 +35,7 @@ from transforms import times, basic_value, time_delta_value, \
 	field_delta_value, per_field_value
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
-from models import Model, Values, Graphable
+from models import Model, Values, CombinedValues, Graphable
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
     GraphWidget, gen_value2colour
 # We use pygame for font rendering...
@@ -55,25 +55,42 @@ def combined_dates(date_list):
 def gen_widgets(panels, dates, font, edge_render):
     """ Generate the widgets from the given panels """
 
-    widgets = []
-    for i, panel in enumerate(panels):
+    # TODO: Pull this out and put into 'panels' instead.
 
-        widget_dict = {}
-
-        # Add the normal items.
+    # Preprocess the widgets as a special case to group the widgets based on
+    # values with the same field and transformation together (ie use a shared
+    # value2colour).
+    groups = {} # (field, transform): [panel]
+    for panel in panels:
         value = panel['values']
-        value2colour = gen_value2colour(value, MAP_COLOUR_LIST[i])
-        widget_dict['map'] = ValuesWidget(value, value2colour, edge_render)
-        widget_dict['scale'] = ScaleWidget(value, value2colour, font)
-        widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
-        
-        # Add the graph.
-        if 'graphs' in panel:
-            widget_dict['graph'] = GraphWidget(panel['graphs'], dates, font, \
-                panel.get('graph_label', DEFAULT_LABEL))
+        if (value.field, value.transforms) not in groups:
+            groups[(value.field, value.transforms)] = []
+        groups[(value.field, value.transforms)].append(panel)
 
-        # Save the widgets.
-        widgets.append(widget_dict)
+    widgets = []
+    i = 0 
+    for panels in groups.values():
+        # Create a value2colour for the group.
+        combined_value = CombinedValues([panel['values'] for panel in panels])
+        value2colour = gen_value2colour(combined_value, MAP_COLOUR_LIST[i])
+        i += 1
+        for panel in panels:
+            # Create the shared dict.
+            widget_dict = {}
+            # Add the normal items.
+            value = panel['values']
+            widget_dict['map'] = ValuesWidget(value, value2colour, edge_render)
+            widget_dict['scale'] = ScaleWidget(combined_value, value2colour, \
+                font)
+            widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
+            
+            # Add the graph.
+            if 'graphs' in panel:
+                widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
+                    font, panel.get('graph_label', DEFAULT_LABEL))
+
+            # Save the widgets.
+            widgets.append(widget_dict)
     
     return widgets
 
@@ -219,8 +236,8 @@ if __name__ == "__main__":
     slow = Model(os.path.join(localpath, "gis/MediumPatches"), \
         os.path.join(localpath, "csv/slow"))
     # Create the values.
-    values = [Values(dry, "NO3Total"),
-              Values(slow, "NO3Total")]
+    values = [Values(dry, "SWTotal"),
+              Values(slow, "SWTotal")]
     # Create the graphs.
     graphs = [[Graphable(values[0].model, values[0].field, \
             values[0].field + " (min, mean, max)", \
@@ -228,7 +245,7 @@ if __name__ == "__main__":
         ], [Graphable(values[1].model, values[1].field, \
                     "Field #{}".format(i), statistics = ['mean'], \
                     field_nos = [i])
-                for i in range(1, 4)]
+                for i in range(1, 5)]
     ]
     # Create the description format strings...
     desc_format = """Field of interest: {field}
@@ -236,7 +253,7 @@ CSV: {csv}
 GIS: {gis}
 Transform: {transform}"""
     descriptions = []
-    for value, transform in zip(values, ["field_delta", "per_field"]):
+    for value, transform in zip(values, ["None", "None"]):
         descriptions.append(desc_format.format(field = value.field, \
            csv = value.model.csv, gis = value.model.gis, \
            transform = transform))
