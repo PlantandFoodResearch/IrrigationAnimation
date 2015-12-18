@@ -150,6 +150,8 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
             
             if scale != None and map != None:
                 # Render the scale.
+                # TODO: We assume that the map is a square when calculating
+                #       the scale size; it might not be, so account for that.
                 scale_size = (float('inf'), \
                     min(value_area[0] - (BORDER + SCALE_WIDTH), \
                         value_area[1] - (desc_rect.height + BORDER * 2 + \
