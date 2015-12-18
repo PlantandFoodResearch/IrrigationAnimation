@@ -113,8 +113,6 @@ def find_patch_files(dir):
     patches = {}
     for file in files:
         # Check that the file name is in a sane format (ie looks like a CSV patch file).
-        # TODO: We make some assumptions here about the format of the file names
-        #       which may or may not be accurate.
         match = re.search(r"(Report)([1-9][0-9]*)(\.csv)$", file)
         
         if match:
