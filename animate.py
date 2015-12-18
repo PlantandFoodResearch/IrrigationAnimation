@@ -53,14 +53,14 @@ def combined_dates(date_list):
             raise ValueError("All models must have the same set of dates!")
     return dates
 
-def gen_render_frame(panels, font, header, timewarp, edge_render):
+def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
     """ Given a list of panels, return a render_frame function showing them,
         and the number of frames.
     """
 
-    # Init the fonts.
+    # Init the font.
     pygame.font.init()
-    font = pygame.font.Font(*font)
+    font = pygame.font.Font(*font_desc)
     
     # Combine the dates and check that they are the same for all the values.
     dates = combined_dates([panel['values'].model.dates for panel in panels])
