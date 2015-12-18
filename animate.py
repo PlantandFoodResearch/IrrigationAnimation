@@ -37,10 +37,11 @@ from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
 from models import Model, Values, Graphable
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
-    GraphWidget
+    GraphWidget, gen_value2colour
 # We use pygame for font rendering...
 import pygame.font
 import os.path
+
 
 def gen_render_frame(panels, font, header, timewarp, edge_render):
     """ Given a list of panels, return a render_frame function showing them,
@@ -65,12 +66,13 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
     scales = []
     descriptions = []
     graphs = []
-    for panel in panels:
+    for i, panel in enumerate(panels):
     
         # Add the normal items.
         value = panel['values']
-        maps.append(ValuesWidget(value, edge_render))
-        scales.append(ScaleWidget(value, font))
+        value2colour = gen_value2colour(value, MAP_COLOUR_LIST[i])
+        maps.append(ValuesWidget(value, value2colour, edge_render))
+        scales.append(ScaleWidget(value, value2colour, font))
         descriptions.append(TextWidget(panel.get('desc', ""), font))
         
         # Add the graph.
@@ -200,30 +202,22 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
 if __name__ == "__main__":
     localpath = os.path.dirname(__file__)
 
-    # Create a Model.
-    model = Model(os.path.join(localpath, "gis/SmallPatches"), \
-        os.path.join(localpath, "csv/small"))
+    # Create a couple of Models.
+    dry = Model(os.path.join(localpath, "gis/MediumPatches"), \
+        os.path.join(localpath, "csv/dry"))
+    slow = Model(os.path.join(localpath, "gis/MediumPatches"), \
+        os.path.join(localpath, "csv/slow"))
     # Create the values.
-    values = [Values(model, "NO3Total", \
-            colour_range = MAP_COLOUR_LIST[0], \
-            transforms = [basic_value, field_delta_value]),
-        Values(model, "NO3Total", \
-            colour_range = MAP_COLOUR_LIST[1], \
-            transforms = [lambda v: per_field_value(v, model.get_patch_fields())])]
+    values = [Values(dry, "NO3Total"),
+              Values(slow, "NO3Total")]
     # Create the graphs.
     graphs = [[Graphable(values[0].model, values[0].field, \
             values[0].field + " (min, mean, max)", \
             statistics = ['min', 'mean', 'max'])
-        ],
-        [Graphable(values[1].model, values[1].field, 'Field #1', \
-            statistics = ['mean'], field_nos = [1]),
-        Graphable(values[1].model, values[1].field, 'Field #2', \
-            statistics = ['mean'], field_nos = [2]),
-        Graphable(values[1].model, values[1].field, 'Field #3', \
-            statistics = ['mean'], field_nos = [3]),
-        Graphable(values[1].model, values[1].field, 'Field #4', \
-            statistics = ['mean'], field_nos = [4])
-        ]
+        ], [Graphable(values[1].model, values[1].field, \
+                    "Field #{}".format(i), statistics = ['mean'], \
+                    field_nos = [i])
+                for i in range(1, 4)]
     ]
     # Create the description format strings...
     desc_format = """Field of interest: {field}

@@ -5,8 +5,6 @@
 
 from constants import AREA_FIELD, DATE_FIELD, FIELD_NO_FIELD, \
     PATCH_NUMBER_FIELD
-# colorsys is used for the gradients
-import colorsys
 
 # To find and load the CSV model files, we need some functions.
 from os import listdir
@@ -202,8 +200,7 @@ def load_shapes(shape_file):
 class Values():
     """ Wrapper class to contain transformed data from a specific model """
     
-    def __init__(self, model, field, data_type='float', transforms=(), \
-        colour_range = [0.0, 1.0/4]):
+    def __init__(self, model, field, data_type='float', transforms=()):
         """ Initialise self """
         
         self.model = model
@@ -223,47 +220,34 @@ class Values():
         self.field = field
         orig_values = self.model.extract_field(self.field, process)
         # Apply the transformations.
-        new_values = orig_values
+        self.values = orig_values
         for transform in transforms:
-            new_values = transform(new_values)
+            self.values = transform(self.values)
             
         # Find the minimum and maximum values.
         self.min = float("inf")
         self.max = -float("inf")
-        for index in new_values:
-            for patch in new_values[index]:
-                value = new_values[index][patch]
+        for index in self.values:
+            for patch in self.values[index]:
+                value = self.values[index][patch]
                 if value < self.min:
                     self.min = value
                 if value > self.max:
                     self.max = value
         
-        # Create the colour mapping function.
-        def value2colour(value):
-            """ Convert from a given value to a colour """
-            # Using this: 
-            # http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855 
-            # We scale to a specific colour range.
-            # Convert to something in the range of 0 to 120 degrees, fed into
-            # the colorsys function (red..green in HSV)
-            try:
-                hue = ((value - self.min) / (self.max - self.min)) # 0-1
-            except ZeroDivisionError:
-                hue = 0
-            # Convert the hue into something in the given range.
-            value = hue * (colour_range[1] - colour_range[0]) + colour_range[0]
-            # Return a RGB version of that colour.
-            return [int(i*255) for i in colorsys.hsv_to_rgb(value, 1.0, 1.0)]
-        
-        self.value2colour = value2colour
-        
-        # Convert all of the values into colours.
-        self.values = {}
-        self.actual_values = new_values
-        for index in new_values:
-            self.values[index] = {}
-            for patch in new_values[index]:
-                self.values[index][patch] = value2colour(new_values[index][patch])
+
+class CombinedValues():
+    """ Wrapper class containing related Values """
+
+    def __init__(self, value_list):
+        """ Initialise self """
+
+        # Save the list of Values.
+        self.value_list = value_list
+
+        # Generate the shared maximums and minimums.
+        self.min = min((value.min for value in values))
+        self.max = max((value.max for value in values))
 
 
 class Graphable():

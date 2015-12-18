@@ -24,6 +24,7 @@ from constants import ANCHOR_FORCE, BROKEN_COLOUR, EDGE_COLOUR, \
 
 import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
+import colorsys # For value2colour
 
 # We define a helper function to round to n significant digits:
 # This is from: http://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python
@@ -36,6 +37,25 @@ def round_sf(v, n):
         if rounded % 1 == 0:
             return int(rounded)
         return rounded
+
+# We also define a helper function to generate a value2colour function for a
+# given values and colour_range.
+def gen_value2colour(values, colour_range):
+    # Create the colour mapping function.
+    def value2colour(value):
+        """ Convert from a given value to a colour """
+        # Using this: 
+        # http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855 
+        # We scale to a specific colour range (in HSV, from 0 to 1).
+        try:
+            hue = ((value - values.min) / (values.max - values.min)) # 0-1
+        except ZeroDivisionError:
+            hue = 0
+        # Convert the hue into something in the given range.
+        value = hue * (colour_range[1] - colour_range[0]) + colour_range[0]
+        # Return a RGB version of that colour.
+        return [int(i*255) for i in colorsys.hsv_to_rgb(value, 1.0, 1.0)]
+    return value2colour
 
 
 class TextWidget():
@@ -108,7 +128,8 @@ class DynamicTextWidget(TextWidget):
 class ScaleWidget():
     """ A dynamically sized widget representing a scale """
     
-    def __init__(self, values, font, labelling=None, row2value=None):
+    def __init__(self, values, value2colour, font, labelling=None, \
+            row2value=None):
         """ Initialise self.
         
             The given scale labelling function is assumed to take a height, and
@@ -147,6 +168,7 @@ class ScaleWidget():
         
         self.font = font
         self.values = values
+        self.value2colour = value2colour
         self.labelling = labelling # Scale labelling function.
         self.row2value = row2value # Row to value conversion function.
         self.size = None # The scale is *mostly* dynamically sized.
@@ -181,7 +203,7 @@ class ScaleWidget():
             # Calculate the height to draw the row at.
             y = base_height - row
             # Calculate the colour for this row.
-            colour = self.values.value2colour(self.row2value(row, height))
+            colour = self.value2colour(self.row2value(row, height))
             # Draw the row.
             pygame.draw.line(surface, colour, (min_x, y), (max_x, y))
             
@@ -216,11 +238,12 @@ class ScaleWidget():
 class ValuesWidget():
     """ Widget for a specific Values """
     
-    def __init__(self, values, edge_render):
+    def __init__(self, values, value2colour, edge_render):
         """ Initialise self """
 
         self.size = None # This widget is dynamically sized.
         self.values = values
+        self.value2colour = value2colour
         self.model = values.model
         self.edge_render = edge_render
         
@@ -251,7 +274,9 @@ class ValuesWidget():
         return [mins[0], mins[1], maxs[0], maxs[1]]
         
     def gen_transform(self, pos_func, size):
-        """ Generate a transformation function to adjust the points in the model """
+        """ Generate a transformation function to adjust the points in the
+            model.
+        """
         
         # The scaling factor required to scale the image to fit nicely in
         # the given size.
@@ -285,7 +310,7 @@ class ValuesWidget():
         # Render patches.
         for patch in self.model.patches:
             try:
-                value = self.values.values[time][patch]
+                value = self.value2colour(self.values.values[time][patch])
             except KeyError:
                 # We currently ignore this, to avoid spamming the console.
                 value = BROKEN_COLOUR
