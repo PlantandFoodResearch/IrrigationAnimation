@@ -42,6 +42,16 @@ from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
 import pygame.font
 import os.path
 
+def combined_dates(date_list):
+    """ Combine the given dates """
+    # Combine the dates and check that they are all the same.
+    dates = None
+    for date in date_list:
+        if dates == None:
+            dates = date
+        elif date != dates:
+            raise ValueError("All models must have the same set of dates!")
+    return dates
 
 def gen_render_frame(panels, font, header, timewarp, edge_render):
     """ Given a list of panels, return a render_frame function showing them,
@@ -53,13 +63,7 @@ def gen_render_frame(panels, font, header, timewarp, edge_render):
     font = pygame.font.Font(*font)
     
     # Combine the dates and check that they are the same for all the values.
-    dates = None
-    for panel in panels:
-        value = panel['values']
-        if dates == None:
-            dates = value.model.dates
-        elif dates != value.model.dates:
-            raise ValueError("All models must have the same set of dates!")
+    dates = combined_dates([panel['values'].model.dates for panel in panels])
     
     # Init the widgets.
     maps = []
