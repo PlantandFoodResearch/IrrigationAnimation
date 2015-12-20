@@ -338,12 +338,8 @@ class Graphable():
                 day_func = lambda day: max((self.orig_values[day][patch] \
                     for patch in self.orig_values[day]))
             elif stat == 'sum':
-                def day_func(index):
-                    """ Calculate the weighted sum for the given day """
-                    day = 0
-                    for patch in values[index]:
-                        day += values[index][patch] * self.areas[patch]
-                    return day
+                day_func = lambda day: sum((self.orig_values[day][patch] \
+                    for patch in self.orig_values[day]))
             else:
                 raise ValueError("Unknown statistic {}!".format(stat))
             self.values.append({day: day_func(day) \
