@@ -234,20 +234,6 @@ class Values():
                     self.min = value
                 if value > self.max:
                     self.max = value
-        
-
-class CombinedValues():
-    """ Wrapper class containing related Values """
-
-    def __init__(self, value_list):
-        """ Initialise self """
-
-        # Save the list of Values.
-        self.value_list = value_list
-
-        # Generate the shared maximums and minimums.
-        self.min = min((value.min for value in value_list))
-        self.max = max((value.max for value in value_list))
 
 
 class Graphable():
@@ -347,3 +333,17 @@ class Graphable():
         
         return [stat[date] for stat in self.values]
         
+
+class Combination():
+    """ Wrapper class containing related objects """
+
+    def __init__(self, objects):
+        """ Initialise self """
+
+        # Save the list of Values.
+        self.objects = objects
+
+        # Generate the shared maximums and minimums.
+        self.min = min((obj.min for obj in objects))
+        self.max = max((obj.max for obj in objects))
+ 
