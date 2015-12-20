@@ -55,42 +55,45 @@ def combined_dates(date_list):
 def gen_widgets(panels, dates, font, edge_render):
     """ Generate the widgets from the given panels """
 
-    # TODO: Pull this out and put into 'panels' instead.
-
-    # Preprocess the widgets as a special case to group the widgets based on
-    # values with the same field and transformation together (ie use a shared
-    # value2colour).
-    groups = {} # (field, transform): [panel]
+    # Generate the shared domains.
+    domains = {} # id: {min, max, ...}
+    def add_object(obj):
+        domain_id = obj.domain
+        if obj.domain not in domains:
+            domains[obj.domain] = {'min': float('inf'), 'max': -float('inf')}
+        domains[obj.domain]['min'] = min(domains[obj.domain]['min'], obj.min)
+        domains[obj.domain]['max'] = max(domains[obj.domain]['max'], obj.max)
     for panel in panels:
-        value = panel['values']
-        if (value.field, value.transforms) not in groups:
-            groups[(value.field, value.transforms)] = []
-        groups[(value.field, value.transforms)].append(panel)
+        if 'values' in panel:
+            add_object(panel['values'])
+        if 'graphs' in panel:
+            for graph in panel['graphs']:
+                add_object(graph)
+    for domain_id, domain in domains.items():
+        domain['v2c'] = gen_value2colour(domain['min'], domain['max'], \
+            MAP_COLOUR_LIST[domain_id])
 
     widgets = []
-    i = 0 
-    for panels in groups.values():
-        # Create a value2colour for the group.
-        combined_value = Combination([panel['values'] for panel in panels])
-        value2colour = gen_value2colour(combined_value, MAP_COLOUR_LIST[i])
-        i += 1
-        for panel in panels:
-            # Create the shared dict.
-            widget_dict = {}
-            # Add the normal items.
-            value = panel['values']
-            widget_dict['map'] = ValuesWidget(value, value2colour, edge_render)
-            widget_dict['scale'] = ScaleWidget(combined_value, value2colour, \
-                font)
-            widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
-            
-            # Add the graph.
-            if 'graphs' in panel:
-                widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
-                    font, panel.get('graph_label', DEFAULT_LABEL))
+    for panel in panels:
+        # Create the shared dict.
+        widget_dict = {}
+        # Add the normal items.
+        value = panel['values']
+        domain = domains[value.domain]
+        widget_dict['map'] = ValuesWidget(value, domain['v2c'], edge_render)
+        widget_dict['scale'] = ScaleWidget(domain['min'], domain['max'], \
+            domain['v2c'], font)
+        widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
+        
+        # Add the graph.
+        if 'graphs' in panel:
+            domain = domains[Combination(panel['graphs']).domain]
+            widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
+                font, panel.get('graph_label', DEFAULT_LABEL), \
+                scale=(domain['min'], domain['max']))
 
-            # Save the widgets.
-            widgets.append(widget_dict)
+        # Save the widgets.
+        widgets.append(widget_dict)
     
     return widgets
 
@@ -236,14 +239,14 @@ if __name__ == "__main__":
     slow = Model(os.path.join(localpath, "gis/MediumPatches"), \
         os.path.join(localpath, "csv/slow"))
     # Create the values.
-    values = [Values(dry, "SWTotal"),
-              Values(slow, "SWTotal")]
+    values = [Values(dry, "SWTotal", 1, transforms = [field_delta_value]),
+              Values(slow, "SWTotal", 1, transforms = [field_delta_value])]
     # Create the graphs.
     graphs = [[Graphable(values[0].model, values[0].field, \
-            values[0].field + " (min, mean, max)", \
+            values[0].field + " (min, mean, max)", 1, \
             statistics = ['min', 'mean', 'max'])
         ], [Graphable(values[1].model, values[1].field, \
-                    "Field #{}".format(i), statistics = ['mean'], \
+                    "Field #{}".format(i), 1, statistics = ['mean'], \
                     field_nos = [i])
                 for i in range(1, 5)]
     ]

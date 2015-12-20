@@ -40,7 +40,7 @@ def round_sf(v, n):
 
 # We also define a helper function to generate a value2colour function for a
 # given values and colour_range.
-def gen_value2colour(values, colour_range):
+def gen_value2colour(min, max, colour_range):
     # Create the colour mapping function.
     def value2colour(value):
         """ Convert from a given value to a colour """
@@ -48,7 +48,7 @@ def gen_value2colour(values, colour_range):
         # http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855 
         # We scale to a specific colour range (in HSV, from 0 to 1).
         try:
-            hue = ((value - values.min) / (values.max - values.min)) # 0-1
+            hue = ((value - min) / (max - min)) # 0-1
         except ZeroDivisionError:
             hue = 0
         # Convert the hue into something in the given range.
@@ -128,7 +128,7 @@ class DynamicTextWidget(TextWidget):
 class ScaleWidget():
     """ A dynamically sized widget representing a scale """
     
-    def __init__(self, values, value2colour, font, labelling=None, \
+    def __init__(self, min, max, value2colour, font, labelling=None, \
             row2value=None):
         """ Initialise self.
         
@@ -147,7 +147,7 @@ class ScaleWidget():
         
         if row2value == None:
             row2value = lambda row, height: (float(row) / height) * \
-                (self.values.max - self.values.min) + self.values.min
+                (max - min) + min
         if labelling == None:
             def labelling(height):
                 # Generate a labelling (list of rows to put the marker on)
@@ -167,7 +167,6 @@ class ScaleWidget():
                 return labels
         
         self.font = font
-        self.values = values
         self.value2colour = value2colour
         self.labelling = labelling # Scale labelling function.
         self.row2value = row2value # Row to value conversion function.

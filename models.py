@@ -200,11 +200,12 @@ def load_shapes(shape_file):
 class Values():
     """ Wrapper class to contain transformed data from a specific model """
     
-    def __init__(self, model, field, data_type='float', transforms=()):
+    def __init__(self, model, field, domain, data_type='float', transforms=()):
         """ Initialise self """
         
         self.model = model
         self.transforms = transforms
+        self.domain = domain
         
         if data_type == 'float':
             process = float
@@ -241,13 +242,14 @@ class Graphable():
         not tied to a specific patch.
     """
     
-    def __init__(self, model, field, label, field_nos = None, \
+    def __init__(self, model, field, label, domain, field_nos = None, \
         statistics = ['min', 'mean', 'max']):
         """ Initialise self """
         
         self.model = model
         self.field = field
         self.label = label
+        self.domain = domain
         
         # Create a helper loading function.
         if field_nos == None:
@@ -340,8 +342,16 @@ class Combination():
     def __init__(self, objects):
         """ Initialise self """
 
-        # Save the list of Values.
+        # Save the list of objects.
         self.objects = objects
+
+        # Find the shared domain.
+        self.domain = None
+        for obj in objects:
+            if self.domain == None:
+                self.domain = obj.domain
+            elif obj.domain != self.domain:
+                raise ValueError("Only objects with shared domains can be made into a combination!")
 
         # Generate the shared maximums and minimums.
         self.min = min((obj.min for obj in objects))
