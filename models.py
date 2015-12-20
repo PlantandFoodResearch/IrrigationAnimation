@@ -314,6 +314,12 @@ class Graphable():
             self.areas[patch] = area
             self.total_area += area
             
+        # Calculate the requested statistics, minimum, and maximum.
+        self.calculate_statistics(statistics, values)
+
+    def calculate_statistics(self, statistics, values):
+        """ Calculate self's statistics """
+
         # Calculate the requested statistics.
         self.values = []
         for stat in statistics:
