@@ -302,7 +302,7 @@ class Graphable():
                 return filtered
         
         # Load the values.
-        values = load_field(self.field)
+        self.orig_values = load_field(self.field)
         
         # Get the areas and total area.
         simple_areas = load_field(AREA_FIELD)
@@ -315,9 +315,9 @@ class Graphable():
             self.total_area += area
             
         # Calculate the requested statistics, minimum, and maximum.
-        self.calculate_statistics(statistics, values)
+        self.calculate_statistics(statistics)
 
-    def calculate_statistics(self, statistics, values):
+    def calculate_statistics(self, statistics):
         """ Calculate self's statistics """
 
         # Calculate the requested statistics.
@@ -327,25 +327,29 @@ class Graphable():
                 def day_func(index):
                     """ Calculate the weighted mean for the given day """
                     day = 0
-                    for patch in values[index]:
-                        day += values[index][patch] * self.areas[patch]
+                    for patch in self.orig_values[index]:
+                        day += self.orig_values[index][patch] * \
+                            self.areas[patch]
                     return day / self.total_area
             elif stat == 'min':
-                day_func = lambda day: min((values[day][patch] \
-                    for patch in values[day]))
+                day_func = lambda day: min((self.orig_values[day][patch] \
+                    for patch in self.orig_values[day]))
             elif stat == 'max':
-                day_func = lambda day: max((values[day][patch] \
-                    for patch in values[day]))
+                day_func = lambda day: max((self.orig_values[day][patch] \
+                    for patch in self.orig_values[day]))
             elif stat == 'sum':
-                day_func = lambda day: sum((values[day][patch] \
-                    for patch in values[day]))
+                day_func = lambda day: sum((self.orig_values[day][patch] \
+                    for patch in self.orig_values[day]))
             else:
                 raise ValueError("Unknown statistic {}!".format(stat))
-            self.values.append({day: day_func(day) for day in values})
+            self.values.append({day: day_func(day) \
+                for day in self.orig_values})
                 
         # Calculate the maximums and minimums.
-        self.max = max([max(stat.values()) for stat in self.values])
-        self.min = min([min(stat.values()) for stat in self.values])
+        self.max = max([max(stat_values.values()) \
+            for stat_values in self.values])
+        self.min = min([min(stat_values.values()) \
+            for stat_values in self.values])
         
     def __getitem__(self, date):
         """ Returns self's value on the given date.
