@@ -86,8 +86,7 @@ def gen_widgets(panels, dates, font, edge_render):
             
             # Add the graph.
             if 'graphs' in panel:
-                comb = Combination(panel['graphs'])
-                widget_dict['graph'] = GraphWidget(comb, dates, \
+                widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
                     font, panel.get('graph_label', DEFAULT_LABEL))
 
             # Save the widgets.

@@ -371,24 +371,24 @@ class ValuesWidget():
         return dirty
         
 class GraphWidget():
-    """ Widget for realtime graphs of a Combination of graphables """
+    """ Widget for realtime graphs of a list of given Graphables """
     
-    def __init__(self, combination, dates, font, label):
+    def __init__(self, graphable, dates, font, label):
         """ Initialise self """
         
         # Check that we have enough colours defined.
-        if len(combination.objects) > len(GRAPH_COLOUR_LIST):
+        if len(graphable) > len(GRAPH_COLOUR_LIST):
             raise ValueError("To many lines specified; not enough colours!")
         
-        self.combination = combination
+        self.graphable = graphable
         self.dates = dates
         self.size = None
         self.font = font
         self.label = label + ": "
         
         # The 'global' minimum and maximum.
-        self.min = self.combination.min
-        self.max = self.combination.max
+        self.min = min([g.min for g in self.graphable])
+        self.max = max([g.max for g in self.graphable])
         
     def render(self, surface, time, pos_func, size):
         """ Render the given graphable class onto a surface """
@@ -408,7 +408,7 @@ class GraphWidget():
         # We render the lines.
         # Render the line.
         # TODO: We need some kind of text saying what the line is.
-        for index, graph in enumerate(self.combination.objects):
+        for index, graph in enumerate(self.graphable):
             self.render_line(surface, graph, GRAPH_COLOUR_LIST[index], \
                 topleft, size, row2date)
         
@@ -508,7 +508,7 @@ class GraphWidget():
         rect = surface.blit(label, (topleft[0], y - label.get_height()))
         # Render the labels for the individual graphs.
         offset = rect.right + SCALE_SPACING
-        for index, graph in enumerate(self.combination.objects):
+        for index, graph in enumerate(self.graphable):
             # TODO: Render this using 'place'.
             label = self.font.render(graph.label, TEXT_AA, \
                 GRAPH_COLOUR_LIST[index])
