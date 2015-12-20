@@ -373,7 +373,8 @@ class ValuesWidget():
 class GraphWidget():
     """ Widget for realtime graphs of a list of given Graphables """
     
-    def __init__(self, graphable, dates, font, label):
+    def __init__(self, graphable, dates, font, label, \
+        scale=(float('inf'), -float('inf'))):
         """ Initialise self """
         
         # Check that we have enough colours defined.
@@ -387,8 +388,8 @@ class GraphWidget():
         self.label = label + ": "
         
         # The 'global' minimum and maximum.
-        self.min = min([g.min for g in self.graphable])
-        self.max = max([g.max for g in self.graphable])
+        self.min = min(scale[0], *[g.min for g in self.graphable])
+        self.max = max(scale[1], *[g.max for g in self.graphable])
         
     def render(self, surface, time, pos_func, size):
         """ Render the given graphable class onto a surface """
