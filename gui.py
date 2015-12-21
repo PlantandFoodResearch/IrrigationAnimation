@@ -345,8 +345,6 @@ class ItemList(ttk.Frame):
         self.context = Options(self)
         self.context.grid(row = 2, column = 1, sticky = 'nsew')
         
-        # Add a rename option.
-        self.context.add_raw_option("Name", self.items[index]['Name'])
         
         # Add the custom buttons.
         self.function(self.context, name, self.items[index])
@@ -677,6 +675,7 @@ class Main(ttk.Frame):
                     fields = []
                 box['values'] = sorted(list(fields))
 
+            add_entry("Name", 'new')
             add_file("GIS files", "gis/SmallPatches.shp", \
                 tkFileDialog.askopenfilename)
             add_file("CSV directory", "csv/small", \
