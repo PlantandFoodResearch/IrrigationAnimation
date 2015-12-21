@@ -24,7 +24,6 @@ from constants import ANCHOR_FORCE, BROKEN_COLOUR, EDGE_COLOUR, \
 
 import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
-import colorsys # For value2colour
 
 # We define a helper function to round to n significant digits:
 # This is from: http://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python
@@ -37,26 +36,6 @@ def round_sf(v, n):
         if rounded % 1 == 0:
             return int(rounded)
         return rounded
-
-# We also define a helper function to generate a value2colour function for a
-# given values and colour_range.
-def gen_value2colour(values, colour_range):
-    # Create the colour mapping function.
-    def value2colour(value):
-        """ Convert from a given value to a colour """
-        # Using this: 
-        # http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855 
-        # We scale to a specific colour range (in HSV, from 0 to 1).
-        try:
-            hue = ((value - values.min) / (values.max - values.min)) # 0-1
-        except ZeroDivisionError:
-            hue = 0
-        # Convert the hue into something in the given range.
-        value = hue * (colour_range[1] - colour_range[0]) + colour_range[0]
-        # Return a RGB version of that colour.
-        return [int(i*255) for i in colorsys.hsv_to_rgb(value, 1.0, 1.0)]
-    return value2colour
-
 
 class TextWidget():
     """ A static, left aligned text widget """
@@ -128,8 +107,7 @@ class DynamicTextWidget(TextWidget):
 class ScaleWidget():
     """ A dynamically sized widget representing a scale """
     
-    def __init__(self, values, value2colour, font, labelling=None, \
-            row2value=None):
+    def __init__(self, domain, font, labelling = None, row2value = None):
         """ Initialise self.
         
             The given scale labelling function is assumed to take a height, and
@@ -147,7 +125,7 @@ class ScaleWidget():
         
         if row2value == None:
             row2value = lambda row, height: (float(row) / height) * \
-                (self.values.max - self.values.min) + self.values.min
+                (domain.max - domain.min) + domain.min
         if labelling == None:
             def labelling(height):
                 # Generate a labelling (list of rows to put the marker on)
@@ -167,8 +145,7 @@ class ScaleWidget():
                 return labels
         
         self.font = font
-        self.values = values
-        self.value2colour = value2colour
+        self.value2colour = domain.value2colour
         self.labelling = labelling # Scale labelling function.
         self.row2value = row2value # Row to value conversion function.
         self.size = None # The scale is *mostly* dynamically sized.
@@ -238,12 +215,12 @@ class ScaleWidget():
 class ValuesWidget():
     """ Widget for a specific Values """
     
-    def __init__(self, values, value2colour, edge_render):
+    def __init__(self, values, edge_render):
         """ Initialise self """
 
         self.size = None # This widget is dynamically sized.
         self.values = values
-        self.value2colour = value2colour
+        self.value2colour = values.domain.value2colour
         self.model = values.model
         self.edge_render = edge_render
         
@@ -373,23 +350,23 @@ class ValuesWidget():
 class GraphWidget():
     """ Widget for realtime graphs of a list of given Graphables """
     
-    def __init__(self, graphable, dates, font, label, \
-        scale=(float('inf'), -float('inf'))):
+    def __init__(self, graph, dates, font):
         """ Initialise self """
         
         # Check that we have enough colours defined.
-        if len(graphable) > len(GRAPH_COLOUR_LIST):
+        if len(graph.graphables) > len(GRAPH_COLOUR_LIST):
             raise ValueError("To many lines specified; not enough colours!")
         
-        self.graphable = graphable
+        # Save some of the given values.
+        self.graphable = graph.graphables
+        self.label = graph.label + ": "
         self.dates = dates
-        self.size = None
         self.font = font
-        self.label = label + ": "
+        self.size = None
         
         # The 'global' minimum and maximum.
-        self.min = min(scale[0], *[g.min for g in self.graphable])
-        self.max = max(scale[1], *[g.max for g in self.graphable])
+        self.min = graph.domain.min
+        self.max = graph.domain.max
         
     def render(self, surface, time, pos_func, size):
         """ Render the given graphable class onto a surface """
@@ -442,7 +419,7 @@ class GraphWidget():
         for row in anchors:
             # Render and save.
             value = str(round_sf((float(row) / height) * \
-                    (self.max - self.min) + self.min, SCALE_SF))
+                (self.max - self.min) + self.min, SCALE_SF))
             rows[row] = self.font.render(value, TEXT_AA, TEXT_COLOUR)
             # Update the maximum text width.
             max_text_width = max(rows[row].get_width(), max_text_width)
@@ -542,7 +519,8 @@ class GraphWidget():
                     (x, y(cur[index])))
             # Save the current position.
             old = cur
-            
+     
+
 def gen_labelling(size, label_size, spacing, label_count=float('inf')):
     """ Generate a labelling for the given size linear area.
         This returns a list of rows for placing the labels on.

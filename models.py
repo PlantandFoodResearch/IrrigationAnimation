@@ -3,7 +3,7 @@
     Author: Alastair Hughes
 """
 
-from constants import AREA_FIELD, DATE_FIELD, FIELD_NO_FIELD, \
+from constants import AREA_FIELD, DATE_FIELD, DEFAULT_LABEL, FIELD_NO_FIELD, \
     PATCH_NUMBER_FIELD
 
 # To find and load the CSV model files, we need some functions.
@@ -15,6 +15,9 @@ from helpers import ThreadedGroup, cache
 
 # shapefile is used to open the GIS files.
 import shapefile
+
+# colorsys is used for the colour mapping.
+import colorsys
 
 
 class Model():
@@ -200,25 +203,14 @@ def load_shapes(shape_file):
 class Values():
     """ Wrapper class to contain transformed data from a specific model """
     
-    def __init__(self, model, field, data_type='float', transforms=()):
+    def __init__(self, model, field, transforms=()):
         """ Initialise self """
         
         self.model = model
         self.transforms = transforms
         
-        if data_type == 'float':
-            process = float
-        else:
-            # TODO: Implement more data types... string is one obvious one.
-            #       Even better, get to a point where we don't have to care
-            #       about it here...
-            #       A different colour mapping function will be required, and
-            #       maximums and minimums are different and not really
-            #       applicable.
-            raise ValueError("Unknown data type {}".format(data_type))
-            
         self.field = field
-        orig_values = self.model.extract_field(self.field, process)
+        orig_values = self.model.extract_field(self.field, float)
         # Apply the transformations.
         self.values = orig_values
         for transform in transforms:
@@ -234,6 +226,9 @@ class Values():
                     self.min = value
                 if value > self.max:
                     self.max = value
+
+        # We have no domain to start with.
+        self.domain = None
 
 
 class Graphable():
@@ -332,18 +327,66 @@ class Graphable():
         """
         
         return [stat[date] for stat in self.values]
-        
 
-class Combination():
-    """ Wrapper class containing related objects """
 
-    def __init__(self, objects):
+class Graph():
+    """ A list of graphables with additional information on the domain """
+
+    def __init__(self, graphables, label = DEFAULT_LABEL):
         """ Initialise self """
 
-        # Save the list of Values.
-        self.objects = objects
+        # Save the graphables.
+        self.graphables = graphables
+
+        # Save the label.
+        self.label = label
 
         # Generate the shared maximums and minimums.
+        self.min = min((graph.min for graph in graphables))
+        self.max = max((graph.max for graph in graphables))
+ 
+        # We have no domain to start with.
+        self.domain = None
+
+
+class Domain():
+    """ Class containing information on a specific 'domain'.
+        Domains hold information shared between different objects so that they
+        can be displayed consistently; specifically, a shared value2colour,
+        minimum, and maximum. This enables a UI to let different models share
+        the same scale, for instance.
+    """
+
+    def __init__(self, objects, colour_range = None):
+        """ Initialise self """
+
+        # Add the given objects.
+        self.objects = objects
         self.min = min((obj.min for obj in objects))
         self.max = max((obj.max for obj in objects))
- 
+        for obj in objects:
+            obj.domain = self
+        
+        # Generate a value2colour function if a colour range is supplied.
+        self.value2colour = None
+        if colour_range != None:
+            def value2colour(value):
+                """ Convert from a given value to a colour, using the basic
+                    algorithm described at:
+                    http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#01907855
+                """
+                # We scale to a specific colour range (in HSV, 0 to 1).
+                try:
+                    hue = ((value - self.min) / (self.max - self.min))
+                except ZeroDivisionError:
+                    hue = 0
+                # Convert the hue into something in the given range.
+                value = hue * (colour_range[1] - colour_range[0]) + \
+                    colour_range[0]
+                # Return a RGB version of that colour.
+                return [int(i*255) for i in colorsys.hsv_to_rgb(value, 1, 1)]
+
+            self.value2colour = value2colour
+
+
+

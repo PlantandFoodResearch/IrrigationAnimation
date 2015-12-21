@@ -34,12 +34,12 @@ from display import preview
 from transforms import times, basic_value, time_delta_value, \
 	field_delta_value, per_field_value
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
-    GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
-from models import Model, Values, Combination, Graphable
+    GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST
+from models import Model, Values, Graphable, Graph, Domain
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
-    GraphWidget, gen_value2colour
-# We use pygame for font rendering...
-import pygame.font
+    GraphWidget
+# We use pygame for font rendering, and for Rects.
+import pygame, pygame.font
 
 
 def combined_dates(date_list):
@@ -55,42 +55,25 @@ def combined_dates(date_list):
 def gen_widgets(panels, dates, font, edge_render):
     """ Generate the widgets from the given panels """
 
-    # TODO: Pull this out and put into 'panels' instead.
-
-    # Preprocess the widgets as a special case to group the widgets based on
-    # values with the same field and transformation together (ie use a shared
-    # value2colour).
-    groups = {} # (field, transform): [panel]
-    for panel in panels:
-        value = panel['values']
-        if (value.field, value.transforms) not in groups:
-            groups[(value.field, value.transforms)] = []
-        groups[(value.field, value.transforms)].append(panel)
-
     widgets = []
-    i = 0 
-    for panels in groups.values():
-        # Create a value2colour for the group.
-        combined_value = Combination([panel['values'] for panel in panels])
-        value2colour = gen_value2colour(combined_value, MAP_COLOUR_LIST[i])
-        i += 1
-        for panel in panels:
-            # Create the shared dict.
-            widget_dict = {}
-            # Add the normal items.
-            value = panel['values']
-            widget_dict['map'] = ValuesWidget(value, value2colour, edge_render)
-            widget_dict['scale'] = ScaleWidget(combined_value, value2colour, \
-                font)
-            widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
-            
-            # Add the graph.
-            if 'graphs' in panel:
-                widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
-                    font, panel.get('graph_label', DEFAULT_LABEL))
+    for panel in panels:
+        # Create the shared dict.
+        widget_dict = {}
+        # Add the normal items.
+        value = panel['values']
+        widget_dict['map'] = ValuesWidget(value, edge_render)
+        if 'scale' not in dir(value.domain):
+            # Add a scale, as required.
+            value.domain.scale = ScaleWidget(value.domain, font)
+            widget_dict['scale'] = value.domain.scale
+        widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
+        
+        # Add the graph.
+        if 'graphs' in panel:
+            widget_dict['graph'] = GraphWidget(panel['graphs'], dates, font)
 
-            # Save the widgets.
-            widgets.append(widget_dict)
+        # Save the widgets.
+        widgets.append(widget_dict)
     
     return widgets
 
@@ -148,7 +131,8 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
         value_area = [i - (2 * BORDER) for i in (surf_w / len(widgets), surf_h)]
         # Iterate through the values and render them.
         for i in range(len(panels)):
-            map, scale, desc, graph = widgets[i]['map'], widgets[i]['scale'], \
+            map, scale, desc, graph = widgets[i]['map'], \
+                widgets[i].get('scale', None), \
                 widgets[i]['desc'], widgets[i].get('graph', None)
             
             # The x offset is the leftmost start point for an item.
@@ -175,7 +159,7 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
             # Update the lowest point.
             lowest = desc_rect.bottom + BORDER
             
-            if scale != None and map != None:
+            if scale != None:
                 # Render the scale.
                 # TODO: We assume that the map is a square when calculating
                 #       the scale size; it might not be, so account for that.
@@ -187,25 +171,27 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
                     lambda size: (x_offset, (lowest + surf_h - \
                         (BORDER + graph_height) - size[1]) / 2), \
                     scale_size)
-
-                # Render the map.
-                # The map size is shrunk to avoid clipping with anything, and
-                # offsets are calculated accordingly.
-                map_size = (value_area[0] - (scale_rect.width + BORDER), \
-                    value_area[1] - (desc_rect.height + BORDER * 2 + \
-                    graph_height))
-                map_rect = map.render(surface, index, \
-                    lambda size: (scale_rect.right + BORDER + \
-                            ((map_size[0] - size[0]) / 2), \
-                        (lowest + surf_h - (BORDER + graph_height) - \
-                            size[1]) / 2), \
-                    map_size)
-                
-                # Update the lowest point.
-                lowest = max(map_rect.bottom, scale_rect.bottom) + BORDER
-                # Add the rects.
-                dirty.append(map_rect)
                 dirty.append(scale_rect)
+            else:
+                scale_rect = pygame.Rect((x_offset - BORDER, lowest), (0, 0))
+
+            # Render the map.
+            # The map size is shrunk to avoid clipping with anything, and
+            # offsets are calculated accordingly.
+            map_size = (value_area[0] - (scale_rect.width + BORDER), \
+                value_area[1] - (desc_rect.height + BORDER * 2 + \
+                graph_height))
+            map_rect = map.render(surface, index, \
+                lambda size: (scale_rect.right + BORDER + \
+                        ((map_size[0] - size[0]) / 2), \
+                    (lowest + surf_h - (BORDER + graph_height) - \
+                        size[1]) / 2), \
+                map_size)
+            
+            # Update the lowest point.
+            lowest = max(map_rect.bottom, scale_rect.bottom) + BORDER
+            # Add the rects.
+            dirty.append(map_rect)
                 
             # Render the graph, if it is defined.
             if graph != None:
@@ -233,20 +219,22 @@ if __name__ == "__main__":
     # Create a couple of Models.
     dry = Model(os.path.join(localpath, "gis/MediumPatches"), \
         os.path.join(localpath, "csv/dry"))
-    slow = Model(os.path.join(localpath, "gis/MediumPatches"), \
-        os.path.join(localpath, "csv/slow"))
     # Create the values.
     values = [Values(dry, "SWTotal"),
-              Values(slow, "SWTotal")]
+              Values(dry, "NO3Total")]
     # Create the graphs.
-    graphs = [[Graphable(values[0].model, values[0].field, \
+    graphs = [Graph([Graphable(values[0].model, values[0].field, \
             values[0].field + " (min, mean, max)", \
-            statistics = ['min', 'mean', 'max'])
-        ], [Graphable(values[1].model, values[1].field, \
-                    "Field #{}".format(i), statistics = ['mean'], \
-                    field_nos = [i])
-                for i in range(1, 5)]
+            statistics = ['min', 'mean', 'max'])]), \
+        Graph([Graphable(values[1].model, values[1].field, \
+            "Field #{}".format(i), statistics = ['mean'], field_nos = [i])
+            for i in range(1, 5)])
     ]
+    # Create the Domains.
+    domain_1 = Domain([values[0], values[1]], MAP_COLOUR_LIST[0])
+    #domain_2 = Domain([values[1]], MAP_COLOUR_LIST[1])
+    domain_3 = Domain([graphs[0]])
+    domain_4 = Domain([graphs[1]])
     # Create the description format strings...
     desc_format = """Field of interest: {field}
 CSV: {csv}
