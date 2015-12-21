@@ -34,7 +34,7 @@ from display import preview
 from transforms import times, basic_value, time_delta_value, \
 	field_delta_value, per_field_value
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
-    GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
+    GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST
 from models import Model, Values, Graphable, Graph, Domain
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
     GraphWidget
@@ -74,9 +74,8 @@ def gen_widgets(panels, dates, font, edge_render):
         
         # Add the graph.
         if 'graphs' in panel:
-            domain = panel['graphs'].domain
             widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
-                font, panel.get('graph_label', DEFAULT_LABEL))
+                font)
 
         # Save the widgets.
         widgets.append(widget_dict)

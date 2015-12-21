@@ -351,7 +351,7 @@ class ValuesWidget():
 class GraphWidget():
     """ Widget for realtime graphs of a list of given Graphables """
     
-    def __init__(self, graph, dates, font, label):
+    def __init__(self, graph, dates, font):
         """ Initialise self """
         
         # Check that we have enough colours defined.
@@ -362,7 +362,7 @@ class GraphWidget():
         self.dates = dates
         self.size = None
         self.font = font
-        self.label = label + ": "
+        self.label = graph.label + ": "
         
         # The 'global' minimum and maximum.
         self.min = graph.domain.min

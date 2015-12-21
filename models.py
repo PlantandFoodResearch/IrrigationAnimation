@@ -3,7 +3,7 @@
     Author: Alastair Hughes
 """
 
-from constants import AREA_FIELD, DATE_FIELD, FIELD_NO_FIELD, \
+from constants import AREA_FIELD, DATE_FIELD, DEFAULT_LABEL, FIELD_NO_FIELD, \
     PATCH_NUMBER_FIELD
 
 # To find and load the CSV model files, we need some functions.
@@ -343,11 +343,14 @@ class Graphable():
 class Graph():
     """ A list of graphables with additional information on the domain """
 
-    def __init__(self, graphables, domain):
+    def __init__(self, graphables, domain, label = DEFAULT_LABEL):
         """ Initialise self """
 
         # Save the graphables.
         self.graphables = graphables
+
+        # Save the label.
+        self.label = label
 
         # Generate the shared maximums and minimums.
         self.min = min((graph.min for graph in graphables))
