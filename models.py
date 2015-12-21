@@ -203,7 +203,7 @@ def load_shapes(shape_file):
 class Values():
     """ Wrapper class to contain transformed data from a specific model """
     
-    def __init__(self, model, field, domain, transforms=()):
+    def __init__(self, model, field, transforms=()):
         """ Initialise self """
         
         self.model = model
@@ -227,7 +227,8 @@ class Values():
                 if value > self.max:
                     self.max = value
 
-        domain.add(self)
+        # We have no domain to start with.
+        self.domain = None
 
 
 class Graphable():
@@ -331,7 +332,7 @@ class Graphable():
 class Graph():
     """ A list of graphables with additional information on the domain """
 
-    def __init__(self, graphables, domain, label = DEFAULT_LABEL):
+    def __init__(self, graphables, label = DEFAULT_LABEL):
         """ Initialise self """
 
         # Save the graphables.
@@ -344,8 +345,8 @@ class Graph():
         self.min = min((graph.min for graph in graphables))
         self.max = max((graph.max for graph in graphables))
  
-        # Add the domain.
-        domain.add(self)
+        # We have no domain to start with.
+        self.domain = None
 
 
 class Domain():

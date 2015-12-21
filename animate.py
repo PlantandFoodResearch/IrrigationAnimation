@@ -223,17 +223,20 @@ if __name__ == "__main__":
     domain_3 = Domain()
     domain_4 = Domain()
     # Create the values.
-    values = [Values(dry, "SWTotal", domain_1),
-              Values(dry, "NO3Total", domain_2)]
+    values = [Values(dry, "SWTotal"),
+              Values(dry, "NO3Total")]
+    domain_1.add(values[0])
+    domain_2.add(values[1])
     # Create the graphs.
     graphs = [Graph([Graphable(values[0].model, values[0].field, \
             values[0].field + " (min, mean, max)", \
-            statistics = ['min', 'mean', 'max'])
-        ], domain_3), \
+            statistics = ['min', 'mean', 'max'])]), \
         Graph([Graphable(values[1].model, values[1].field, \
             "Field #{}".format(i), statistics = ['mean'], field_nos = [i])
-            for i in range(1, 5)], domain_4)
+            for i in range(1, 5)])
     ]
+    domain_3.add(graphs[0])
+    domain_4.add(graphs[1])
     # Create the description format strings...
     desc_format = """Field of interest: {field}
 CSV: {csv}
