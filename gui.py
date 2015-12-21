@@ -15,7 +15,6 @@
     - Chaining transformations and per-field transformations is not implemented
       in the GUI yet.
     - Rendering tab/pane for controlling running render jobs.
-    - Add support for combining transformations.
 
     Future:
     - Saving existing setups.
