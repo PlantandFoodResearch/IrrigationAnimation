@@ -221,16 +221,12 @@ class ScrolledListbox(ttk.Frame):
         self.bind = lambda *args: box.bind(*args)
         self.see = lambda *args: box.see(*args)
         self.insert = lambda *args: box.insert(*args)
-        
+
     
 class ItemList(ttk.Frame):
     """ An itemlist with flexible per-item options """
     
-    def __init__(self, master, name, function, \
-        renamecallback = lambda name, newname: True, \
-        deletecallback = lambda name: True, \
-        addcallback = lambda name: True, \
-        deleteable = lambda active: True, *args, **kargs):
+    def __init__(self, master, name, function, *args, **kargs):
         """ Initialise self """
         
         # Init self.
@@ -243,15 +239,6 @@ class ItemList(ttk.Frame):
         self.context = None
         # The index of the currently active element.
         self.active = None
-        # The current delete button.
-        self.delete_button = None
-        # Callback function for checking whether or not the current item can
-        # be deleted.
-        self.deleteable = deleteable
-        # Generic callbacks.
-        self.renamecallback = renamecallback
-        self.deletecallback = deletecallback
-        self.addcallback = addcallback
         
         # Create the widgets.
         self.create_widgets()
@@ -304,9 +291,6 @@ class ItemList(ttk.Frame):
         # Update the active element.
         self.update_active()
         
-        # Call the custom callback.
-        self.addcallback(name)
-        
     def delete_item(self, index):
         """ Remove the item at the given index from the listbox """
         
@@ -318,9 +302,6 @@ class ItemList(ttk.Frame):
         name = self.box.get(index)
         del(self.items[name])
         self.box.delete(index)
-        
-        # Call the custom callback.
-        self.deletecallback(name)
         
     def rename_item(self, name, index):
         """ Rename the item at the given index """
@@ -348,8 +329,6 @@ class ItemList(ttk.Frame):
             # Update the active marker, if required.
             if self.active == original:
                 self.active = name
-            # Call the custom callback.
-            self.renamecallback(original, name)
             
     def delete_selected(self):
         """ Delete any currently selected items """
@@ -393,15 +372,10 @@ class ItemList(ttk.Frame):
         # Note the current active item.
         self.active = name
         
-        # Update the delete button's status.
-        self.update_deleteable()
-        
     def remove_frame(self):
         """ Remove the context-specific frame, if one exists """
         
         if self.context != None:
-            # Unset the delete button.
-            self.delete_button = None
             
             # Destroy the old frame.
             self.context.grid_forget()
@@ -424,16 +398,6 @@ class ItemList(ttk.Frame):
                 self.create_frame(selected[0])
         else:
             self.remove_frame()
-            
-    def update_deleteable(self):
-        """ Force an update for the deletion button """
-        
-        if self.delete_button != None:
-            # Check for all of the selected items.
-            self.delete_button.config(state = 'enabled')
-            for selected in self.box.curselection():
-                if not self.deleteable(self.box.get(selected)):
-                    self.delete_button.config(state = 'disabled')
                 
     def __iter__(self):
         """ Iterate through self's items """
