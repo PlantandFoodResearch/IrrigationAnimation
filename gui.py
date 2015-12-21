@@ -33,7 +33,7 @@
 # Local imports.
 from display import preview, render
 from animate import gen_render_frame
-from models import Model, Values, Graphable
+from models import Model, Values, Graphable, Graph, Domain
 from constants import MAP_COLOUR_LIST, MAX_FPS, MIN_FPS, MAX_TEXT_HEIGHT, \
     MIN_TEXT_HEIGHT, FIELD_NO_FIELD
 import transforms
@@ -506,6 +506,7 @@ class Main(ttk.Frame):
             try:
                 # Create and save the panels.
                 panels = []
+                domains = {} # id: ([items], colour)
                 for index, config in enumerate(self.panel_list):
                     gis = config['GIS files'].get()
                     csv = config['CSV directory'].get()
@@ -513,6 +514,8 @@ class Main(ttk.Frame):
                     transform = config['Value transform'].get()
                     graph = config["Graph statistics"].get()
                     per_field = config["Per-field"].get()
+                    map_domain_id = 0
+                    graph_domain_id = 1
                     name = config["Name"].get()
                     value = self.values[((gis, csv), field, transform)]
                     panel = {'values': value}
@@ -529,6 +532,7 @@ class Main(ttk.Frame):
                             # Just one graph.
                             graphs.append(Graphable(value.model, field, field + \
                                 stat_name, statistics = statistics))
+                            graph_label = 'Key'
                         else:
                             # Multiple, per-field graphs.
                             # Figure out the available fields.
@@ -539,16 +543,34 @@ class Main(ttk.Frame):
                                     str(field_no), field_nos = [field_no], \
                                     statistics = statistics))
                             # Set the graph label.
-                            panel['graph_label'] = "Fields" + stat_name
+                            graph_label = "Fields" + stat_name
                         
                         # Add the graph to the panel.
-                        panel['graphs'] = graphs
+                        graph = Graph(graphs, label = graph_label)
+                        panel['graphs'] = graph
+                        # Add the graph to the domain list.
+                        if graph_domain_id in domains:
+                            domains[graph_domain_id][0].append(graph)
+                        else:
+                            domains[graph_domain_id] = ([graph], False)
                     # Add the description.
                     panel['desc'] = config["Description string"].get().format(\
                         name = name, field = field, csv = csv, gis = gis, \
                         transform = transform)
+                    # Add the map to the domains.
+                    domains[map_domain_id] = (domains.get(map_domain_id, \
+                        ([], True))[0] + [value], True)
 
                     panels.append(panel)
+
+                # Initialise the domains.
+                i = 0
+                for items, coloured in domains.values():
+                    if coloured:
+                        Domain(items, MAP_COLOUR_LIST[i])
+                        i += 1
+                    else:
+                        Domain(items)
                 
                 # Generate the render_frame function and frame count
                 render_frame, frames = gen_render_frame(panels, \
