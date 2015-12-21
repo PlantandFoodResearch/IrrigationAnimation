@@ -25,6 +25,16 @@ def time_delta_value(values):
                 values.get(index - 1, {patch: values[index][patch]})[patch]
     return new_values
 
+# Time culm acculumates the value for a specific patch as time goes on.
+def time_culm_value(values):
+    new_values = {}
+    for index in sorted(values.keys()):
+        new_values[index] = {}
+        for patch in values[index]:
+            new_values[index][patch] = values[index][patch] + \
+                new_values.get(index - 1, {patch: 0})[patch]
+    return new_values
+
 # Field delta uses the relative delta between a value and the maximum and
 # minimums on one specific day.
 def field_delta_value(values):
@@ -104,6 +114,7 @@ def patch_filter(values, patches):
 #       here...
 transformations = {'basic': lambda v: v,
     'time_delta': time_delta_value,
+    'time_culm': time_culm_value,
     'field_delta': field_delta_value,
     'exponential': exponential_value,
     'log': log_value,
