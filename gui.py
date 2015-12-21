@@ -55,7 +55,7 @@ class Options(ttk.Frame):
         self.master = master
         ttk.Frame.__init__(self, self.master)
         # Give the second column some weight...
-        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(2, weight = 1)
         
         # Options added.
         self.options = {} # name: (entry, get)
@@ -266,16 +266,16 @@ class ItemList(ttk.Frame):
         label = ttk.Label(labelframe, text = self.name)
         label.grid(row = 1, sticky = 'nw')
 
+        # Add a 'new' button.
+        button = ttk.Button(labelframe, text = 'New', command = self.add_item)
+        button.grid(row = 2, sticky = 'sw')
+
+        # Add the listbox.
         self.box = ScrolledListbox(self)
-        self.box.grid(row = 1, column = 2, rowspan = 3, sticky = 'nes')
+        self.box.grid(row = 1, column = 2, rowspan = 2, sticky = 'nes')
     
         # Bind select events to updating the active element.
         self.box.bind("<<ListboxSelect>>", lambda event: self.update_active())
-
-        # Add a 'new' button.
-        button = ttk.Button(labelframe, text = 'New', \
-            command = self.add_item)
-        button.grid(row = 2, sticky = 'nw')
         
     def add_item(self):
         """ Add a new item to the listbox """
@@ -373,7 +373,7 @@ class ItemList(ttk.Frame):
         
         # Create the context.
         self.context = Options(self)
-        self.context.grid(row = 3, column = 1, sticky = 'sw')
+        self.context.grid(row = 2, column = 1, sticky = 'nsew')
         
         # Add a rename option.
         var = tk.StringVar(value = name)
