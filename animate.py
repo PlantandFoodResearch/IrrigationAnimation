@@ -217,24 +217,22 @@ if __name__ == "__main__":
     # Create a couple of Models.
     dry = Model(os.path.join(localpath, "gis/MediumPatches"), \
         os.path.join(localpath, "csv/dry"))
-    slow = Model(os.path.join(localpath, "gis/MediumPatches"), \
-        os.path.join(localpath, "csv/slow"))
     # Create the Domains.
     domain_1 = Domain()
     domain_2 = Domain()
     domain_3 = Domain()
     domain_4 = Domain()
     # Create the values.
-    values = [Values(dry, "SWTotal", domain_1, transforms = [field_delta_value]),
-              Values(slow, "SWTotal", domain_1, transforms = [field_delta_value])]
+    values = [Values(dry, "SWTotal", domain_1),
+              Values(dry, "NO3Total", domain_2)]
     # Create the graphs.
     graphs = [Graph([Graphable(values[0].model, values[0].field, \
             values[0].field + " (min, mean, max)", \
             statistics = ['min', 'mean', 'max'])
-        ], domain_2), \
+        ], domain_3), \
         Graph([Graphable(values[1].model, values[1].field, \
             "Field #{}".format(i), statistics = ['mean'], field_nos = [i])
-            for i in range(1, 5)], domain_2)
+            for i in range(1, 5)], domain_4)
     ]
     # Create the description format strings...
     desc_format = """Field of interest: {field}
