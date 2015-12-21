@@ -212,15 +212,16 @@ class ScrolledListbox(ttk.Frame):
         
         # Pass-through the listbox functions.
         self.curselection = lambda *args: box.curselection(*args)
-        self.get = lambda *args: box.get(*args)
-        self.delete = lambda *args: box.delete(*args)
+        self.get = lambda *args, **kargs: box.get(*args, **kargs)
+        self.delete = lambda *args, **kargs: box.delete(*args, **kargs)
         self.selection_set = \
             lambda *args, **kargs: box.selection_set(*args, **kargs)
         self.selection_clear = \
             lambda *args, **kargs: box.selection_clear(*args, **kargs)
-        self.bind = lambda *args: box.bind(*args)
-        self.see = lambda *args: box.see(*args)
-        self.insert = lambda *args: box.insert(*args)
+        self.bind = lambda *args, **kargs: box.bind(*args, **kargs)
+        self.see = lambda *args, **kargs: box.see(*args, **kargs)
+        self.insert = lambda *args, **kargs: box.insert(*args, **kargs)
+        self.size = lambda *args, **kargs: box.size(*args, **kargs)
 
     
 class ItemList(ttk.Frame):
@@ -234,7 +235,7 @@ class ItemList(ttk.Frame):
         self.name = name
         self.function = function
         # Map for items in the list.
-        self.items = {} # name: {key: var}
+        self.items = [] # [{key: var}]
         # Current context frame.
         self.context = None
         # The index of the currently active element.
@@ -267,16 +268,9 @@ class ItemList(ttk.Frame):
     def add_item(self):
         """ Add a new item to the listbox """
         
-        # Find a unique name
-        id = 0
-        name = 'new'
-        while name in self.items:
-            id += 1
-            name = 'new-' + str(id)
-        
         # Add the item.
-        self.items[name] = {}
-        self.box.insert('end', name)
+        self.items.append({})
+        self.box.insert('end', 'new')
         
         # Clear the existing selection.
         for selected in self.box.curselection():
@@ -299,8 +293,7 @@ class ItemList(ttk.Frame):
             self.active = None
         
         # Remove the item from self.items and the listbox.
-        name = self.box.get(index)
-        del(self.items[name])
+        del(self.items[index])
         self.box.delete(index)
         
     def rename_item(self, name, index):
@@ -309,13 +302,8 @@ class ItemList(ttk.Frame):
         # Only rename if required.
         original = self.box.get(index)
         if name != original:
-
-            # Validate the name
-            if name in self.items:
-                raise ValueError("{} is already used!".format(name))
-            elif name == "":
-                raise ValueError("Name must contains something!")
-
+            if name.strip() == "":
+                raise ValueError("Invalid blank name!")
             # Add the newly named item.
             self.box.insert(index + 1, name)
             # Update selection, if required.
@@ -323,9 +311,6 @@ class ItemList(ttk.Frame):
                 self.box.selection_set(index + 1)
             # Remove the old item.
             self.box.delete(index)
-            # Update self.items
-            self.items[name] = self.items[original]
-            del(self.items[original])
             # Update the active marker, if required.
             if self.active == original:
                 self.active = name
@@ -357,11 +342,11 @@ class ItemList(ttk.Frame):
         # Add a rename option.
         var = tk.StringVar(value = name)
         var.trace("w", lambda *args: self.rename_item(var.get(), index))
-        self.items[name]["Name"] = var
+        self.items[index]["Name"] = var
         self.context.add_raw_option("Name", var)
         
         # Add the custom buttons.
-        self.function(self.context, name, self.items[name])
+        self.function(self.context, name, self.items[index])
         
         # Add a 'delete' button at the bottom.
         self.delete_button = ttk.Button(self.context, text = "Delete", \
@@ -370,7 +355,7 @@ class ItemList(ttk.Frame):
             sticky = 'sw')
             
         # Note the current active item.
-        self.active = name
+        self.active = index
         
     def remove_frame(self):
         """ Remove the context-specific frame, if one exists """
@@ -401,13 +386,9 @@ class ItemList(ttk.Frame):
                 
     def __iter__(self):
         """ Iterate through self's items """
-        for name in self.box.get(0, 'end'):
-            yield self.items[name]
+        for variables in self.items:
+            yield variables
         raise StopIteration()
-        
-    def __getitem__(self, name):
-        """ Get the given item """
-        return self.items[name]
     
 
 class Main(ttk.Frame):
