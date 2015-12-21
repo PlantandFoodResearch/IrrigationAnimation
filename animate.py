@@ -62,20 +62,16 @@ def gen_widgets(panels, dates, font, edge_render):
         widget_dict = {}
         # Add the normal items.
         value = panel['values']
-        domain = value.domain
-        if domain.value2colour == None:
-            domain.init_value2colour(MAP_COLOUR_LIST[i])
+        if value.domain.value2colour == None:
+            value.domain.init_value2colour(MAP_COLOUR_LIST[i])
             i += 1
-        widget_dict['map'] = ValuesWidget(value, domain.value2colour, \
-            edge_render)
-        widget_dict['scale'] = ScaleWidget(domain.min, domain.max, \
-            domain.value2colour, font)
+        widget_dict['map'] = ValuesWidget(value, edge_render)
+        widget_dict['scale'] = ScaleWidget(value.domain, font)
         widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
         
         # Add the graph.
         if 'graphs' in panel:
-            widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
-                font)
+            widget_dict['graph'] = GraphWidget(panel['graphs'], dates, font)
 
         # Save the widgets.
         widgets.append(widget_dict)

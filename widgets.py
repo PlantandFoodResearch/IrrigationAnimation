@@ -107,8 +107,7 @@ class DynamicTextWidget(TextWidget):
 class ScaleWidget():
     """ A dynamically sized widget representing a scale """
     
-    def __init__(self, min, max, value2colour, font, labelling=None, \
-            row2value=None):
+    def __init__(self, domain, font, labelling = None, row2value = None):
         """ Initialise self.
         
             The given scale labelling function is assumed to take a height, and
@@ -126,7 +125,7 @@ class ScaleWidget():
         
         if row2value == None:
             row2value = lambda row, height: (float(row) / height) * \
-                (max - min) + min
+                (domain.max - domain.min) + domain.min
         if labelling == None:
             def labelling(height):
                 # Generate a labelling (list of rows to put the marker on)
@@ -146,7 +145,7 @@ class ScaleWidget():
                 return labels
         
         self.font = font
-        self.value2colour = value2colour
+        self.value2colour = domain.value2colour
         self.labelling = labelling # Scale labelling function.
         self.row2value = row2value # Row to value conversion function.
         self.size = None # The scale is *mostly* dynamically sized.
@@ -216,12 +215,12 @@ class ScaleWidget():
 class ValuesWidget():
     """ Widget for a specific Values """
     
-    def __init__(self, values, value2colour, edge_render):
+    def __init__(self, values, edge_render):
         """ Initialise self """
 
         self.size = None # This widget is dynamically sized.
         self.values = values
-        self.value2colour = value2colour
+        self.value2colour = values.domain.value2colour
         self.model = values.model
         self.edge_render = edge_render
         
