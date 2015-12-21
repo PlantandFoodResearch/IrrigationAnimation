@@ -93,7 +93,7 @@ class Model():
         #       generic?
 
         values = self.extract_field(FIELD_NO_FIELD, lambda v: int(float(v)))
-        fields = {}
+        fields = {} # id: [patch_no, ...]
         # There should be at least one row...
         for patch in values[0]:
             if values[0][patch] not in fields:
@@ -236,41 +236,14 @@ class Graphable():
         not tied to a specific patch.
     """
     
-    def __init__(self, model, field, label, field_nos = None, \
-        statistics = ['min', 'mean', 'max']):
+    def __init__(self, value, label, statistics = ['min', 'mean', 'max']):
         """ Initialise self """
-        
-        self.model = model
-        self.field = field
+
+        self.value = value
         self.label = label
         
-        # Create a helper loading function.
-        if field_nos == None:
-            # TODO: Explore supporting other data types?
-            load_field = lambda field: self.model.extract_field(field, float)
-        else:
-            # TODO: I'd like to make this filtering more generic (so that it
-            #       can be applied elsewhere).
-            # We are only interested in specific fields.
-            fields = self.model.get_patch_fields()
-            patches = []
-            for field in field_nos:
-                patches += fields[field]
-            # Define the helper function.
-            def load_field(field):
-                values = self.model.extract_field(field, float)
-                filtered = {}
-                for day in values:
-                    filtered[day] = {}
-                    for patch in patches:
-                        filtered[day][patch] = values[day][patch]
-                return filtered
-        
-        # Load the values.
-        self.orig_values = load_field(self.field)
-        
         # Get the areas and total area.
-        simple_areas = load_field(AREA_FIELD)
+        simple_areas = self.value.model.extract_field(AREA_FIELD, float)
         self.areas = {} # patch: area
         self.total_area = 0 # The total area.
         # We assume that areas remain the same, so pick the first area.
@@ -279,7 +252,7 @@ class Graphable():
             self.areas[patch] = area
             self.total_area += area
             
-        # Calculate the requested statistics, minimum, and maximum.
+        # Calculate the requested statistics, the minimum, and the maximum.
         self.calculate_statistics(statistics)
 
     def calculate_statistics(self, statistics):
@@ -292,28 +265,28 @@ class Graphable():
                 def day_func(index):
                     """ Calculate the weighted mean for the given day """
                     day = 0
-                    for patch in self.orig_values[index]:
-                        day += self.orig_values[index][patch] * \
+                    for patch in self.value.values[index]:
+                        day += self.value.values[index][patch] * \
                             self.areas[patch]
                     return day / self.total_area
             elif stat == 'min':
-                day_func = lambda day: min((self.orig_values[day][patch] \
-                    for patch in self.orig_values[day]))
+                day_func = lambda day: min((self.value.values[day][patch] \
+                    for patch in self.value.values[day]))
             elif stat == 'max':
-                day_func = lambda day: max((self.orig_values[day][patch] \
-                    for patch in self.orig_values[day]))
+                day_func = lambda day: max((self.value.values[day][patch] \
+                    for patch in self.value.values[day]))
             elif stat == 'sum':
                 def day_func(index):
                     """ Calculate the weighted sum for the given day """
                     day = 0
-                    for patch in self.orig_values[index]:
-                        day += self.orig_values[index][patch] * \
+                    for patch in self.value.values[index]:
+                        day += self.value.values[index][patch] * \
                             self.areas[patch]
                     return day
             else:
                 raise ValueError("Unknown statistic {}!".format(stat))
             self.values.append({day: day_func(day) \
-                for day in self.orig_values})
+                for day in self.value.values})
                 
         # Calculate the maximums and minimums.
         self.max = max([max(stat_values.values()) \

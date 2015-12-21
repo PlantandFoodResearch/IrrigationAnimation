@@ -32,7 +32,7 @@
 # Import the other modules...
 from display import preview
 from transforms import times, basic_value, time_delta_value, \
-	field_delta_value, per_field_value
+	field_delta_value, per_field_value, patch_filter
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST
 from models import Model, Values, Graphable, Graph, Domain
@@ -211,7 +211,7 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
         for index, rect in enumerate(dirty):
             intersects = rect.collidelistall(dirty[index + 1:])
             for collision in intersects:
-                # TODO: This is not very usefull...
+                # TODO: This is not very useful...
                 print("WARNING: Widgets intersect! ({}, {})".format(index, \
                     collision + index + 1))
             
@@ -229,23 +229,23 @@ if __name__ == "__main__":
     values = [(Values(small, "SWTotal"), "None"),
               (Values(small, "NO3Total"), "None")]
     # Create the graphs.
-    graphs = [Graph([Graphable(values[0][0].model, values[0][0].field, \
-            values[0][0].field + " (min, mean, max)", \
+    graphs = [Graph([Graphable(Values(small, "SWTotal"), \
+            "SWTotal (min, mean, max)", \
             statistics = ['min', 'mean', 'max'])]), \
-        Graph([Graphable(values[1][0].model, values[1][0].field, \
-            "Field #{}".format(i), statistics = ['mean'], field_nos = [i])
-            for i in range(1, 5)])
+        Graph([Graphable(Values(small, "NO3Total", \
+                transforms = [lambda v: patch_filter(v, patch_set)]), \
+            "Field #{}".format(i), statistics = ['mean']) \
+            for i, patch_set in small.get_patch_fields().items()])
     ]
-    # Create the description format strings...
-    desc_format = """Field of interest: {field}
-CSV: {csv}
-GIS: {gis}
-Transform: {transform}"""
+    # Create the description strings...
     descriptions = []
     for value, transform in values:
-        descriptions.append(desc_format.format(field = value.field, \
-           csv = value.model.csv, gis = value.model.gis, \
-           transform = transform))
+        descriptions.append("""Field of interest: {field}
+CSV: {csv}
+GIS: {gis}
+Transform: {transform}""".format(field = value.field, \
+            csv = value.model.csv, gis = value.model.gis, \
+            transform = transform))
     # Create and save the panels.
     panels = []
     for value, graph, desc in zip(values, graphs, descriptions):

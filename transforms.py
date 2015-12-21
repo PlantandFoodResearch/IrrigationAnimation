@@ -86,6 +86,14 @@ def log_value(values, v = math.e):
         for patch in values[index]:
             new_values[index][patch] = math.log(values[index][patch], v)
     return new_values
+# Filter by patch_no.
+def patch_filter(values, patches):
+    new_values = {}
+    for index in values:
+        new_values[index] = {}
+        for patch in patches:
+            new_values[index][patch] = values[index][patch]
+    return new_values
 
 
 # TODO: Some functions might accept arguments, so cannot be currently listed
