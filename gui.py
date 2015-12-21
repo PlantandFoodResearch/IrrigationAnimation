@@ -60,7 +60,7 @@ class Options(ttk.Frame):
         # Options added.
         self.options = {} # name: (entry, get)
         
-    def add_raw_option(self, name, var, result = lambda x: x):
+    def add_entry(self, name, var, result = lambda x: x):
         """ Add an option """
         
         row = self.grid_size()[1]
@@ -94,7 +94,7 @@ class Options(ttk.Frame):
         # Add the option to the options array.
         self.options[name] = (entry, get)
         
-    def add_text_option(self, name, var):
+    def add_text(self, name, var):
         """ Add a textbox option """
         
         row = self.grid_size()[1]
@@ -124,7 +124,7 @@ class Options(ttk.Frame):
         # Add the option.
         self.options[name] = (text, lambda: text.get('0.0', 'end'))
         
-    def add_combobox_option(self, name, var, options, \
+    def add_combobox(self, name, var, options, \
         callback = lambda old, new: None, \
         postcommand = lambda box: None):
         """ Add a combobox option """
@@ -152,7 +152,7 @@ class Options(ttk.Frame):
         # Add the option to the options array.
         self.options[name] = (box, var.get)
         
-    def add_file_option(self, name, filevar, \
+    def add_file(self, name, filevar, \
         function = tkFileDialog.asksaveasfilename):
         """ Add a file selection option.
             filevar is the current selection (a string variable).
@@ -604,29 +604,29 @@ class Main(ttk.Frame):
         self.options = Options(self)
         self.options.pack(expand = True, fill = 'both')
         # Add the 'raw' (string) options.
-        self.options.add_raw_option("Title", tk.StringVar())
+        self.options.add_entry("Title", tk.StringVar())
         def check_int(i, min, max):
             if min <= i <= max:
                 return i
             else:
                 raise ValueError("{} not within [{}, {}]!".format(i, min, max))
-        self.options.add_raw_option("FPS", tk.IntVar(value = 4), \
+        self.options.add_entry("FPS", tk.IntVar(value = 4), \
             lambda x: check_int(x, MIN_FPS, MAX_FPS))
         def check_size(size):
             x, y = size.split('x')
             return int(x), int(y)
-        self.options.add_raw_option("Dimensions", \
+        self.options.add_entry("Dimensions", \
             tk.StringVar(value = "1280x1024"), check_size)
-        self.options.add_raw_option("Text size", tk.IntVar(value = 25), \
+        self.options.add_entry("Text size", tk.IntVar(value = 25), \
             lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
         # Add the listbox options.
-        self.options.add_combobox_option("Timewarp", \
+        self.options.add_combobox("Timewarp", \
             tk.StringVar(value = 'basic'), transforms.times.keys())
-        self.options.add_combobox_option("Edge render", \
+        self.options.add_combobox("Edge render", \
             tk.StringVar(value = "True"), ["True", "False"])
         # Add the file option.
         movie_filename = tk.StringVar(value = "movies/movie.mp4")
-        self.options.add_file_option("Movie filename", movie_filename)
+        self.options.add_file("Movie filename", movie_filename)
         
     def create_lists(self):
         """ Create the lists """
@@ -648,23 +648,23 @@ class Main(ttk.Frame):
                     values[name] = tk.StringVar(value = default)
                     values[name].trace("w", lambda *args: cache_model())
                     cache_model()
-                master.add_file_option(name, values[name], *args)
+                master.add_file(name, values[name], *args)
                 
             def add_entry(name, default, **kargs):
                 if name not in values:
                     values[name] = tk.StringVar(value = default)
-                master.add_raw_option(name, values[name], **kargs)
+                master.add_entry(name, values[name], **kargs)
 
             def add_combo(name, options, default, **kargs):
                 if name not in values:
                     values[name] = tk.StringVar(value = default)
-                master.add_combobox_option(name, values[name], options, \
+                master.add_combobox(name, values[name], options, \
                     **kargs)
 
             def add_text(name, default):
                 if name not in values:
                     values[name] = FuncVar(value = default)
-                master.add_text_option(name, values[name])
+                master.add_text(name, values[name])
 
             def post_field(box):
                 """ Callback function for updating the list of fields """
