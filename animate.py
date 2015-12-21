@@ -55,28 +55,17 @@ def combined_dates(date_list):
 def gen_widgets(panels, dates, font, edge_render):
     """ Generate the widgets from the given panels """
 
-    # Generate the shared domains.
-    domains = {} # id: Domain
-    def add_object(obj):
-        if obj.domain not in domains:
-            domains[obj.domain] = Domain(obj.domain)
-        domains[obj.domain].add(obj)
-    for panel in panels:
-        if 'values' in panel:
-            add_object(panel['values'])
-        if 'graphs' in panel:
-            for graph in panel['graphs']:
-                add_object(graph)
-    for domain_id, domain in domains.items():
-        domain.init_value2colour(MAP_COLOUR_LIST[domain_id])
-
     widgets = []
+    i = 0
     for panel in panels:
         # Create the shared dict.
         widget_dict = {}
         # Add the normal items.
         value = panel['values']
-        domain = domains[value.domain]
+        domain = value.domain
+        if domain.value2colour == None:
+            domain.init_value2colour(MAP_COLOUR_LIST[i])
+            i += 1
         widget_dict['map'] = ValuesWidget(value, domain.value2colour, \
             edge_render)
         widget_dict['scale'] = ScaleWidget(domain.min, domain.max, \
@@ -85,7 +74,7 @@ def gen_widgets(panels, dates, font, edge_render):
         
         # Add the graph.
         if 'graphs' in panel:
-            domain = domains[Combination(panel['graphs']).domain]
+            domain = Combination(panel['graphs']).domain
             widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
                 font, panel.get('graph_label', DEFAULT_LABEL), \
                 scale=(domain.min, domain.max))
@@ -236,15 +225,19 @@ if __name__ == "__main__":
         os.path.join(localpath, "csv/dry"))
     slow = Model(os.path.join(localpath, "gis/MediumPatches"), \
         os.path.join(localpath, "csv/slow"))
+
+    # Create the Domains.
+    domain_1 = Domain()
+    domain_2 = Domain()
     # Create the values.
-    values = [Values(dry, "SWTotal", 1, transforms = [field_delta_value]),
-              Values(slow, "SWTotal", 1, transforms = [field_delta_value])]
+    values = [Values(dry, "SWTotal", domain_1, transforms = [field_delta_value]),
+              Values(slow, "SWTotal", domain_1, transforms = [field_delta_value])]
     # Create the graphs.
     graphs = [[Graphable(values[0].model, values[0].field, \
-            values[0].field + " (min, mean, max)", 1, \
+            values[0].field + " (min, mean, max)", domain_1, \
             statistics = ['min', 'mean', 'max'])
         ], [Graphable(values[1].model, values[1].field, \
-                    "Field #{}".format(i), 1, statistics = ['mean'], \
+                    "Field #{}".format(i), domain_1, statistics = ['mean'], \
                     field_nos = [i])
                 for i in range(1, 5)]
     ]

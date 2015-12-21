@@ -239,6 +239,8 @@ class Values():
                 if value > self.max:
                     self.max = value
 
+        domain.add(self)
+
 
 class Graphable():
     """ Wrapper class for a model containing 'graphable' information - anything
@@ -291,6 +293,8 @@ class Graphable():
             
         # Calculate the requested statistics, minimum, and maximum.
         self.calculate_statistics(statistics)
+
+        domain.add(self)
 
     def calculate_statistics(self, statistics):
         """ Calculate self's statistics """
@@ -360,18 +364,19 @@ class Combination():
         self.min = min((obj.min for obj in objects))
         self.max = max((obj.max for obj in objects))
  
+        self.domain.add(self)
+
 
 class Domain():
     """ Class containing information on a specific 'domain' """
 
-    def __init__(self, domain_id):
+    def __init__(self):
         """ Initialise self """
 
-        self.did = domain_id
         self.objects = []
         self.min = float('inf')
         self.max = -float('inf')
-
+        
         self.value2colour = None
 
     def init_value2colour(self, colour_range):
