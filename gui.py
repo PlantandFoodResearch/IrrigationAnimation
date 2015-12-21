@@ -457,7 +457,7 @@ class Main(ttk.Frame):
         # Don't bother with early caching for this; rendering takes quite a bit
         # longer anyway...
         self.values = ThreadedDict(lambda name: Values(self.models[name[0]], \
-            name[1], transforms = [transforms.transformations[name[2]]]))
+            name[1], transforms = name[2]))
         
         # Create the widgets...
         self.create_buttons()
@@ -562,31 +562,35 @@ class Main(ttk.Frame):
             if graph_domain_id == "":
                 graph_domain_id = len(domains) + 1
             name = config["Name"].get()
-            value = self.values[((gis, csv), field, transform)]
+            value = self.values[((gis, csv), field, \
+                tuple([transforms.transformations[transform]]))]
             panel = {'values': value}
             if graph != 'None':
                 graphs = []
             
                 # Generate a list of statistics.
-                statistics = []
+                stats = []
                 for stat in graph.split("+"):
-                    statistics.append(stat.strip().lower())
-                stat_name = " (" + ", ".join(statistics) + ")"
+                    stats.append(stat.strip().lower())
+                stat_name = " (" + ", ".join(stats) + ")"
                     
                 if per_field == 'False':
                     # Just one graph.
-                    graphs.append(Graphable(value.model, field, field + \
-                        stat_name, statistics = statistics))
+                    graph_value = self.values[((gis, csv), field, tuple())]
+                    graphs.append(Graphable(graph_value, field + stat_name, \
+                        statistics = stats))
                     graph_label = 'Key'
                 else:
                     # Multiple, per-field graphs.
                     # Figure out the available fields.
-                    fields = value.model.get_patch_fields().keys()
+                    fields = value.model.get_patch_fields().items()
                     # Generate a graph for each field.
-                    for field_no in fields:
-                        graphs.append(Graphable(value.model, field, \
-                            str(field_no), field_nos = [field_no], \
-                            statistics = statistics))
+                    for field_no, patch_set in fields:
+                        graph_value = self.values[((gis, csv), field, \
+                            tuple([lambda v: \
+                                transforms.patch_filter(v, patch_set)]))]
+                        graphs.append(Graphable(graph_value, str(field_no), \
+                            statistics = stats))
                     # Set the graph label.
                     graph_label = "Fields" + stat_name
                 
