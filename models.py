@@ -208,7 +208,6 @@ class Values():
         
         self.model = model
         self.transforms = transforms
-        self.domain = domain
         
         self.field = field
         orig_values = self.model.extract_field(self.field, float)
@@ -346,8 +345,7 @@ class Graph():
         self.max = max((graph.max for graph in graphables))
  
         # Add the domain.
-        self.domain = domain
-        self.domain.add(self)
+        domain.add(self)
 
 
 class Domain():
@@ -391,4 +389,5 @@ class Domain():
             self.max = other.max
 
         self.objects.append(other)
+        other.domain = self
 
