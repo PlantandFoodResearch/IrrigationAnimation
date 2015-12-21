@@ -502,7 +502,7 @@ class GraphWidget():
         # This scales and offsets the given value as required.
         def y(value):
             try:
-                perc = ((value - graph.min) / (graph.max - graph.min))
+                perc = ((value - self.min) / (self.max - self.min))
             except ZeroDivisionError:
                 perc = 0
             return topleft[1] + size[1] - (size[1] * perc)
