@@ -97,18 +97,14 @@ def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
     # denominator is the number of values.
     value_area = [i - (2 * BORDER) for i in (surf_w / len(widgets), surf_h)]
     # Iterate through the values and render them.
-    for i in range(len(widgets)):
-        map, scale, desc, graph = widgets[i]['map'], \
-            widgets[i].get('scale', None), \
-            widgets[i]['desc'], widgets[i].get('graph', None)
-        
+    for i, widget_set in enumerate(widgets):
         # The x offset is the leftmost start point for an item.
         x_offset = (surf_w / len(widgets)) * i + BORDER
         
         # Render the description.
         # We use the maximum of desc_offset and x_offset to avoid
         # clipping, if possible.
-        desc_rect = desc.render(surface, index, \
+        desc_rect = widget_set['desc'].render(surface, index, \
             lambda size: (max(x_offset + (value_area[0] / 2) - \
                 (size[0] / 2), desc_offset), BORDER))
         # Update the description offset.
@@ -126,7 +122,7 @@ def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
         # Update the lowest point.
         lowest = desc_rect.bottom + BORDER
         
-        if scale != None:
+        if 'scale' in widget_set:
             # Render the scale.
             # TODO: We assume that the map is a square when calculating
             #       the scale size; it might not be, so account for that.
@@ -134,10 +130,9 @@ def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
                 min(value_area[0] - (BORDER + SCALE_WIDTH), \
                     value_area[1] - (desc_rect.height + BORDER * 2 + \
                     graph_height)))
-            scale_rect = scale.render(surface, index, \
+            scale_rect = widget_set['scale'].render(surface, index, \
                 lambda size: (x_offset, (lowest + surf_h - \
-                    (BORDER + graph_height) - size[1]) / 2), \
-                scale_size)
+                    (BORDER + graph_height) - size[1]) / 2), scale_size)
             dirty.append(scale_rect)
         else:
             scale_rect = pygame.Rect((x_offset - BORDER, lowest), (0, 0))
@@ -146,13 +141,11 @@ def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
         # The map size is shrunk to avoid clipping with anything, and
         # offsets are calculated accordingly.
         map_size = (value_area[0] - (scale_rect.width + BORDER), \
-            value_area[1] - (desc_rect.height + BORDER * 2 + \
-            graph_height))
-        map_rect = map.render(surface, index, \
+            value_area[1] - (desc_rect.height + BORDER * 2 + graph_height))
+        map_rect = widget_set['map'].render(surface, index, \
             lambda size: (scale_rect.right + BORDER + \
                     ((map_size[0] - size[0]) / 2), \
-                (lowest + surf_h - (BORDER + graph_height) - \
-                    size[1]) / 2), \
+                (lowest + surf_h - (BORDER + graph_height) - size[1]) / 2), \
             map_size)
         
         # Update the lowest point.
@@ -161,11 +154,10 @@ def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
         dirty.append(map_rect)
             
         # Render the graph, if it is defined.
-        if graph != None:
-            graph_rect = graph.render(surface, index, \
+        if 'graph' in widget_set:
+            graph_rect = widget_set['graph'].render(surface, index, \
                 lambda size: (x_offset, lowest), \
-                (value_area[0], max(surf_h - (lowest + BORDER), \
-                    graph_height)))
+                (value_area[0], max(surf_h - (lowest + BORDER), graph_height)))
             dirty.append(graph_rect)
 
     return dirty
