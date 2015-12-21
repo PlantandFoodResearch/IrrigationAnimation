@@ -498,77 +498,8 @@ class Main(ttk.Frame):
                     self.master.after(100, check_ended)
             
             try:
-                # Create and save the panels.
-                panels = []
-                domains = {} # id: ([items], colour)
-                for index, config in enumerate(self.panel_list):
-                    gis = config['GIS files'].get()
-                    csv = config['CSV directory'].get()
-                    field = config['Field'].get()
-                    transform = config['Value transform'].get()
-                    graph = config["Graph statistics"].get()
-                    per_field = config["Per-field"].get()
-                    map_domain_id = config["Map domain"].get()
-                    if map_domain_id == "":
-                        map_domain_id = len(domains)
-                    graph_domain_id = config["Graph domain"].get()
-                    if graph_domain_id == "":
-                        graph_domain_id = len(domains) + 1
-                    name = config["Name"].get()
-                    value = self.values[((gis, csv), field, transform)]
-                    panel = {'values': value}
-                    if graph != 'None':
-                        graphs = []
-                    
-                        # Generate a list of statistics.
-                        statistics = []
-                        for stat in graph.split("+"):
-                            statistics.append(stat.strip().lower())
-                        stat_name = " (" + ", ".join(statistics) + ")"
-                            
-                        if per_field == 'False':
-                            # Just one graph.
-                            graphs.append(Graphable(value.model, field, field + \
-                                stat_name, statistics = statistics))
-                            graph_label = 'Key'
-                        else:
-                            # Multiple, per-field graphs.
-                            # Figure out the available fields.
-                            fields = value.model.get_patch_fields().keys()
-                            # Generate a graph for each field.
-                            for field_no in fields:
-                                graphs.append(Graphable(value.model, field, \
-                                    str(field_no), field_nos = [field_no], \
-                                    statistics = statistics))
-                            # Set the graph label.
-                            graph_label = "Fields" + stat_name
-                        
-                        # Add the graph to the panel.
-                        graph = Graph(graphs, label = graph_label)
-                        panel['graphs'] = graph
-                        # Add the graph to the domain list.
-                        if graph_domain_id in domains:
-                            domains[graph_domain_id][0].append(graph)
-                        else:
-                            domains[graph_domain_id] = ([graph], False)
-                    # Add the description.
-                    panel['desc'] = config["Description string"].get().format(\
-                        name = name, field = field, csv = csv, gis = gis, \
-                        transform = transform)
-                    # Add the map to the domains.
-                    domains[map_domain_id] = (domains.get(map_domain_id, \
-                        ([], True))[0] + [value], True)
-
-                    panels.append(panel)
-
-                # Initialise the domains.
-                i = 0
-                for items, coloured in domains.values():
-                    if coloured:
-                        Domain(items, MAP_COLOUR_LIST[i])
-                        i += 1
-                    else:
-                        Domain(items)
+                # Generate self's panels.
+                panels = self.create_panels()
                 
                 # Generate the render_frame function and frame count
                 render_frame, frames = gen_render_frame(panels, \
@@ -609,6 +540,85 @@ class Main(ttk.Frame):
         
         # Create the progress bar (shares the same frame).
         self.create_progressbar(lower)
+
+    def create_panels(self):
+        """ Generate the panels from self's current config.
+            This is called from within the render_wrapper function.
+        """
+
+        # Create and save the panels.
+        panels = []
+        domains = {} # id: ([items], colour)
+        for index, config in enumerate(self.panel_list):
+            gis = config['GIS files'].get()
+            csv = config['CSV directory'].get()
+            field = config['Field'].get()
+            transform = config['Value transform'].get()
+            graph = config["Graph statistics"].get()
+            per_field = config["Per-field"].get()
+            map_domain_id = config["Map domain"].get()
+            if map_domain_id == "":
+                map_domain_id = len(domains)
+            graph_domain_id = config["Graph domain"].get()
+            if graph_domain_id == "":
+                graph_domain_id = len(domains) + 1
+            name = config["Name"].get()
+            value = self.values[((gis, csv), field, transform)]
+            panel = {'values': value}
+            if graph != 'None':
+                graphs = []
+            
+                # Generate a list of statistics.
+                statistics = []
+                for stat in graph.split("+"):
+                    statistics.append(stat.strip().lower())
+                stat_name = " (" + ", ".join(statistics) + ")"
+                    
+                if per_field == 'False':
+                    # Just one graph.
+                    graphs.append(Graphable(value.model, field, field + \
+                        stat_name, statistics = statistics))
+                    graph_label = 'Key'
+                else:
+                    # Multiple, per-field graphs.
+                    # Figure out the available fields.
+                    fields = value.model.get_patch_fields().keys()
+                    # Generate a graph for each field.
+                    for field_no in fields:
+                        graphs.append(Graphable(value.model, field, \
+                            str(field_no), field_nos = [field_no], \
+                            statistics = statistics))
+                    # Set the graph label.
+                    graph_label = "Fields" + stat_name
+                
+                # Add the graph to the panel.
+                graph = Graph(graphs, label = graph_label)
+                panel['graphs'] = graph
+                # Add the graph to the domain list.
+                if graph_domain_id in domains:
+                    domains[graph_domain_id][0].append(graph)
+                else:
+                    domains[graph_domain_id] = ([graph], False)
+            # Add the description.
+            panel['desc'] = config["Description string"].get().format(\
+                name = name, field = field, csv = csv, gis = gis, \
+                transform = transform)
+            # Add the map to the domains.
+            domains[map_domain_id] = (domains.get(map_domain_id, \
+                ([], True))[0] + [value], True)
+
+            panels.append(panel)
+
+        # Initialise the domains.
+        i = 0
+        for items, coloured in domains.values():
+            if coloured:
+                Domain(items, MAP_COLOUR_LIST[i])
+                i += 1
+            else:
+                Domain(items)
+
+        return panels
         
     def create_progressbar(self, frame):
         """ Create self's progress bar """
