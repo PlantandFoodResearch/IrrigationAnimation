@@ -311,9 +311,6 @@ class ItemList(ttk.Frame):
                 self.box.selection_set(index + 1)
             # Remove the old item.
             self.box.delete(index)
-            # Update the active marker, if required.
-            if self.active == original:
-                self.active = name
             
     def delete_selected(self):
         """ Delete any currently selected items """
@@ -673,7 +670,7 @@ class Main(ttk.Frame):
                 except KeyError:
                     fields = []
                 box['values'] = sorted(list(fields))
-                
+
             add_file("GIS files", "gis/SmallPatches.shp", \
                 tkFileDialog.askopenfilename)
             add_file("CSV directory", "csv/small", \
