@@ -150,7 +150,7 @@ class Options(ttk.Frame):
         box.grid(row = row, column = 2, sticky = 'e')
         
         # Add the option to the options array.
-        self.options[name] = (box, lambda: var.get())
+        self.options[name] = (box, var.get)
         
     def add_file_option(self, name, filevar, \
         function = tkFileDialog.asksaveasfilename):
@@ -180,8 +180,8 @@ class Options(ttk.Frame):
         button.grid(row = 1, column = 3, sticky = 'e')
         
         # Add the option to the options array.
-        self.options[name] = (filevar, lambda: filevar.get())
-    
+        self.options[name] = (filevar, filevar.get)
+
     def __iter__(self):
         """ Iterate through the existing options """
         
