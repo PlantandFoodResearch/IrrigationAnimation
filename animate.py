@@ -80,11 +80,17 @@ def gen_widgets(panels, dates, font, edge_render):
 def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
     """ Render the widgets """
 
+    # TODO: Currently we manually place all the widgets, and attempt to be
+    #       intelligent about their positioning so that they do not clip.
+    #       It would be better if the widgets were smart enough to place
+    #       themselves...
+        
     dirty = []
 
-    # Render the maps and scales.
+    # Render the widgets.
     # desc_offset is the current leftmost offset for a description,
-    # calculated to avoid clipping.
+    # calculated to avoid clipping within the descriptions, if possible.
+    # TODO: It would be brilliant if we could use 'place' instead.
     desc_offset = label_rect.right + BORDER
     # value_area is the area dedicated to a specific map/scale/description.
     # It is calculated as a fraction of the space available, where the
@@ -188,20 +194,19 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
         
         index = frame_map[frame] # Figure out the row index in the CSV.
         surface.fill(DEFAULT_COLOUR) # Fill the surface.
-        # Cache the surface width and height for readability purposes.
-        surf_w, surf_h = surface.get_size()
-        
-        # Record a list of 'dirty' rects.
-        dirty = []
         
         # TODO: Currently we manually place all the widgets, and attempt to be
         #       intelligent about their positioning so that they do not clip.
         #       It would be better if the widgets were smart enough to place
         #       themselves...
         
+        # Cache the surface width and height for readability purposes.
+        surf_w, surf_h = surface.get_size()
+
         # Render the date and label.
-        dirty.append(date.render(surface, index, \
-            lambda size: (surf_w - (BORDER + size[0]), BORDER)))
+        # Dirty is a list of rects rendered to.
+        dirty = [date.render(surface, index, \
+            lambda size: (surf_w - (BORDER + size[0]), BORDER))]
         label_rect = label.render(surface, index, \
             lambda size: (BORDER, BORDER))
         dirty.append(label_rect)
@@ -214,6 +219,7 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
         for index, rect in enumerate(dirty):
             intersects = rect.collidelistall(dirty[index + 1:])
             for collision in intersects:
+                # TODO: This is not very usefull...
                 print("WARNING: Widgets intersect! ({}, {})".format(index, \
                     collision + index + 1))
             
@@ -224,42 +230,43 @@ if __name__ == "__main__":
     import os.path
     localpath = os.path.dirname(__file__)
 
-    # Create a couple of Models.
-    dry = Model(os.path.join(localpath, "gis/MediumPatches"), \
-        os.path.join(localpath, "csv/dry"))
-    # Create the values.
-    values = [Values(dry, "SWTotal"),
-              Values(dry, "NO3Total")]
+    # Create a Models.
+    small = Model(os.path.join(localpath, "gis/SmallPatches"), \
+        os.path.join(localpath, "csv/small"))
+    # Create the values. We also include the transformation, for later use.
+    values = [(Values(small, "SWTotal"), "None"),
+              (Values(small, "NO3Total"), "None")]
     # Create the graphs.
-    graphs = [Graph([Graphable(values[0].model, values[0].field, \
-            values[0].field + " (min, mean, max)", \
+    graphs = [Graph([Graphable(values[0][0].model, values[0][0].field, \
+            values[0][0].field + " (min, mean, max)", \
             statistics = ['min', 'mean', 'max'])]), \
-        Graph([Graphable(values[1].model, values[1].field, \
+        Graph([Graphable(values[1][0].model, values[1][0].field, \
             "Field #{}".format(i), statistics = ['mean'], field_nos = [i])
             for i in range(1, 5)])
     ]
-    # Create the Domains.
-    domain_1 = Domain([values[0], values[1]], MAP_COLOUR_LIST[0])
-    #domain_2 = Domain([values[1]], MAP_COLOUR_LIST[1])
-    domain_3 = Domain([graphs[0]])
-    domain_4 = Domain([graphs[1]])
     # Create the description format strings...
     desc_format = """Field of interest: {field}
 CSV: {csv}
 GIS: {gis}
 Transform: {transform}"""
     descriptions = []
-    for value, transform in zip(values, ["None", "None"]):
+    for value, transform in values:
         descriptions.append(desc_format.format(field = value.field, \
            csv = value.model.csv, gis = value.model.gis, \
            transform = transform))
     # Create and save the panels.
     panels = []
     for value, graph, desc in zip(values, graphs, descriptions):
-        panels.append({'values': value, 'graphs': graph, 'desc': desc})
+        panels.append({'values': value[0], 'graphs': graph, 'desc': desc})
+
+    # Initialise the Domains.
+    Domain([values[0][0]], MAP_COLOUR_LIST[0])
+    Domain([values[1][0]], MAP_COLOUR_LIST[1])
+    Domain([graphs[0]])
+    Domain([graphs[1]])
     
     # Create the render_frame function and frame count.
-    header = "Model render" # Header displayed
+    header = "Preview render" # Header displayed
     timewarp = 'basic' # Time warp method used
     edge_render = True # Whether or not to render edges (plot edges, terrain).
     font = (None, 25) # A (name, size) tuple for the font.
