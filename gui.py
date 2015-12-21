@@ -54,6 +54,8 @@ class Options(ttk.Frame):
         
         self.master = master
         ttk.Frame.__init__(self, self.master)
+        # Give the second column some weight...
+        self.grid_columnconfigure(2, weight=1)
         
         # Options added.
         self.options = {} # name: (entry, get)
@@ -162,19 +164,20 @@ class Options(ttk.Frame):
         # Create a frame to hold the label and filename.
         frame = ttk.Frame(self)
         frame.grid(row = row, column = 1, columnspan = 2, sticky = 'ew')
+        frame.columnconfigure(2, weight=1) # Make the middle column expand.
         
         # Create a label.
         label = ttk.Label(frame, text = name + ": ")
-        label.pack(side = 'left')
+        label.grid(row = 1, column = 1, sticky = 'w')
         # Create the callback for the name.
         file_label = ttk.Label(frame, textvariable = filevar)
-        file_label.pack(side = 'right')
+        file_label.grid(row = 1, column = 2, sticky = 'e')
         
         # Create a button to change the file.
         # TODO: Add sanity checking of the resulting filename.
-        button = ttk.Button(self, text = "Change", \
+        button = ttk.Button(frame, text = "Change", \
             command = lambda: filevar.set(function()))
-        button.grid(row = row, column = 3)
+        button.grid(row = 1, column = 3, sticky = 'e')
         
         # Add the option to the options array.
         self.options[name] = (filevar, lambda: filevar.get())
@@ -224,10 +227,10 @@ class ItemList(ttk.Frame):
     """ An itemlist with flexible per-item options """
     
     def __init__(self, master, name, function, \
-        renamecallback=lambda name, newname: True, \
-        deletecallback=lambda name: True, \
-        addcallback=lambda name: True, \
-        deleteable=lambda active: True, *args, **kargs):
+        renamecallback = lambda name, newname: True, \
+        deletecallback = lambda name: True, \
+        addcallback = lambda name: True, \
+        deleteable = lambda active: True, *args, **kargs):
         """ Initialise self """
         
         # Init self.
@@ -254,6 +257,8 @@ class ItemList(ttk.Frame):
         self.create_widgets()
         
     def create_widgets(self):
+        # Add a weight so that things grow properly.
+        self.grid_columnconfigure(1, weight = 1)
         
         # Add the label.
         labelframe = ttk.Frame(self)
