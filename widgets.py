@@ -357,11 +357,12 @@ class GraphWidget():
         if len(graph.graphables) > len(GRAPH_COLOUR_LIST):
             raise ValueError("To many lines specified; not enough colours!")
         
+        # Save some of the given values.
         self.graphable = graph.graphables
-        self.dates = dates
-        self.size = None
-        self.font = font
         self.label = graph.label + ": "
+        self.dates = dates
+        self.font = font
+        self.size = None
         
         # The 'global' minimum and maximum.
         self.min = graph.domain.min
@@ -418,7 +419,7 @@ class GraphWidget():
         for row in anchors:
             # Render and save.
             value = str(round_sf((float(row) / height) * \
-                    (self.max - self.min) + self.min, SCALE_SF))
+                (self.max - self.min) + self.min, SCALE_SF))
             rows[row] = self.font.render(value, TEXT_AA, TEXT_COLOUR)
             # Update the maximum text width.
             max_text_width = max(rows[row].get_width(), max_text_width)
@@ -518,7 +519,8 @@ class GraphWidget():
                     (x, y(cur[index])))
             # Save the current position.
             old = cur
-            
+     
+
 def gen_labelling(size, label_size, spacing, label_count=float('inf')):
     """ Generate a labelling for the given size linear area.
         This returns a list of rows for placing the labels on.
