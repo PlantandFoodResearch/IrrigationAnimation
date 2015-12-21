@@ -753,6 +753,7 @@ class Main(ttk.Frame):
 
 
 if __name__ == "__main__":
-    ui = Main(tk.Tk(), width=600, height=600)
-    ui.mainloop()
+    root = tk.Tk()
+    root.geometry('600x800')
+    Main(root).mainloop()
     
