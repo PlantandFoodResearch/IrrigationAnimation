@@ -675,7 +675,17 @@ class Main(ttk.Frame):
                     fields = []
                 box['values'] = sorted(list(fields))
 
+            # Add the rename option.
             add_entry("Name", 'new')
+
+            # Add a description string option.
+            add_text("Description string", """{name}:
+    Field of interest: {field}
+    CSV: {csv}
+    GIS: {gis}
+    Transform: {transform}""")
+
+            # Add the Value options.
             add_file("GIS files", "gis/SmallPatches.shp", \
                 tkFileDialog.askopenfilename)
             add_file("CSV directory", "csv/small", \
@@ -683,17 +693,13 @@ class Main(ttk.Frame):
             add_combo("Value transform", transforms.transformations.keys(), \
                 'basic')
             add_combo("Field", [], "", postcommand = post_field)
+            add_entry("Map domain", "")
+
+            # Add the graph options.
             add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
                 "Min + Mean + Max", "Sum", "None"], "None")
             add_combo("Per-field", ['True', 'False'], 'False')
-            add_entry("Map domain", "")
             add_entry("Graph domain", "")
-            # Add a description string option.
-            add_text("Description string", """{name}:
-    Field of interest: {field}
-    CSV: {csv}
-    GIS: {gis}
-    Transform: {transform}""")
 
         self.panel_list = ItemList(self, "Panels", panel_options)
         self.panel_list.pack(expand = True, fill = 'both')
