@@ -16,12 +16,6 @@
       in the GUI yet.
     - Rendering tab/pane for controlling running render jobs.
     - Add support for combining transformations.
-    - Add support for using the same colour and scale for values *if* the
-      field and transformations are equal *but* the csv file is different.
-      This would involve moving value2colour out of values into something
-      else, and making it accept a group of values instead, adjusting
-      ScaleWidget to accept a group of values instead, and doing a pre-pass on
-      the panels in the rendering code to determine which ones fit the criteria.
 
     Future:
     - Saving existing setups.
