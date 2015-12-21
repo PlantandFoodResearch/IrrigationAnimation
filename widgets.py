@@ -24,7 +24,6 @@ from constants import ANCHOR_FORCE, BROKEN_COLOUR, EDGE_COLOUR, \
 
 import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
-import colorsys # For value2colour
 
 # We define a helper function to round to n significant digits:
 # This is from: http://stackoverflow.com/questions/3410976/how-to-round-a-number-to-significant-figures-in-python
@@ -37,26 +36,6 @@ def round_sf(v, n):
         if rounded % 1 == 0:
             return int(rounded)
         return rounded
-
-# We also define a helper function to generate a value2colour function for a
-# given values and colour_range.
-def gen_value2colour(min, max, colour_range):
-    # Create the colour mapping function.
-    def value2colour(value):
-        """ Convert from a given value to a colour """
-        # Using this: 
-        # http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#10907855 
-        # We scale to a specific colour range (in HSV, from 0 to 1).
-        try:
-            hue = ((value - min) / (max - min)) # 0-1
-        except ZeroDivisionError:
-            hue = 0
-        # Convert the hue into something in the given range.
-        value = hue * (colour_range[1] - colour_range[0]) + colour_range[0]
-        # Return a RGB version of that colour.
-        return [int(i*255) for i in colorsys.hsv_to_rgb(value, 1.0, 1.0)]
-    return value2colour
-
 
 class TextWidget():
     """ A static, left aligned text widget """

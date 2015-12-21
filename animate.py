@@ -35,9 +35,9 @@ from transforms import times, basic_value, time_delta_value, \
 	field_delta_value, per_field_value
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
-from models import Model, Values, Combination, Graphable
+from models import Model, Values, Combination, Graphable, Domain
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
-    GraphWidget, gen_value2colour
+    GraphWidget
 # We use pygame for font rendering...
 import pygame.font
 
@@ -56,13 +56,11 @@ def gen_widgets(panels, dates, font, edge_render):
     """ Generate the widgets from the given panels """
 
     # Generate the shared domains.
-    domains = {} # id: {min, max, ...}
+    domains = {} # id: Domain
     def add_object(obj):
-        domain_id = obj.domain
         if obj.domain not in domains:
-            domains[obj.domain] = {'min': float('inf'), 'max': -float('inf')}
-        domains[obj.domain]['min'] = min(domains[obj.domain]['min'], obj.min)
-        domains[obj.domain]['max'] = max(domains[obj.domain]['max'], obj.max)
+            domains[obj.domain] = Domain(obj.domain)
+        domains[obj.domain].add(obj)
     for panel in panels:
         if 'values' in panel:
             add_object(panel['values'])
@@ -70,8 +68,7 @@ def gen_widgets(panels, dates, font, edge_render):
             for graph in panel['graphs']:
                 add_object(graph)
     for domain_id, domain in domains.items():
-        domain['v2c'] = gen_value2colour(domain['min'], domain['max'], \
-            MAP_COLOUR_LIST[domain_id])
+        domain.init_value2colour(MAP_COLOUR_LIST[domain_id])
 
     widgets = []
     for panel in panels:
@@ -80,9 +77,10 @@ def gen_widgets(panels, dates, font, edge_render):
         # Add the normal items.
         value = panel['values']
         domain = domains[value.domain]
-        widget_dict['map'] = ValuesWidget(value, domain['v2c'], edge_render)
-        widget_dict['scale'] = ScaleWidget(domain['min'], domain['max'], \
-            domain['v2c'], font)
+        widget_dict['map'] = ValuesWidget(value, domain.value2colour, \
+            edge_render)
+        widget_dict['scale'] = ScaleWidget(domain.min, domain.max, \
+            domain.value2colour, font)
         widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
         
         # Add the graph.
@@ -90,7 +88,7 @@ def gen_widgets(panels, dates, font, edge_render):
             domain = domains[Combination(panel['graphs']).domain]
             widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
                 font, panel.get('graph_label', DEFAULT_LABEL), \
-                scale=(domain['min'], domain['max']))
+                scale=(domain.min, domain.max))
 
         # Save the widgets.
         widgets.append(widget_dict)
