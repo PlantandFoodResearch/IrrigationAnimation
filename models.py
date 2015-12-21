@@ -203,26 +203,15 @@ def load_shapes(shape_file):
 class Values():
     """ Wrapper class to contain transformed data from a specific model """
     
-    def __init__(self, model, field, domain, data_type='float', transforms=()):
+    def __init__(self, model, field, domain, transforms=()):
         """ Initialise self """
         
         self.model = model
         self.transforms = transforms
         self.domain = domain
         
-        if data_type == 'float':
-            process = float
-        else:
-            # TODO: Implement more data types... string is one obvious one.
-            #       Even better, get to a point where we don't have to care
-            #       about it here...
-            #       A different colour mapping function will be required, and
-            #       maximums and minimums are different and not really
-            #       applicable.
-            raise ValueError("Unknown data type {}".format(data_type))
-            
         self.field = field
-        orig_values = self.model.extract_field(self.field, process)
+        orig_values = self.model.extract_field(self.field, float)
         # Apply the transformations.
         self.values = orig_values
         for transform in transforms:
@@ -402,6 +391,4 @@ class Domain():
             self.max = other.max
 
         self.objects.append(other)
-
-
 
