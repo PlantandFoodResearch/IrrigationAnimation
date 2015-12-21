@@ -31,8 +31,8 @@
 
 # Import the other modules...
 from display import preview
-from transforms import times, basic_value, time_delta_value, \
-	field_delta_value, per_field_value, patch_filter
+from transforms import times, time_delta_value, field_delta_value, \
+    per_field_value, patch_filter
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST
 from models import Model, Values, Graphable, Graph, Domain

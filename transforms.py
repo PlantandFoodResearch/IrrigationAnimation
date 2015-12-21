@@ -12,10 +12,9 @@ import math
 # Transformation functions:
 # These accept a map 'values' of the form values[row index][patch no], and
 # returns another map 'values' suitably transformed.
-# These are applied to the data as preprocessing. For instance, change_value
-# returns the delta between the current and previous value. Other useful
-# functions might scale the data, or remove anomalies.
-basic_value = lambda values: values # No transform.
+# These are applied to the data as preprocessing. For instance,
+# time_delta_value returns the delta between the current and previous value.
+
 # Time delta uses the delta between a value and the previous day's result.
 def time_delta_value(values):
     new_values = {}
@@ -25,6 +24,7 @@ def time_delta_value(values):
             new_values[index][patch] = values[index][patch] - \
                 values.get(index - 1, {patch: values[index][patch]})[patch]
     return new_values
+
 # Field delta uses the relative delta between a value and the maximum and
 # minimums on one specific day.
 def field_delta_value(values):
@@ -40,6 +40,7 @@ def field_delta_value(values):
             except ZeroDivisionError:
                 new_values[index][patch] = 0
     return new_values
+
 # Per field normalises the data relative to specific fields.
 def per_field_value(values, fields):
     """ This normalises all patches relative to their field.
@@ -70,6 +71,7 @@ def per_field_value(values, fields):
                 new_values[index][patch] = scaled_value
 
     return new_values
+
 # Exponential scaling.
 def exponential_value(values, v = math.e):
     new_values = {}
@@ -78,6 +80,7 @@ def exponential_value(values, v = math.e):
         for patch in values[index]:
             new_values[index][patch] = v**(values[index][patch])
     return new_values
+
 # Logarithmic scaling.
 def log_value(values, v = math.e):
     new_values = {}
@@ -86,6 +89,7 @@ def log_value(values, v = math.e):
         for patch in values[index]:
             new_values[index][patch] = math.log(values[index][patch], v)
     return new_values
+
 # Filter by patch_no.
 def patch_filter(values, patches):
     new_values = {}
@@ -98,7 +102,7 @@ def patch_filter(values, patches):
 
 # TODO: Some functions might accept arguments, so cannot be currently listed
 #       here...
-transformations = {'basic': basic_value,
+transformations = {'basic': lambda v: v,
     'time_delta': time_delta_value,
     'field_delta': field_delta_value,
     'exponential': exponential_value,
