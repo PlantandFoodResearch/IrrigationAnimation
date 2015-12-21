@@ -27,12 +27,16 @@ The pygame previewer has a few keybindings:
 
 ## Dependencies ##
 
+Python 2.7 is used, however porting to Python 3 should not be too difficult.
+
 - pygame (for rendering, displaying a preview)
 - PyMovie (for generating movies)
 - pyshp (for parsing the GIS files)
+- numpy (used by pygame to generate arrays to be passed to PyMovie)
 
 When installing packages, it is essential to use anaconda's python!
 Either launch Anaconda's CLI, or launch the command prompt and type 'anaconda'.
+numpy is already installed with anaconda.
 
 ### Pygame ###
 
