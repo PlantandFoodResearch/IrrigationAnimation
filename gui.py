@@ -268,9 +268,12 @@ class ItemList(ttk.Frame):
     def add_item(self):
         """ Add a new item to the listbox """
         
-        # Add the item.
-        self.items.append({})
-        self.box.insert('end', 'new')
+        # Create a textvariable for the item's name.
+        var = tk.StringVar(value = 'new')
+        var.trace("w", lambda *args: self.rename_item(var))
+        # Add the item to the box.
+        self.box.insert('end', var.get())
+        self.items.append({'Name': var})
         
         # Clear the existing selection.
         for selected in self.box.curselection():
@@ -296,13 +299,19 @@ class ItemList(ttk.Frame):
         del(self.items[index])
         self.box.delete(index)
         
-    def rename_item(self, name, index):
-        """ Rename the item at the given index """
+    def rename_item(self, var):
+        """ Rename the item with the given text variable """
+
+        # Find the index for the given variable.
+        index = None
+        for i, item in enumerate(self.items):
+            if item['Name'] == var:
+                index = i
         
         # Only rename if required.
-        original = self.box.get(index)
-        if name != original:
-            if name.strip() == "":
+        name = var.get().strip()
+        if name != self.box.get(index):
+            if name == "":
                 raise ValueError("Invalid blank name!")
             # Add the newly named item.
             self.box.insert(index + 1, name)
@@ -337,10 +346,7 @@ class ItemList(ttk.Frame):
         self.context.grid(row = 2, column = 1, sticky = 'nsew')
         
         # Add a rename option.
-        var = tk.StringVar(value = name)
-        var.trace("w", lambda *args: self.rename_item(var.get(), index))
-        self.items[index]["Name"] = var
-        self.context.add_raw_option("Name", var)
+        self.context.add_raw_option("Name", self.items[index]['Name'])
         
         # Add the custom buttons.
         self.function(self.context, name, self.items[index])
