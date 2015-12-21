@@ -113,11 +113,11 @@ def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
         dirty.append(desc_rect)
         
         # Figure out the graph height.
-        if graph == None:
-            graph_height = 0
-        else:
+        if 'graph' in widget_set:
             graph_height = int(min(value_area[0] * GRAPH_RATIO, \
                 surf_h * GRAPH_MAX_HEIGHT))
+        else:
+            graph_height = 0
 
         # Update the lowest point.
         lowest = desc_rect.bottom + BORDER
