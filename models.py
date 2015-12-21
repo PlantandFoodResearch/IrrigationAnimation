@@ -350,7 +350,12 @@ class Graph():
 
 
 class Domain():
-    """ Class containing information on a specific 'domain' """
+    """ Class containing information on a specific 'domain'.
+        Domains hold information shared between different objects so that they
+        can be displayed consistently; specifically, a shared value2colour,
+        minimum, and maximum. This enables a UI to let different models share
+        the same scale, for instance.
+    """
 
     def __init__(self, objects, colour_range = None):
         """ Initialise self """
