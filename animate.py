@@ -77,9 +77,8 @@ def gen_widgets(panels, dates, font, edge_render):
     
     return widgets
 
-def render_panels(surface, panels, widgets, surf_w, surf_h, index, date_rect, \
-    label_rect):
-    """ Render the panels """
+def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
+    """ Render the widgets """
 
     dirty = []
 
@@ -92,7 +91,7 @@ def render_panels(surface, panels, widgets, surf_w, surf_h, index, date_rect, \
     # denominator is the number of values.
     value_area = [i - (2 * BORDER) for i in (surf_w / len(widgets), surf_h)]
     # Iterate through the values and render them.
-    for i in range(len(panels)):
+    for i in range(len(widgets)):
         map, scale, desc, graph = widgets[i]['map'], \
             widgets[i].get('scale', None), \
             widgets[i]['desc'], widgets[i].get('graph', None)
@@ -190,8 +189,7 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
         index = frame_map[frame] # Figure out the row index in the CSV.
         surface.fill(DEFAULT_COLOUR) # Fill the surface.
         # Cache the surface width and height for readability purposes.
-        surf_w = surface.get_width()
-        surf_h = surface.get_height()
+        surf_w, surf_h = surface.get_size()
         
         # Record a list of 'dirty' rects.
         dirty = []
@@ -202,23 +200,22 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
         #       themselves...
         
         # Render the date and label.
-        date_rect = date.render(surface, index, \
-            lambda size: (surf_w - (BORDER + size[0]), BORDER))
+        dirty.append(date.render(surface, index, \
+            lambda size: (surf_w - (BORDER + size[0]), BORDER)))
         label_rect = label.render(surface, index, \
             lambda size: (BORDER, BORDER))
-        dirty += [label_rect, date_rect]
+        dirty.append(label_rect)
 
-        # Render the panels.
-        dirty += render_panels(surface, panels, widgets, surf_w, surf_h, \
-            index, date_rect, label_rect)
+        # Render the widgets.
+        dirty += render_widgets(surface, widgets, surf_w, surf_h, index, \
+            label_rect)
     
         # Check for intersections, and print a warning if any are found.
-        if len(dirty) != 0:
-            for index, widget in enumerate(dirty):
-                intersects = widget.collidelistall(dirty[index + 1:])
-                for collision in intersects:
-                    print("WARNING: Widgets intersect! ({}, {})".format(index, \
-                        collision + index + 1))
+        for index, rect in enumerate(dirty):
+            intersects = rect.collidelistall(dirty[index + 1:])
+            for collision in intersects:
+                print("WARNING: Widgets intersect! ({}, {})".format(index, \
+                    collision + index + 1))
             
     return render_frame, len(frame_map)
 
