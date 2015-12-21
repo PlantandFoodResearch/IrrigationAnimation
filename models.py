@@ -352,43 +352,36 @@ class Graph():
 class Domain():
     """ Class containing information on a specific 'domain' """
 
-    def __init__(self):
+    def __init__(self, objects, colour_range = None):
         """ Initialise self """
 
-        self.objects = []
-        self.min = float('inf')
-        self.max = -float('inf')
+        # Add the given objects.
+        self.objects = objects
+        self.min = min((obj.min for obj in objects))
+        self.max = max((obj.max for obj in objects))
+        for obj in objects:
+            obj.domain = self
         
+        # Generate a value2colour function if a colour range is supplied.
         self.value2colour = None
+        if colour_range != None:
+            def value2colour(value):
+                """ Convert from a given value to a colour, using the basic
+                    algorithm described at:
+                    http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#01907855
+                """
+                # We scale to a specific colour range (in HSV, 0 to 1).
+                try:
+                    hue = ((value - self.min) / (self.max - self.min))
+                except ZeroDivisionError:
+                    hue = 0
+                # Convert the hue into something in the given range.
+                value = hue * (colour_range[1] - colour_range[0]) + \
+                    colour_range[0]
+                # Return a RGB version of that colour.
+                return [int(i*255) for i in colorsys.hsv_to_rgb(value, 1, 1)]
 
-    def init_value2colour(self, colour_range):
-        """ Generate a value2colour for self """
+            self.value2colour = value2colour
 
-        def value2colour(value):
-            """ Convert from a given value to a colour, using the basic
-                algorithm described at:
-                http://stackoverflow.com/questions/10901085/range-values-to-pseudocolor/10907855#01907855
-            """
-            # We scale to a specific colour range (in HSV, 0 to 1).
-            try:
-                hue = ((value - self.min) / (self.max - self.min))
-            except ZeroDivisionError:
-                hue = 0
-            # Convert the hue into something in the given range.
-            value = hue * (colour_range[1] - colour_range[0]) + colour_range[0]
-            # Return a RGB version of that colour.
-            return [int(i*255) for i in colorsys.hsv_to_rgb(value, 1, 1)]
 
-        self.value2colour = value2colour
-
-    def add(self, other):
-        """ Add another object into the domain """
-
-        if other.min < self.min:
-            self.min = other.min
-        if other.max > self.max:
-            self.max = other.max
-
-        self.objects.append(other)
-        other.domain = self
 
