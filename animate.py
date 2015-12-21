@@ -35,7 +35,7 @@ from transforms import times, basic_value, time_delta_value, \
 	field_delta_value, per_field_value
 from constants import DEFAULT_COLOUR, BORDER, SCALE_WIDTH, GRAPH_RATIO, \
     GRAPH_MAX_HEIGHT, MAP_COLOUR_LIST, DEFAULT_LABEL
-from models import Model, Values, Combination, Graphable, Domain
+from models import Model, Values, Graphable, Graph, Domain
 from widgets import TextWidget, DynamicTextWidget, ScaleWidget, ValuesWidget, \
     GraphWidget
 # We use pygame for font rendering...
@@ -74,10 +74,9 @@ def gen_widgets(panels, dates, font, edge_render):
         
         # Add the graph.
         if 'graphs' in panel:
-            domain = Combination(panel['graphs']).domain
+            domain = panel['graphs'].domain
             widget_dict['graph'] = GraphWidget(panel['graphs'], dates, \
-                font, panel.get('graph_label', DEFAULT_LABEL), \
-                scale=(domain.min, domain.max))
+                font, panel.get('graph_label', DEFAULT_LABEL))
 
         # Save the widgets.
         widgets.append(widget_dict)
@@ -233,13 +232,13 @@ if __name__ == "__main__":
     values = [Values(dry, "SWTotal", domain_1, transforms = [field_delta_value]),
               Values(slow, "SWTotal", domain_1, transforms = [field_delta_value])]
     # Create the graphs.
-    graphs = [[Graphable(values[0].model, values[0].field, \
-            values[0].field + " (min, mean, max)", domain_1, \
+    graphs = [Graph([Graphable(values[0].model, values[0].field, \
+            values[0].field + " (min, mean, max)", \
             statistics = ['min', 'mean', 'max'])
-        ], [Graphable(values[1].model, values[1].field, \
-                    "Field #{}".format(i), domain_1, statistics = ['mean'], \
-                    field_nos = [i])
-                for i in range(1, 5)]
+        ], domain_1), \
+        Graph([Graphable(values[1].model, values[1].field, \
+            "Field #{}".format(i), statistics = ['mean'], field_nos = [i])
+            for i in range(1, 5)], domain_1)
     ]
     # Create the description format strings...
     desc_format = """Field of interest: {field}

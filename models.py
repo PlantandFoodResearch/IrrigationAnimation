@@ -247,14 +247,13 @@ class Graphable():
         not tied to a specific patch.
     """
     
-    def __init__(self, model, field, label, domain, field_nos = None, \
+    def __init__(self, model, field, label, field_nos = None, \
         statistics = ['min', 'mean', 'max']):
         """ Initialise self """
         
         self.model = model
         self.field = field
         self.label = label
-        self.domain = domain
         
         # Create a helper loading function.
         if field_nos == None:
@@ -293,8 +292,6 @@ class Graphable():
             
         # Calculate the requested statistics, minimum, and maximum.
         self.calculate_statistics(statistics)
-
-        domain.add(self)
 
     def calculate_statistics(self, statistics):
         """ Calculate self's statistics """
@@ -341,29 +338,23 @@ class Graphable():
         """
         
         return [stat[date] for stat in self.values]
-        
 
-class Combination():
-    """ Wrapper class containing related objects """
 
-    def __init__(self, objects):
+class Graph():
+    """ A list of graphables with additional information on the domain """
+
+    def __init__(self, graphables, domain):
         """ Initialise self """
 
-        # Save the list of objects.
-        self.objects = objects
-
-        # Find the shared domain.
-        self.domain = None
-        for obj in objects:
-            if self.domain == None:
-                self.domain = obj.domain
-            elif obj.domain != self.domain:
-                raise ValueError("Only objects with shared domains can be made into a combination!")
+        # Save the graphables.
+        self.graphables = graphables
 
         # Generate the shared maximums and minimums.
-        self.min = min((obj.min for obj in objects))
-        self.max = max((obj.max for obj in objects))
+        self.min = min((graph.min for graph in graphables))
+        self.max = max((graph.max for graph in graphables))
  
+        # Add the domain.
+        self.domain = domain
         self.domain.add(self)
 
 
