@@ -77,6 +77,93 @@ def gen_widgets(panels, dates, font, edge_render):
     
     return widgets
 
+def render_panels(surface, panels, widgets, surf_w, surf_h, index, date_rect, \
+    label_rect):
+    """ Render the panels """
+
+    dirty = []
+
+    # Render the maps and scales.
+    # desc_offset is the current leftmost offset for a description,
+    # calculated to avoid clipping.
+    desc_offset = label_rect.right + BORDER
+    # value_area is the area dedicated to a specific map/scale/description.
+    # It is calculated as a fraction of the space available, where the
+    # denominator is the number of values.
+    value_area = [i - (2 * BORDER) for i in (surf_w / len(widgets), surf_h)]
+    # Iterate through the values and render them.
+    for i in range(len(panels)):
+        map, scale, desc, graph = widgets[i]['map'], \
+            widgets[i].get('scale', None), \
+            widgets[i]['desc'], widgets[i].get('graph', None)
+        
+        # The x offset is the leftmost start point for an item.
+        x_offset = (surf_w / len(widgets)) * i + BORDER
+        
+        # Render the description.
+        # We use the maximum of desc_offset and x_offset to avoid
+        # clipping, if possible.
+        desc_rect = desc.render(surface, index, \
+            lambda size: (max(x_offset + (value_area[0] / 2) - \
+                (size[0] / 2), desc_offset), BORDER))
+        # Update the description offset.
+        desc_offset = desc_rect.right + BORDER
+        # Add the rects.
+        dirty.append(desc_rect)
+        
+        # Figure out the graph height.
+        if graph == None:
+            graph_height = 0
+        else:
+            graph_height = int(min(value_area[0] * GRAPH_RATIO, \
+                surf_h * GRAPH_MAX_HEIGHT))
+
+        # Update the lowest point.
+        lowest = desc_rect.bottom + BORDER
+        
+        if scale != None:
+            # Render the scale.
+            # TODO: We assume that the map is a square when calculating
+            #       the scale size; it might not be, so account for that.
+            scale_size = (float('inf'), \
+                min(value_area[0] - (BORDER + SCALE_WIDTH), \
+                    value_area[1] - (desc_rect.height + BORDER * 2 + \
+                    graph_height)))
+            scale_rect = scale.render(surface, index, \
+                lambda size: (x_offset, (lowest + surf_h - \
+                    (BORDER + graph_height) - size[1]) / 2), \
+                scale_size)
+            dirty.append(scale_rect)
+        else:
+            scale_rect = pygame.Rect((x_offset - BORDER, lowest), (0, 0))
+
+        # Render the map.
+        # The map size is shrunk to avoid clipping with anything, and
+        # offsets are calculated accordingly.
+        map_size = (value_area[0] - (scale_rect.width + BORDER), \
+            value_area[1] - (desc_rect.height + BORDER * 2 + \
+            graph_height))
+        map_rect = map.render(surface, index, \
+            lambda size: (scale_rect.right + BORDER + \
+                    ((map_size[0] - size[0]) / 2), \
+                (lowest + surf_h - (BORDER + graph_height) - \
+                    size[1]) / 2), \
+            map_size)
+        
+        # Update the lowest point.
+        lowest = max(map_rect.bottom, scale_rect.bottom) + BORDER
+        # Add the rects.
+        dirty.append(map_rect)
+            
+        # Render the graph, if it is defined.
+        if graph != None:
+            graph_rect = graph.render(surface, index, \
+                lambda size: (x_offset, lowest), \
+                (value_area[0], max(surf_h - (lowest + BORDER), \
+                    graph_height)))
+            dirty.append(graph_rect)
+
+    return dirty
 
 def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
     """ Given a list of panels, return a render_frame function showing them,
@@ -120,86 +207,10 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
         label_rect = label.render(surface, index, \
             lambda size: (BORDER, BORDER))
         dirty += [label_rect, date_rect]
-        
-        # Render the maps and scales.
-        # desc_offset is the current leftmost offset for a description,
-        # calculated to avoid clipping.
-        desc_offset = label_rect.right + BORDER
-        # value_area is the area dedicated to a specific map/scale/description.
-        # It is calculated as a fraction of the space available, where the
-        # denominator is the number of values.
-        value_area = [i - (2 * BORDER) for i in (surf_w / len(widgets), surf_h)]
-        # Iterate through the values and render them.
-        for i in range(len(panels)):
-            map, scale, desc, graph = widgets[i]['map'], \
-                widgets[i].get('scale', None), \
-                widgets[i]['desc'], widgets[i].get('graph', None)
-            
-            # The x offset is the leftmost start point for an item.
-            x_offset = (surf_w / len(widgets)) * i + BORDER
-            
-            # Render the description.
-            # We use the maximum of desc_offset and x_offset to avoid
-            # clipping, if possible.
-            desc_rect = desc.render(surface, index, \
-                lambda size: (max(x_offset + (value_area[0] / 2) - \
-                    (size[0] / 2), desc_offset), BORDER))
-            # Update the description offset.
-            desc_offset = desc_rect.right + BORDER
-            # Add the rects.
-            dirty.append(desc_rect)
-            
-            # Figure out the graph height.
-            if graph == None:
-                graph_height = 0
-            else:
-                graph_height = int(min(value_area[0] * GRAPH_RATIO, \
-                    surf_h * GRAPH_MAX_HEIGHT))
 
-            # Update the lowest point.
-            lowest = desc_rect.bottom + BORDER
-            
-            if scale != None:
-                # Render the scale.
-                # TODO: We assume that the map is a square when calculating
-                #       the scale size; it might not be, so account for that.
-                scale_size = (float('inf'), \
-                    min(value_area[0] - (BORDER + SCALE_WIDTH), \
-                        value_area[1] - (desc_rect.height + BORDER * 2 + \
-                        graph_height)))
-                scale_rect = scale.render(surface, index, \
-                    lambda size: (x_offset, (lowest + surf_h - \
-                        (BORDER + graph_height) - size[1]) / 2), \
-                    scale_size)
-                dirty.append(scale_rect)
-            else:
-                scale_rect = pygame.Rect((x_offset - BORDER, lowest), (0, 0))
-
-            # Render the map.
-            # The map size is shrunk to avoid clipping with anything, and
-            # offsets are calculated accordingly.
-            map_size = (value_area[0] - (scale_rect.width + BORDER), \
-                value_area[1] - (desc_rect.height + BORDER * 2 + \
-                graph_height))
-            map_rect = map.render(surface, index, \
-                lambda size: (scale_rect.right + BORDER + \
-                        ((map_size[0] - size[0]) / 2), \
-                    (lowest + surf_h - (BORDER + graph_height) - \
-                        size[1]) / 2), \
-                map_size)
-            
-            # Update the lowest point.
-            lowest = max(map_rect.bottom, scale_rect.bottom) + BORDER
-            # Add the rects.
-            dirty.append(map_rect)
-                
-            # Render the graph, if it is defined.
-            if graph != None:
-                graph_rect = graph.render(surface, index, \
-                    lambda size: (x_offset, lowest), \
-                    (value_area[0], max(surf_h - (lowest + BORDER), \
-                        graph_height)))
-                dirty.append(graph_rect)
+        # Render the panels.
+        dirty += render_panels(surface, panels, widgets, surf_w, surf_h, \
+            index, date_rect, label_rect)
     
         # Check for intersections, and print a warning if any are found.
         if len(dirty) != 0:
