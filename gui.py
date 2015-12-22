@@ -729,6 +729,6 @@ class Main(ttk.Frame):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry('600x1000')
+    root.geometry('600x950')
     Main(root).mainloop()
     
