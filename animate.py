@@ -4,27 +4,27 @@
 
     Future improvements:
     - GUI tweaking (1)
-    - Transformations
-        - Intergrate with the scale
     - Code cleanups (2)
     - Removing all of the TODO's... (2)
     - Speed ups + profiling
-    - Weather integration (3)
-    - Render an irrigator
     - Render the description text using 'place'
-    - Documentation
-        - Design notes/walk through
-    - Additional widgets
-        - Simple value marker/s (on scale, or just as a value)
     - Labels on existing widgets (eg units for a scale)
-    - Pausing support for the dynamic viewer
-    - Avoiding lag with the dynamic viewer
     
     Stretch goals:
     - Packaging?
     - Remove pygame dependency?
     - String value support (eg plant stage)?
     - CLI interface
+    - Weather integration
+    - Render an irrigator
+    - Pausing support for the dynamic viewer
+    - Avoiding lag with the dynamic viewer
+    - Documentation
+        - Design notes/walk through
+    - Additional widgets
+        - Simple value marker/s (on scale, or just as a value)
+    - Transformations
+        - Intergrate with the scale
 
     Author: Alastair Hughes
 """
