@@ -2,10 +2,8 @@
 """ User interface code for the animation renderer.
 
     Current TODO's:
-    - Error reporting is broken/non-existant.
     - There is no validation before trying to render, so no nice error
       messages.
-    - There are *lots* of TODO's.
     - Hanging without any indications is still broken
     - We should clear any invalid fields at render time
     - The open file/dir dialogs do not have any customisation.
@@ -99,11 +97,8 @@ class Options(ttk.Frame):
         def wrapper(*args):
             try:
                 return result(var.get())
-            except Exception as e:
+            except:
                 var.set("")
-                if len(args) == 0:
-                    # If this is not called as an event, re-raise the error.
-                    raise e
 
         # Create a label.
         label = ttk.Label(self, text = name + ':')
@@ -359,9 +354,7 @@ class ItemList(ttk.Frame):
         """ Rename the given item """
         
         # Only rename if required.
-        if name != self.box.get(index):
-            if name == "":
-                raise ValueError("Invalid blank name!")
+        if name != self.box.get(index) and name != "":
             # Add the newly named item.
             self.box.insert(index + 1, name)
             # Update selection, if required.
@@ -446,11 +439,8 @@ class Main(ttk.Frame):
         self.pack(expand = True, fill = 'both')
 
         # Add the exception handler.
-        def report_exception(*args):
-            """ Report the given exception to the user """
-            tkMessageBox.showerror('Exception', \
-                traceback.format_exception(*args))
-        master.report_callback_exception = report_exception
+        master.report_callback_exception = lambda *args: \
+            self.pretty_error(traceback.format_exception(*args))
         
         # Models.
         self.models = ThreadedDict(lambda name: Model(*name))
@@ -466,6 +456,11 @@ class Main(ttk.Frame):
         self.create_options()
         # Create the lists...
         self.create_lists()
+
+    def pretty_error(self, message):
+        """ Show a pretty error message """
+        print("ERROR: {}".format(message))
+        tkMessageBox.showerror('Error', message)
         
     def create_buttons(self):
         """ Create the button widgets """
@@ -520,7 +515,6 @@ class Main(ttk.Frame):
                 # Call the cleanup function, which will reschedule itself as
                 # required.
                 check_ended()
-
             
         # Create the buttons.
         # Preview button.
