@@ -131,12 +131,24 @@ class Job(Thread):
         self.function = function
         self.args = args
         self.kargs = kargs
+        self.error = None
         
     def run(self):
         """ Run the function """
-        # TODO: Currently, if this fails, the exception is not passed out to
-        #       the caller.
-        self.function(*self.args, **self.kargs)
+        try:
+            self.function(*self.args, **self.kargs)
+        except Exception as e:
+            # Save the error.
+            self.error = e
+
+    def join(self):
+        """ Join method that throws an error, if there is one """
+        # NOTE: The documentation *specifically says* not to override
+        #       any methods in Thread other than __init__ and run.
+        #       I've done it anyway... what harm could it possibly do? ;D
+        Thread.join(self)
+        if self.error != None:
+            raise self.error
 
 
 class FuncVar():
