@@ -150,8 +150,8 @@ def map_delta(values):
         """
         if date not in v.values:
             date += 1
-        return max((abs(v.actual_values[date][patch]) \
-            for patch in v.actual_values[date]))
+        return max((abs(v.values[date][patch]) \
+            for patch in v.values[date]))
     
     # Generate a map of maximum deltas per day.
     max_deltas = {}
