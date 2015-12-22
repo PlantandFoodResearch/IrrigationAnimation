@@ -287,7 +287,7 @@ class ItemList(ttk.Frame):
 
         # Create a textvariable for the item's name.
         var = tk.StringVar(value = self.default)
-        var.trace("w", lambda *args: self.rename_item(var))
+        var.trace("w", lambda *args: self.rename_item(self.find_item(var)))
         values['Name'] = var
 
         # Create the options widget for this item.
@@ -313,6 +313,17 @@ class ItemList(ttk.Frame):
         
         # Update the active element.
         self.update_active()
+
+    def find_item(self, var):
+        """ Return the index of the item with the given variable for it's
+            name.
+        """
+        index = None
+        for i, item in enumerate(self.items):
+            if item['Name'] == var:
+                index = i
+        return index
+        
         
     def delete_item(self, index):
         """ Remove the item at the given index from the listbox """
@@ -326,17 +337,11 @@ class ItemList(ttk.Frame):
         del(self.items[index])
         self.box.delete(index)
         
-    def rename_item(self, var):
+    def rename_item(self, index):
         """ Rename the item with the given text variable """
-
-        # Find the index for the given variable.
-        index = None
-        for i, item in enumerate(self.items):
-            if item['Name'] == var:
-                index = i
         
         # Only rename if required.
-        name = var.get().strip()
+        name = self.items[index]['Name'].get().strip()
         if name != self.box.get(index):
             if name == "":
                 raise ValueError("Invalid blank name!")
@@ -347,7 +352,7 @@ class ItemList(ttk.Frame):
                 self.box.selection_set(index + 1)
             # Remove the old item.
             self.box.delete(index)
-            
+
     def delete_selected(self):
         """ Delete any currently selected items """
         
