@@ -84,7 +84,7 @@ class Options(ttk.Frame):
         self.grid_columnconfigure(2, weight = 1)
         
         # Options added.
-        self.options = {} # name: (entry, get)
+        self.options = {} # name: get_func
         
     def add_entry(self, name, var, result = lambda x: x):
         """ Add an option """
@@ -112,7 +112,7 @@ class Options(ttk.Frame):
         entry.bind('<Return>', wrapper)
         
         # Add the option to the options array.
-        self.options[name] = (entry, wrapper)
+        self.options[name] = wrapper
         
     def add_text(self, name, var):
         """ Add a textbox option """
@@ -142,11 +142,9 @@ class Options(ttk.Frame):
         text.bind('<<Modified>>', modified_callback)
         
         # Add the option.
-        self.options[name] = (text, lambda: text.get('0.0', 'end'))
+        self.options[name] = lambda: text.get('0.0', 'end')
         
-    def add_combobox(self, name, var, options, \
-        callback = lambda old, new: None, \
-        postcommand = lambda box: None):
+    def add_combobox(self, name, var, options, postcommand = lambda box: None):
         """ Add a combobox option """
         
         row = self.grid_size()[1]
@@ -155,22 +153,15 @@ class Options(ttk.Frame):
         label = ttk.Label(self, text = name + ':')
         label.grid(row = row, column = 1, sticky = 'w')
         
-        # Define a validator command and callback.
-        def valid(old, new, reason):
-            if new in box['values']:
-                if old != new or reason == "focusin":
-                    callback(old, new)
-                return True
-            return False
-            
         # Create the combobox.
         box = ttk.Combobox(self, textvariable = var, values = list(options), \
             postcommand = lambda: postcommand(box), validate='all', \
-            validatecommand = (self.register(valid), "%s", "%P", "%V"))
+            validatecommand = \
+                (self.register(lambda n: n in box['values']), "%P"))
         box.grid(row = row, column = 2, sticky = 'e')
         
         # Add the option to the options array.
-        self.options[name] = (box, var.get)
+        self.options[name] = var.get
         
     def add_file(self, name, filevar, \
         function = tkFileDialog.asksaveasfilename):
@@ -205,7 +196,7 @@ class Options(ttk.Frame):
         button.grid(row = 1, column = 3, sticky = 'e')
         
         # Add the option to the options array.
-        self.options[name] = (filevar, filevar.get)
+        self.options[name] = filevar.get
 
     def add_itemlist(self, name, var, function, default, *args, **kargs):
         """ Creates a new ItemList attached to the given variable """
@@ -214,12 +205,12 @@ class Options(ttk.Frame):
         itemlist.grid(row = self.grid_size()[1], column = 1, columnspan = 2, \
             sticky = 'nesw')
 
-        self.options[name] = (var, var.get)
+        self.options[name] = var.get
 
     def get(self, name):
         """ Get the value of the given variable """
         
-        return self.options[name][1]()
+        return self.options[name]()
         
 
 class ScrolledListbox(ttk.Frame):
