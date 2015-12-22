@@ -181,10 +181,10 @@ class Options(ttk.Frame):
         # Add the option to the options array.
         self.options[name] = (filevar, filevar.get)
 
-    def add_itemlist(self, name, var, function, default):
+    def add_itemlist(self, name, var, function, default, *args, **kargs):
         """ Creates a new ItemList attached to the given variable """
 
-        itemlist = ItemList(self, name, function, var, default)
+        itemlist = ItemList(self, name, function, var, default, *args, **kargs)
         itemlist.grid(row = self.grid_size()[1], column = 1, columnspan = 2, \
             sticky = 'nesw')
 
@@ -209,12 +209,13 @@ class ScrolledListbox(ttk.Frame):
     def __init__(self, master, *args, **kargs):
         """ Initialise self """
         
-        ttk.Frame.__init__(self, master, *args, **kargs)
+        ttk.Frame.__init__(self, master)
         
         # Create the scrollbar and listbox.
         scroll = ttk.Scrollbar(self, orient = 'vertical')
         box = tk.Listbox(self, selectmode = 'extended', \
-            exportselection = False, yscrollcommand = scroll.set)
+            exportselection = False, yscrollcommand = scroll.set, \
+            *args, **kargs)
         scroll.config(command = box.yview)
         scroll.pack(side = 'right', fill = 'y', expand = True)
         box.pack(side = 'left', fill = 'both', expand = True)
@@ -240,7 +241,7 @@ class ItemList(ttk.Frame):
         """ Initialise self """
         
         # Init self.
-        ttk.Frame.__init__(self, master, *args, **kargs)
+        ttk.Frame.__init__(self, master, borderwidth = 2, relief = 'raised')
         self.name = name
         self.function = function
         self.default = default # The default name.
@@ -250,12 +251,12 @@ class ItemList(ttk.Frame):
         self.active = None
         
         # Create the widgets.
-        self.create_widgets()
+        self.create_widgets(*args, **kargs)
         # Add any existing items.
         for item in self.items:
             self.box.insert('end', item['Name'].get())
         
-    def create_widgets(self):
+    def create_widgets(self, *args, **kargs):
         # Add a weight so that things grow properly.
         self.grid_columnconfigure(1, weight = 1)
         
@@ -270,7 +271,7 @@ class ItemList(ttk.Frame):
         button.grid(row = 2, sticky = 'sw')
 
         # Add the listbox.
-        self.box = ScrolledListbox(self)
+        self.box = ScrolledListbox(self, *args, **kargs)
         self.box.grid(row = 1, column = 2, rowspan = 2, sticky = 'nes')
     
         # Bind select events to updating the active element.
@@ -683,7 +684,7 @@ class Main(ttk.Frame):
 
         def add_itemlist(name, func, default):
             values[name] = ListVar()
-            master.add_itemlist(name, values[name], func, default)
+            master.add_itemlist(name, values[name], func, default, height = 5)
 
         def post_field(box):
             """ Callback function for updating the list of fields """
@@ -729,6 +730,6 @@ class Main(ttk.Frame):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry('600x950')
+    root.geometry('600x750')
     Main(root).mainloop()
     
