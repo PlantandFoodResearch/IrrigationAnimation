@@ -247,7 +247,10 @@ class Graphable():
         self.areas = {} # patch: area
         self.total_area = 0 # The total area.
         # We assume that areas remain the same, so pick the first area.
-        for patch in simple_areas[0]:
+        # We also assume that the we only are interested in the patches in the
+        # given values, and that the patches are consistent as time changes,
+        # so we just pick the first one.
+        for patch in value.values[0]:
             area = int(simple_areas[0][patch])
             self.areas[patch] = area
             self.total_area += area
