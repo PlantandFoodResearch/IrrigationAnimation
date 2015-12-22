@@ -94,7 +94,7 @@ class Options(ttk.Frame):
         # Create a wrapper callback.
         def wrapper(*args):
             try:
-                result(var.get())
+                return result(var.get())
             except Exception as e:
                 var.set("")
                 if len(args) == 0:
@@ -216,13 +216,6 @@ class Options(ttk.Frame):
 
         self.options[name] = (var, var.get)
 
-    def __iter__(self):
-        """ Iterate through the existing options """
-        
-        for name, (entry, get) in self.options.items():
-            yield (name, get)
-        raise StopIteration
-        
     def get(self, name):
         """ Get the value of the given variable """
         
@@ -326,7 +319,8 @@ class ItemList(ttk.Frame):
         self.function(widget, values)
         # Create the extra buttons.
         frame = ttk.Frame(widget)
-        frame.grid(row = widget.grid_size()[1], column = 1, sticky = 'sw')
+        frame.grid(row = widget.grid_size()[1], column = 1, columnspan = 2, \
+            sticky = 'sw')
         # Add a 'delete' button at the bottom.
         delete = ttk.Button(frame, text = "Delete", command = \
             self.delete_selected)
