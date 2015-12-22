@@ -25,6 +25,7 @@
         - Simple value marker/s (on scale, or just as a value)
     - Transformations
         - Intergrate with the scale
+    - Tests, at least for the transformation and loading code
 
     Author: Alastair Hughes
 """
