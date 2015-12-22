@@ -246,8 +246,6 @@ class ItemList(ttk.Frame):
         self.function = function
         # Map for items in the list.
         self.items = items # [{key: var}]
-        # Current context frame.
-        self.context = None
         # The index of the currently active element.
         self.active = None
         
@@ -281,13 +279,28 @@ class ItemList(ttk.Frame):
     def add_item(self):
         """ Add a new item to the listbox """
         
-        # Create a textvariable for the item's name.
-        var = tk.StringVar(value = 'new')
-        var.trace("w", lambda *args: self.rename_item(var))
         # Add the item to the box.
-        self.box.insert('end', var.get())
-        self.items.append({'Name': var})
-        
+        name = 'new'
+        self.box.insert('end', name)
+        values = {}
+        self.items.append(values)
+
+        # Create a textvariable for the item's name.
+        var = tk.StringVar(value = name)
+        var.trace("w", lambda *args: self.rename_item(var))
+        values['Name'] = var
+
+        # Create the options widget for this item.
+        widget = Options(self)
+        # Add the custom buttons.
+        self.function(widget, values)
+        # Add a 'delete' button at the bottom.
+        self.delete_button = ttk.Button(widget, text = "Delete", \
+            command = self.delete_selected)
+        self.delete_button.grid(row = widget.grid_size()[1], column = 1, \
+            sticky = 'sw')
+        values['Widgets'] = widget
+
         # Clear the existing selection.
         for selected in self.box.curselection():
             self.box.selection_clear(selected)
@@ -306,6 +319,7 @@ class ItemList(ttk.Frame):
         
         # Reset self.active, if need be.
         if index == self.active:
+            self.remove_frame()
             self.active = None
         
         # Remove the item from self.items and the listbox.
@@ -344,29 +358,12 @@ class ItemList(ttk.Frame):
         while len(selected) != 0:
             self.delete_item(selected[0])
             selected = self.box.curselection()
-            
-        # Update the active item.
-        self.update_active()
         
     def create_frame(self, index):
         """ Create a new frame for the given index """
         
-        # Find the name for that index.
-        name = self.box.get(index)
-        
-        # Create the context.
-        self.context = Options(self)
-        self.context.grid(row = 2, column = 1, sticky = 'nsew')
-        
-        
-        # Add the custom buttons.
-        self.function(self.context, name, self.items[index])
-        
-        # Add a 'delete' button at the bottom.
-        self.delete_button = ttk.Button(self.context, text = "Delete", \
-            command = self.delete_selected)
-        self.delete_button.grid(row = self.context.grid_size()[1], column = 1, \
-            sticky = 'sw')
+        # Add the widgets in.
+        self.items[index]['Widgets'].grid(row = 2, column = 1, sticky = 'nsew')
             
         # Note the current active item.
         self.active = index
@@ -374,14 +371,11 @@ class ItemList(ttk.Frame):
     def remove_frame(self):
         """ Remove the context-specific frame, if one exists """
         
-        if self.context != None:
+        if self.active != None:
+            # Forget the old frame.
+            self.items[self.active]['Widgets'].grid_forget()
             
-            # Destroy the old frame.
-            self.context.grid_forget()
-            self.context.destroy()
-            
-            # Update the active frame and element.
-            self.context = None
+            # Update the active element.
             self.active = None
         
     def update_active(self):
@@ -645,7 +639,7 @@ class Main(ttk.Frame):
         """ Create the lists """
         
         # Create the actual model_list.
-        def panel_options(master, active, values):
+        def panel_options(master, values):
             """ Create the additional options for a specified value """
             
             def cache_model():
