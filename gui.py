@@ -39,13 +39,6 @@ import ttk
 # Threading imports.
 from threading import Thread, Lock
 
-class InvalidOption(ValueError):
-    """ Error to be raised if an option is invalid """
-    
-    def __init__(self, name, value, error = None):
-        ValueError.__init__(self, \
-            "Option '{}' has an invalid value of '{}' (original exception: {})!".format(name, value, error))
-        
 class Options(ttk.Frame):
 
     def __init__(self, master):
@@ -88,7 +81,7 @@ class Options(ttk.Frame):
                 return result(current)
             except Exception as e:
                 var.set("")
-                raise InvalidOption(name, current, e)
+                raise e
         
         # Add the option to the options array.
         self.options[name] = (entry, get)
