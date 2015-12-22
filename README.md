@@ -1,5 +1,17 @@
 # IrrigationAnimation #
 
+A tool to visualise modelled temporal and spacial data.
+
+The tool will accept a set of CSV files and set of GIS files and render an
+animation of the data.
+There must be a single CSV file for each part of the GIS data, with a matching
+number.
+
+Because the tool was largely designed for use by two people in a limited
+timespan, the focus was on implementing features. As such, the GUI is a bit
+flaky, and there may be remaining bugs that affect the visualisation.
+
+
 ## Using ##
 
 Currently, we have two interfaces; a tkinter GUI, and the builtin pygame UI.
@@ -64,4 +76,13 @@ PySHP can be installed via Anaconda's PIP:
 
 $ pip install pyshp
 
+
+## People ##
+
+This program was written by Alastair Hughes as a part-time work experience
+project at Plant & Food Research, between the 19th of November and the 24th of
+December, 2015.
+
+Joanna Sharp and Hamish Brown at Plant & Food contributed essential ideas,
+direction, and feedback.
 
