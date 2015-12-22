@@ -12,8 +12,7 @@
     - We currently happily overwrite existing videos without any kind of
       warning.
     - There are *lots* of bugs...
-    - Chaining transformations and per-field transformations is not implemented
-      in the GUI yet.
+    - The per-field transformation is not implemented in the GUI yet.
     - Rendering tab/pane for controlling running render jobs.
 
     Future:
@@ -513,11 +512,13 @@ class Main(ttk.Frame):
             value_transforms = [trans['Name'].get() \
                 for trans in config['Transforms'].get()]
             graph = config["Graph statistics"].get()
+            graph_transforms = [trans['Name'].get() \
+                for trans in config['Graph transforms'].get()]
             per_field = config["Per-field"].get()
-            map_domain_id = config["Same scales"].get()
+            map_domain_id = config["Same scales (map)"].get()
             if map_domain_id == "":
                 map_domain_id = len(domains)
-            graph_domain_id = config["Graph domain"].get()
+            graph_domain_id = config["Same scales (graph)"].get()
             if graph_domain_id == "":
                 graph_domain_id = len(domains) + 1
             name = config["Name"].get()
@@ -532,11 +533,16 @@ class Main(ttk.Frame):
                 stats = []
                 for stat in graph.split("+"):
                     stats.append(stat.strip().lower())
-                stat_name = " (" + ", ".join(stats) + ")"
+                stat_name = " (" + ", ".join(stats) + ") (" + \
+                    " + ".join(graph_transforms) + ")"
+
+                graph_transform_list = [transforms.transformations[transform] \
+                    for transform in graph_transforms]
                     
                 if per_field == 'False':
                     # Just one graph.
-                    graph_value = self.values[((gis, csv), field, tuple())]
+                    graph_value = self.values[((gis, csv), field, \
+                        tuple(graph_transform_list))]
                     graphs.append(Graphable(graph_value, field + stat_name, \
                         statistics = stats))
                     graph_label = 'Key'
@@ -547,7 +553,7 @@ class Main(ttk.Frame):
                     # Generate a graph for each field.
                     for field_no, patch_set in fields:
                         graph_value = self.values[((gis, csv), field, \
-                            tuple([lambda v: \
+                            tuple(graph_transform_list + [lambda v: \
                                 transforms.patch_filter(v, patch_set)]))]
                         graphs.append(Graphable(graph_value, str(field_no), \
                             statistics = stats))
@@ -704,14 +710,15 @@ class Main(ttk.Frame):
         add_file("CSV directory", "csv/small", tkFileDialog.askdirectory)
         cache_model()
         add_combo("Field", [], "", postcommand = post_field)
-        add_entry("Same scales", "")
+        add_entry("Same scales (map)", "")
         add_itemlist("Transforms", self.transform_options, 'basic')
 
         # Add the graph options.
         add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
             "Min + Mean + Max", "Sum", "None"], "None")
         add_combo("Per-field", ['True', 'False'], 'False')
-        add_entry("Graph domain", "")
+        add_entry("Same scales (graph)", "")
+        add_itemlist("Graph transforms", self.transform_options, 'basic')
         
     def create_lists(self):
         """ Create the lists """
@@ -722,6 +729,6 @@ class Main(ttk.Frame):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry('600x800')
+    root.geometry('600x1000')
     Main(root).mainloop()
     
