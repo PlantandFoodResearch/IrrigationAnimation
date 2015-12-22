@@ -79,8 +79,7 @@ class Options(ttk.Frame):
     def __init__(self, master):
         """ Init self """
         
-        self.master = master
-        ttk.Frame.__init__(self, self.master)
+        ttk.Frame.__init__(self, master)
         # Give the second column some weight...
         self.grid_columnconfigure(2, weight = 1)
         
@@ -93,11 +92,14 @@ class Options(ttk.Frame):
         row = self.grid_size()[1]
         
         # Create a wrapper callback.
-        def wrapper(event):
+        def wrapper(*args):
             try:
                 result(var.get())
-            except:
+            except Exception as e:
                 var.set("")
+                if len(args) == 0:
+                    # If this is not called as an event, re-raise the error.
+                    raise e
 
         # Create a label.
         label = ttk.Label(self, text = name + ':')
@@ -109,17 +111,8 @@ class Options(ttk.Frame):
         entry.grid(row = row, column = 2, sticky = 'e')
         entry.bind('<Return>', wrapper)
         
-        # Create a get function.
-        def get():
-            current = var.get()
-            try:
-                return result(current)
-            except Exception as e:
-                var.set("")
-                raise e
-        
         # Add the option to the options array.
-        self.options[name] = (entry, get)
+        self.options[name] = (entry, wrapper)
         
     def add_text(self, name, var):
         """ Add a textbox option """
@@ -201,9 +194,14 @@ class Options(ttk.Frame):
         file_label.grid(row = 1, column = 2, sticky = 'e')
         
         # Create a button to change the file.
-        # TODO: Add sanity checking of the resulting filename.
-        button = ttk.Button(frame, text = "Change", \
-            command = lambda: filevar.set(function()))
+        def set_file():
+            filename = function()
+            # Ignore blank filenames.
+            # TODO: Add better sanity checking.
+            if filename != '':
+                filevar.set(filename)
+        # Make and grid the button.
+        button = ttk.Button(frame, text = "Change", command = set_file)
         button.grid(row = 1, column = 3, sticky = 'e')
         
         # Add the option to the options array.
@@ -242,8 +240,8 @@ class ScrolledListbox(ttk.Frame):
         # Create the scrollbar and listbox.
         scroll = ttk.Scrollbar(self, orient = 'vertical')
         box = tk.Listbox(self, selectmode = 'extended', \
-            exportselection = False, yscrollcommand = scroll.set, \
-            *args, **kargs)
+            exportselection = False, yscrollcommand = scroll.set, *args, \
+            **kargs)
         scroll.config(command = box.yview)
         scroll.pack(side = 'right', fill = 'y', expand = True)
         box.pack(side = 'left', fill = 'both', expand = True)
@@ -270,6 +268,7 @@ class ItemList(ttk.Frame):
         
         # Init self.
         ttk.Frame.__init__(self, master, borderwidth = 2, relief = 'raised')
+        # Save the name, function, and default name.
         self.name = name
         self.function = function
         self.default = default # The default name.
@@ -285,6 +284,8 @@ class ItemList(ttk.Frame):
             self.box.insert('end', item['Name'].get())
         
     def create_widgets(self, *args, **kargs):
+        """ Create the widgets for self """
+
         # Add a weight so that things grow properly.
         self.grid_columnconfigure(1, weight = 1)
         
@@ -331,14 +332,11 @@ class ItemList(ttk.Frame):
             self.delete_selected)
         delete.grid(row = 1, column = 1, sticky = 'w')
         # Add a 'move up' and a 'move down' button.
-        def move_up():
-            """ Move the current item up """
-            self.active
-        up = ttk.Button(frame, text = 'Up', command = lambda: \
-            self.swap_active((self.active - 1) % self.box.size()))
+        up = ttk.Button(frame, text = 'Up', command = \
+            lambda: self.swap_active((self.active - 1) % self.box.size()))
         up.grid(row = 1, column = 2)
-        down = ttk.Button(frame, text = 'Down', command = lambda: \
-            self.swap_active((self.active + 1) % self.box.size()))
+        down = ttk.Button(frame, text = 'Down', command = \
+            lambda: self.swap_active((self.active + 1) % self.box.size()))
         down.grid(row = 1, column = 3, sticky = 'e')
         # Save the widget.
         values['Widgets'] = widget
@@ -395,28 +393,25 @@ class ItemList(ttk.Frame):
         self.items[self.active] = self.items[second]
         self.items[second] = active_items
         # Update the active and selected item.
+        if second not in self.box.curselection():
+            self.box.selection_clear(self.active)
+            self.box.selection_set(first = second)
         self.active = second
-        for selected in self.box.curselection():
-            self.box.selection_clear(selected)
-        self.box.selection_set(first = self.active)
             
     def delete_selected(self):
         """ Delete any currently selected items """
         
         # Delete any currently selected items.
-        # We do this in a convoluted way because the index numbers move as
-        # things are removed.
-        selected = self.box.curselection()
+        selected = sorted(self.box.curselection())
         while len(selected) != 0:
-            self.delete_item(selected[0])
-            selected = self.box.curselection()
+            self.delete_item(selected.pop())
         
     def create_frame(self, index):
         """ Create a new frame for the given index """
         
         # Add the widgets in.
         self.items[index]['Widgets'].grid(row = 2, column = 1, sticky = 'nsew')
-            
+ 
         # Note the current active item.
         self.active = index
         
