@@ -634,82 +634,80 @@ class Main(ttk.Frame):
         # Add the file option.
         movie_filename = tk.StringVar(value = "movies/movie.mp4")
         self.options.add_file("Movie filename", movie_filename)
-        
-    def create_lists(self):
-        """ Create the lists """
-        
-        # Create the actual model_list.
-        def panel_options(master, values):
-            """ Create the additional options for a specified value """
+
+    def panel_options(self, master, values):
+        """ Helper for create_list that creates the options for a specific
+            item in the list.
+        """
+
+        def cache_model():
+            """ Cache the given model (async) """
+            try:
+                self.models.cache((values['GIS files'].get(), \
+                    values['CSV directory'].get()))
+            except KeyError:
+                pass
+
+        def add_file(name, default, *args):
+            values[name] = tk.StringVar(value = default)
+            values[name].trace("w", lambda *args: cache_model())
+            master.add_file(name, values[name], *args)
             
-            def cache_model():
-                """ Cache the given model (async) """
-                try:
-                    self.models.cache((values['GIS files'].get(), \
-                        values['CSV directory'].get()))
-                except KeyError:
-                    pass
+        def add_entry(name, default, **kargs):
+            values[name] = tk.StringVar(value = default)
+            master.add_entry(name, values[name], **kargs)
 
-            def add_file(name, default, *args):
-                values[name] = tk.StringVar(value = default)
-                values[name].trace("w", lambda *args: cache_model())
-                cache_model()
-                master.add_file(name, values[name], *args)
-                
-            def add_entry(name, default, **kargs):
-                values[name] = tk.StringVar(value = default)
-                master.add_entry(name, values[name], **kargs)
+        def add_combo(name, options, default, **kargs):
+            values[name] = tk.StringVar(value = default)
+            master.add_combobox(name, values[name], options, **kargs)
 
-            def add_combo(name, options, default, **kargs):
-                values[name] = tk.StringVar(value = default)
-                master.add_combobox(name, values[name], options, \
-                    **kargs)
+        def add_text(name, default):
+            values[name] = FuncVar(value = default)
+            master.add_text(name, values[name])
 
-            def add_text(name, default):
-                values[name] = FuncVar(value = default)
-                master.add_text(name, values[name])
+        def add_itemlist(name, func):
+            values[name] = ListVar()
+            master.add_itemlist(name, values[name], func)
 
-            def add_itemlist(name, func):
-                values[name] = ListVar()
-                master.add_itemlist(name, values[name], func)
+        def post_field(box):
+            """ Callback function for updating the list of fields """
+            try:
+                fields = self.models[(values['GIS files'].get(), \
+                    values['CSV directory'].get())].fields()
+            except KeyError:
+                fields = []
+            box['values'] = sorted(list(fields))
 
-            def post_field(box):
-                """ Callback function for updating the list of fields """
-                try:
-                    fields = self.models[(values['GIS files'].get(), \
-                        values['CSV directory'].get())].fields()
-                except KeyError:
-                    fields = []
-                box['values'] = sorted(list(fields))
+        # Add the rename option.
+        add_entry("Name", 'new')
 
-            # Add the rename option.
-            add_entry("Name", 'new')
-
-            # Add a description string option.
-            add_text("Description string", """{name}:
+        # Add a description string option.
+        add_text("Description string", """{name}:
     Field of interest: {field}
     CSV: {csv}
     GIS: {gis}
     Transform: {transform}""")
 
-            # Add the Value options.
-            add_file("GIS files", "gis/SmallPatches.shp", \
-                tkFileDialog.askopenfilename)
-            add_file("CSV directory", "csv/small", \
-                tkFileDialog.askdirectory)
-            add_combo("Value transform", transforms.transformations.keys(), \
-                'basic')
-            add_combo("Field", [], "", postcommand = post_field)
-            add_entry("Map domain", "")
-            add_itemlist("Transforms", lambda *args: args)
+        # Add the Value options.
+        add_file("GIS files", "gis/SmallPatches.shp", \
+            tkFileDialog.askopenfilename)
+        add_file("CSV directory", "csv/small", tkFileDialog.askdirectory)
+        cache_model()
+        add_combo("Value transform", transforms.transformations.keys(), \
+            'basic')
+        add_combo("Field", [], "", postcommand = post_field)
+        add_entry("Map domain", "")
+        add_itemlist("Transforms", lambda *args: args)
 
-            # Add the graph options.
-            add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
-                "Min + Mean + Max", "Sum", "None"], "None")
-            add_combo("Per-field", ['True', 'False'], 'False')
-            add_entry("Graph domain", "")
-
-        self.panel_list = ItemList(self, "Panels", panel_options, [])
+        # Add the graph options.
+        add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
+            "Min + Mean + Max", "Sum", "None"], "None")
+        add_combo("Per-field", ['True', 'False'], 'False')
+        add_entry("Graph domain", "")
+        
+    def create_lists(self):
+        """ Create the lists """
+        self.panel_list = ItemList(self, "Panels", self.panel_options, [])
         self.panel_list.pack(expand = True, fill = 'both')
 
 
