@@ -182,10 +182,10 @@ class Options(ttk.Frame):
         # Add the option to the options array.
         self.options[name] = (filevar, filevar.get)
 
-    def add_itemlist(self, name, var, function):
+    def add_itemlist(self, name, var, function, default):
         """ Creates a new ItemList attached to the given variable """
 
-        itemlist = ItemList(self, name, function, var)
+        itemlist = ItemList(self, name, function, var, default)
         itemlist.grid(row = self.grid_size()[1], column = 1, columnspan = 2, \
             sticky = 'nesw')
 
@@ -237,13 +237,14 @@ class ScrolledListbox(ttk.Frame):
 class ItemList(ttk.Frame):
     """ An itemlist with flexible per-item options """
     
-    def __init__(self, master, name, function, items, *args, **kargs):
+    def __init__(self, master, name, function, items, default, *args, **kargs):
         """ Initialise self """
         
         # Init self.
         ttk.Frame.__init__(self, master, *args, **kargs)
         self.name = name
         self.function = function
+        self.default = default # The default name.
         # Map for items in the list.
         self.items = items # [{key: var}]
         # The index of the currently active element.
@@ -280,13 +281,12 @@ class ItemList(ttk.Frame):
         """ Add a new item to the listbox """
         
         # Add the item to the box.
-        name = 'new'
-        self.box.insert('end', name)
+        self.box.insert('end', self.default)
         values = {}
         self.items.append(values)
 
         # Create a textvariable for the item's name.
-        var = tk.StringVar(value = name)
+        var = tk.StringVar(value = self.default)
         var.trace("w", lambda *args: self.rename_item(var))
         values['Name'] = var
 
@@ -510,10 +510,11 @@ class Main(ttk.Frame):
             gis = config['GIS files'].get()
             csv = config['CSV directory'].get()
             field = config['Field'].get()
-            transform = config['Value transform'].get()
+            value_transforms = [trans['Name'].get() \
+                for trans in config['Transforms'].get()]
             graph = config["Graph statistics"].get()
             per_field = config["Per-field"].get()
-            map_domain_id = config["Map domain"].get()
+            map_domain_id = config["Same scales"].get()
             if map_domain_id == "":
                 map_domain_id = len(domains)
             graph_domain_id = config["Graph domain"].get()
@@ -521,7 +522,8 @@ class Main(ttk.Frame):
                 graph_domain_id = len(domains) + 1
             name = config["Name"].get()
             value = self.values[((gis, csv), field, \
-                tuple([transforms.transformations[transform]]))]
+                tuple([transforms.transformations[transform] \
+                    for transform in value_transforms]))]
             panel = {'values': value}
             if graph != 'None':
                 graphs = []
@@ -563,7 +565,7 @@ class Main(ttk.Frame):
             # Add the description.
             panel['desc'] = config["Description string"].get().format(\
                 name = name, field = field, csv = csv, gis = gis, \
-                transform = transform)
+                transform = " + ".join(value_transforms))
             # Add the map to the domains.
             domains[map_domain_id] = (domains.get(map_domain_id, \
                 ([], True))[0] + [value], True)
@@ -635,6 +637,14 @@ class Main(ttk.Frame):
         movie_filename = tk.StringVar(value = "movies/movie.mp4")
         self.options.add_file("Movie filename", movie_filename)
 
+    def transform_options(self, master, values):
+        """ Helper for panel_options that creates the options for some
+            transformations.
+        """
+
+        master.add_combobox('Name', values['Name'], \
+            transforms.transformations.keys())
+
     def panel_options(self, master, values):
         """ Helper for create_list that creates the options for a specific
             item in the list.
@@ -665,9 +675,9 @@ class Main(ttk.Frame):
             values[name] = FuncVar(value = default)
             master.add_text(name, values[name])
 
-        def add_itemlist(name, func):
+        def add_itemlist(name, func, default):
             values[name] = ListVar()
-            master.add_itemlist(name, values[name], func)
+            master.add_itemlist(name, values[name], func, default)
 
         def post_field(box):
             """ Callback function for updating the list of fields """
@@ -679,7 +689,7 @@ class Main(ttk.Frame):
             box['values'] = sorted(list(fields))
 
         # Add the rename option.
-        add_entry("Name", 'new')
+        master.add_entry("Name", values["Name"])
 
         # Add a description string option.
         add_text("Description string", """{name}:
@@ -693,11 +703,9 @@ class Main(ttk.Frame):
             tkFileDialog.askopenfilename)
         add_file("CSV directory", "csv/small", tkFileDialog.askdirectory)
         cache_model()
-        add_combo("Value transform", transforms.transformations.keys(), \
-            'basic')
         add_combo("Field", [], "", postcommand = post_field)
-        add_entry("Map domain", "")
-        add_itemlist("Transforms", lambda *args: args)
+        add_entry("Same scales", "")
+        add_itemlist("Transforms", self.transform_options, 'basic')
 
         # Add the graph options.
         add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
@@ -707,7 +715,8 @@ class Main(ttk.Frame):
         
     def create_lists(self):
         """ Create the lists """
-        self.panel_list = ItemList(self, "Panels", self.panel_options, [])
+        self.panel_list = ItemList(self, "Panels", self.panel_options, [], \
+            'new')
         self.panel_list.pack(expand = True, fill = 'both')
 
 
