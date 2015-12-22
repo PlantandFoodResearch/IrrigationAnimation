@@ -30,7 +30,7 @@ from models import Model, Values, Graphable, Graph, Domain
 from constants import MAP_COLOUR_LIST, MAX_FPS, MIN_FPS, MAX_TEXT_HEIGHT, \
     MIN_TEXT_HEIGHT, FIELD_NO_FIELD
 import transforms
-from helpers import Job, ThreadedDict, FuncVar
+from helpers import Job, ThreadedDict, FuncVar, ListVar
 
 # Tkinter imports
 import Tkinter as tk
@@ -182,6 +182,15 @@ class Options(ttk.Frame):
         # Add the option to the options array.
         self.options[name] = (filevar, filevar.get)
 
+    def add_itemlist(self, name, var, function):
+        """ Creates a new ItemList attached to the given variable """
+
+        itemlist = ItemList(self, name, function, var)
+        itemlist.grid(row = self.grid_size()[1], column = 1, columnspan = 2, \
+            sticky = 'nesw')
+
+        self.options[name] = (var, var.get)
+
     def __iter__(self):
         """ Iterate through the existing options """
         
@@ -194,6 +203,7 @@ class Options(ttk.Frame):
         
         return self.options[name][1]()
         
+
 class ScrolledListbox(ttk.Frame):
     """ Scrolled listbox """
     
@@ -227,7 +237,7 @@ class ScrolledListbox(ttk.Frame):
 class ItemList(ttk.Frame):
     """ An itemlist with flexible per-item options """
     
-    def __init__(self, master, name, function, *args, **kargs):
+    def __init__(self, master, name, function, items, *args, **kargs):
         """ Initialise self """
         
         # Init self.
@@ -235,7 +245,7 @@ class ItemList(ttk.Frame):
         self.name = name
         self.function = function
         # Map for items in the list.
-        self.items = [] # [{key: var}]
+        self.items = items # [{key: var}]
         # Current context frame.
         self.context = None
         # The index of the currently active element.
@@ -243,6 +253,9 @@ class ItemList(ttk.Frame):
         
         # Create the widgets.
         self.create_widgets()
+        # Add any existing items.
+        for item in self.items:
+            self.box.insert('end', item['Name'].get())
         
     def create_widgets(self):
         # Add a weight so that things grow properly.
@@ -379,7 +392,7 @@ class ItemList(ttk.Frame):
         
         selected = self.box.curselection()
         if len(selected) > 0:
-            if self.box.get(selected[0]) != self.active:
+            if selected[0] != self.active:
                 self.remove_frame()
                 self.create_frame(selected[0])
         else:
@@ -666,6 +679,11 @@ class Main(ttk.Frame):
                     values[name] = FuncVar(value = default)
                 master.add_text(name, values[name])
 
+            def add_itemlist(name, func):
+                if name not in values:
+                    values[name] = ListVar()
+                master.add_itemlist(name, values[name], func)
+
             def post_field(box):
                 """ Callback function for updating the list of fields """
                 try:
@@ -694,6 +712,7 @@ class Main(ttk.Frame):
                 'basic')
             add_combo("Field", [], "", postcommand = post_field)
             add_entry("Map domain", "")
+            add_itemlist("Transforms", lambda *args: args)
 
             # Add the graph options.
             add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
@@ -701,7 +720,7 @@ class Main(ttk.Frame):
             add_combo("Per-field", ['True', 'False'], 'False')
             add_entry("Graph domain", "")
 
-        self.panel_list = ItemList(self, "Panels", panel_options)
+        self.panel_list = ItemList(self, "Panels", panel_options, [])
         self.panel_list.pack(expand = True, fill = 'both')
 
 

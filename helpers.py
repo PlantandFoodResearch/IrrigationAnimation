@@ -151,6 +151,24 @@ class FuncVar():
 
     def set(self, value):
         self.value = value
+
+
+class ListVar(FuncVar):
+    """ A 'variable' list, supporting get and set methods """
+
+    def __init__(self, value = None):
+        """ Initialise self """
+        if value != None:
+            self.value = value
+        else:
+            self.value = []
+
+        # Init the wrappers.
+        self.append = self.value.append
+        self.__getitem__ = self.value.__getitem__
+        self.__setitem__ = self.value.__setitem__
+        self.__delitem__ = self.value.__delitem__
+        self.__iter__ = self.value.__iter__
         
 
 def cache(func):
