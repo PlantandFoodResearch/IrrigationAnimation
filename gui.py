@@ -295,9 +295,9 @@ class ItemList(ttk.Frame):
         # Add the custom buttons.
         self.function(widget, values)
         # Add a 'delete' button at the bottom.
-        self.delete_button = ttk.Button(widget, text = "Delete", \
+        delete_button = ttk.Button(widget, text = "Delete", \
             command = self.delete_selected)
-        self.delete_button.grid(row = widget.grid_size()[1], column = 1, \
+        delete_button.grid(row = widget.grid_size()[1], column = 1, \
             sticky = 'sw')
         values['Widgets'] = widget
 
