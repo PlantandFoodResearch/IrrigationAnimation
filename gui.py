@@ -34,7 +34,11 @@ from helpers import Job, ThreadedDict, FuncVar, ListVar
 # Tkinter imports
 import Tkinter as tk
 import tkFileDialog
+import tkMessageBox
 import ttk
+
+# traceback is used for formatting tracebacks nicely.
+import traceback
 
 # Threading imports.
 from threading import Thread, Lock
@@ -437,9 +441,16 @@ class Main(ttk.Frame):
     def __init__(self, master, *args, **kargs):
         """ Init self """
         
-        self.master = master
-        ttk.Frame.__init__(self, self.master, *args, **kargs)
+        # Initialise self.
+        ttk.Frame.__init__(self, master, *args, **kargs)
         self.pack(expand = True, fill = 'both')
+
+        # Add the exception handler.
+        def report_exception(*args):
+            """ Report the given exception to the user """
+            tkMessageBox.showerror('Exception', \
+                traceback.format_exception(*args))
+        master.report_callback_exception = report_exception
         
         # Models.
         self.models = ThreadedDict(lambda name: Model(*name))
@@ -484,7 +495,7 @@ class Main(ttk.Frame):
                     button.config(state = "normal")
                     self.bar_stop()
                 else:
-                    self.master.after(100, check_ended)
+                    self.after(100, check_ended)
             
             try:
                 # Generate self's panels.
