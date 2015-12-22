@@ -651,31 +651,26 @@ class Main(ttk.Frame):
                     pass
 
             def add_file(name, default, *args):
-                if name not in values:
-                    values[name] = tk.StringVar(value = default)
-                    values[name].trace("w", lambda *args: cache_model())
-                    cache_model()
+                values[name] = tk.StringVar(value = default)
+                values[name].trace("w", lambda *args: cache_model())
+                cache_model()
                 master.add_file(name, values[name], *args)
                 
             def add_entry(name, default, **kargs):
-                if name not in values:
-                    values[name] = tk.StringVar(value = default)
+                values[name] = tk.StringVar(value = default)
                 master.add_entry(name, values[name], **kargs)
 
             def add_combo(name, options, default, **kargs):
-                if name not in values:
-                    values[name] = tk.StringVar(value = default)
+                values[name] = tk.StringVar(value = default)
                 master.add_combobox(name, values[name], options, \
                     **kargs)
 
             def add_text(name, default):
-                if name not in values:
-                    values[name] = FuncVar(value = default)
+                values[name] = FuncVar(value = default)
                 master.add_text(name, values[name])
 
             def add_itemlist(name, func):
-                if name not in values:
-                    values[name] = ListVar()
+                values[name] = ListVar()
                 master.add_itemlist(name, values[name], func)
 
             def post_field(box):
