@@ -97,8 +97,12 @@ class Options(ttk.Frame):
         def wrapper(*args):
             try:
                 return result(var.get())
-            except:
+            except Exception as e:
                 var.set("")
+                if len(args) == 0:
+                    # Raise the exception if this is not being called in a
+                    # callback.
+                    raise e
 
         # Create a label.
         label = ttk.Label(self, text = name + ':')
@@ -457,6 +461,9 @@ class Main(ttk.Frame):
         # Create the lists...
         self.create_lists()
 
+        # Add the render job variable.
+        self.render_job = None
+
     def pretty_error(self, message):
         """ Show a pretty error message """
         print("ERROR: {}".format(message))
@@ -468,12 +475,14 @@ class Main(ttk.Frame):
         # Create the holder frame.
         lower = ttk.Frame(self)
         lower.pack(side='bottom', fill='x')
+
         # Create the helper function...
         def render_wrapper(button, func, *args):
             """ Helper render wrapper """
             
-            # TODO: We really should validate the fields before starting in
-            #       order to return a sane error message.
+            if not self.sane_values():
+                # Something is wrong!
+                return
             
             # Disable the button in question.
             button.config(state = "disabled")
@@ -489,14 +498,18 @@ class Main(ttk.Frame):
                 if lock.acquire(False):
                     button.config(state = "normal")
                     self.bar_stop()
+                    if self.render_job != None:
+                        self.render_job.join()
                 else:
                     self.after(100, check_ended)
             
+            # This is wrapped to ensure that the cleanup function is always
+            # run.
             try:
                 # Generate self's panels.
                 panels = self.create_panels()
                 
-                # Generate the render_frame function and frame count
+                # Generate the render_frame function and frame count.
                 render_frame, frames = gen_render_frame(panels, \
                     (None, self.options.get('Text size')), \
                     self.options.get('Title'), self.options.get('Timewarp'), \
@@ -508,9 +521,9 @@ class Main(ttk.Frame):
                         func(*args, **kargs)
 
                 # Create and start the job.
-                job = Job(wrap_render, render_frame, frames, \
+                self.render_job = Job(wrap_render, render_frame, frames, \
                     *[self.options.get(arg) for arg in args])
-                job.start()
+                self.render_job.start()
             finally:
                 # Call the cleanup function, which will reschedule itself as
                 # required.
@@ -534,6 +547,32 @@ class Main(ttk.Frame):
         
         # Create the progress bar (shares the same frame).
         self.create_progressbar(lower)
+
+    def sane_values(self):
+        """ Sanitize the current values.
+            Prints an error and returns false if the values are not sane.
+        """
+
+        def wrap_get(name, message = "{name} is invalid!"):
+            """ Get the value, and if an error occured, print the message """
+            try:
+                self.options.get(name)
+            except Exception as e:
+                self.pretty_error(message.format(name = name))
+                raise ValueError("Value {} is invalid!".format(name))
+
+        try:
+            wrap_get('Dimensions')
+            wrap_get('Text size')
+            wrap_get('FPS')
+
+            if len(self.panel_list.items) == 0:
+                self.pretty_error("No panels defined!")
+                raise ValueError("There must be something to render!")
+
+        except ValueError:
+            return False
+        return True
 
     def create_panels(self):
         """ Generate the panels from self's current config.
