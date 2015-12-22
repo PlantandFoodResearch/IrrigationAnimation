@@ -1,7 +1,4 @@
-""" A small library of transformation functions.
-
-    transformation: Data transformations
-    times:          Time mapping transformations
+""" A small library of time and data transformation functions.
 
     Author: Alastair Hughes
 """
@@ -109,16 +106,6 @@ def patch_filter(values, patches):
             new_values[index][patch] = values[index][patch]
     return new_values
 
-
-# TODO: Some functions might accept arguments, so cannot be currently listed
-#       here...
-transformations = {'basic': lambda v: v,
-    'time_delta': time_delta_value,
-    'time_culm': time_culm_value,
-    'field_delta': field_delta_value,
-    'exponential': exponential_value,
-    'log': log_value,
-    }
 
 # Time mapping functions:
 # Basic time map functions; these are functions that accept a list of Values

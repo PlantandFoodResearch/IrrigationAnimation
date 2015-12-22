@@ -12,7 +12,6 @@
     - We currently happily overwrite existing videos without any kind of
       warning.
     - There are *lots* of bugs...
-    - The per-field transformation is not implemented in the GUI yet.
     - Rendering tab/pane for controlling running render jobs.
 
     Future:
@@ -28,7 +27,8 @@ from animate import gen_render_frame
 from models import Model, Values, Graphable, Graph, Domain
 from constants import MAP_COLOUR_LIST, MAX_FPS, MIN_FPS, MAX_TEXT_HEIGHT, \
     MIN_TEXT_HEIGHT, FIELD_NO_FIELD
-import transforms
+from transforms import field_delta_value, time_delta_value, time_culm_value, \
+    exponential_value, log_value, per_field_value, patch_filter, times
 from helpers import Job, ThreadedDict, FuncVar, ListVar
 
 # Tkinter imports
@@ -38,6 +38,41 @@ import ttk
 
 # Threading imports.
 from threading import Thread, Lock
+
+# Available transformations.
+# Format: {key: [func, arg1, ...]}
+# Arguments are optional, and are special strings.
+transformations = {
+    'field_delta': [field_delta_value],
+    'time_delta': [time_delta_value],
+    'time_culm': [time_culm_value],
+    'exponential': [exponential_value],
+    'log': [log_value],
+    'per_field': [per_field_value, 'fields'],
+}
+
+def get_transform_tuple(transform_config, model):
+    """ Generate the transformation tuple """
+
+    transforms = []
+    names = []
+    for values in transform_config:
+        # Find and save the name.
+        name = values['Name'].get()
+        names.append(name)
+
+        # Add the transformation.
+        func = transformations[name][0]
+        mandatory_args = [] # Mandatory arguments for the given transform.
+        for arg in transformations[name][1:]:
+            if arg == 'fields':
+                mandatory_args.append(model.get_patch_fields())
+            else:
+                raise ValueError("Unknown transform arg {}!".format(arg))
+        # Create the transformation.
+        transforms.append(lambda v: func(v, *mandatory_args))
+
+    return tuple(transforms), names
 
 class Options(ttk.Frame):
 
@@ -527,11 +562,7 @@ class Main(ttk.Frame):
             gis = config['GIS files'].get()
             csv = config['CSV directory'].get()
             field = config['Field'].get()
-            value_transforms = [trans['Name'].get() \
-                for trans in config['Transforms'].get()]
             graph = config["Graph statistics"].get()
-            graph_transforms = [trans['Name'].get() \
-                for trans in config['Graph transforms'].get()]
             per_field = config["Per-field"].get()
             map_domain_id = config["Same scales (map)"].get()
             if map_domain_id == "":
@@ -540,9 +571,14 @@ class Main(ttk.Frame):
             if graph_domain_id == "":
                 graph_domain_id = len(domains) + 1
             name = config["Name"].get()
-            value = self.values[((gis, csv), field, \
-                tuple([transforms.transformations[transform] \
-                    for transform in value_transforms]))]
+            # Find the value transformations and names.
+            value_trans, value_tran_names = \
+                get_transform_tuple(config['Transforms'].get(), \
+                self.models[(gis, csv)])
+            value = self.values[((gis, csv), field, value_trans)]
+            graph_trans, graph_tran_names = \
+                get_transform_tuple(config['Graph transforms'].get(), \
+                self.models[(gis, csv)])
             panel = {'values': value}
             if graph != 'None':
                 graphs = []
@@ -552,15 +588,12 @@ class Main(ttk.Frame):
                 for stat in graph.split("+"):
                     stats.append(stat.strip().lower())
                 stat_name = " (" + ", ".join(stats) + ") (" + \
-                    " + ".join(graph_transforms) + ")"
+                    " + ".join(graph_tran_names) + ")"
 
-                graph_transform_list = [transforms.transformations[transform] \
-                    for transform in graph_transforms]
-                    
                 if per_field == 'False':
                     # Just one graph.
                     graph_value = self.values[((gis, csv), field, \
-                        tuple(graph_transform_list))]
+                        graph_trans)]
                     graphs.append(Graphable(graph_value, field + stat_name, \
                         statistics = stats))
                     graph_label = 'Key'
@@ -571,8 +604,8 @@ class Main(ttk.Frame):
                     # Generate a graph for each field.
                     for field_no, patch_set in fields:
                         graph_value = self.values[((gis, csv), field, \
-                            tuple(graph_transform_list + [lambda v: \
-                                transforms.patch_filter(v, patch_set)]))]
+                            tuple(list(graph_trans) + \
+                                [lambda v: patch_filter(v, patch_set)]))]
                         graphs.append(Graphable(graph_value, str(field_no), \
                             statistics = stats))
                     # Set the graph label.
@@ -589,7 +622,7 @@ class Main(ttk.Frame):
             # Add the description.
             panel['desc'] = config["Description string"].get().format(\
                 name = name, field = field, csv = csv, gis = gis, \
-                transform = " + ".join(value_transforms))
+                transform = " + ".join(value_tran_names))
             # Add the map to the domains.
             domains[map_domain_id] = (domains.get(map_domain_id, \
                 ([], True))[0] + [value], True)
@@ -654,7 +687,7 @@ class Main(ttk.Frame):
             lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
         # Add the listbox options.
         self.options.add_combobox("Timewarp", \
-            tk.StringVar(value = 'basic'), transforms.times.keys())
+            tk.StringVar(value = 'basic'), times.keys())
         self.options.add_combobox("Edge render", \
             tk.StringVar(value = "True"), ["True", "False"])
         # Add the file option.
@@ -666,8 +699,7 @@ class Main(ttk.Frame):
             transformations.
         """
 
-        master.add_combobox('Name', values['Name'], \
-            transforms.transformations.keys())
+        master.add_combobox('Name', values['Name'], transformations.keys())
 
     def panel_options(self, master, values):
         """ Helper for create_list that creates the options for a specific
@@ -729,14 +761,16 @@ class Main(ttk.Frame):
         cache_model()
         add_combo("Field", [], "", postcommand = post_field)
         add_entry("Same scales (map)", "")
-        add_itemlist("Transforms", self.transform_options, 'basic')
+        add_itemlist("Transforms", self.transform_options, \
+            list(transformations.keys())[0])
 
         # Add the graph options.
         add_combo("Graph statistics", ["Mean", "Min", "Max", "Min + Max", \
             "Min + Mean + Max", "Sum", "None"], "None")
         add_combo("Per-field", ['True', 'False'], 'False')
         add_entry("Same scales (graph)", "")
-        add_itemlist("Graph transforms", self.transform_options, 'basic')
+        add_itemlist("Graph transforms", self.transform_options, \
+            list(transformations.keys())[0])
         
     def create_lists(self):
         """ Create the lists """
