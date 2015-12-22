@@ -287,18 +287,32 @@ class ItemList(ttk.Frame):
 
         # Create a textvariable for the item's name.
         var = tk.StringVar(value = self.default)
-        var.trace("w", lambda *args: self.rename_item(self.find_item(var)))
+        var.trace("w", lambda *args: self.rename_item(self.active, \
+            self.items[self.active]['Name'].get().strip()))
         values['Name'] = var
 
         # Create the options widget for this item.
         widget = Options(self)
         # Add the custom buttons.
         self.function(widget, values)
+        # Create the extra buttons.
+        frame = ttk.Frame(widget)
+        frame.grid(row = widget.grid_size()[1], column = 1, sticky = 'sw')
         # Add a 'delete' button at the bottom.
-        delete_button = ttk.Button(widget, text = "Delete", \
-            command = self.delete_selected)
-        delete_button.grid(row = widget.grid_size()[1], column = 1, \
-            sticky = 'sw')
+        delete = ttk.Button(frame, text = "Delete", command = \
+            self.delete_selected)
+        delete.grid(row = 1, column = 1, sticky = 'w')
+        # Add a 'move up' and a 'move down' button.
+        def move_up():
+            """ Move the current item up """
+            self.active
+        up = ttk.Button(frame, text = 'Up', command = lambda: \
+            self.swap_active((self.active - 1) % self.box.size()))
+        up.grid(row = 1, column = 2)
+        down = ttk.Button(frame, text = 'Down', command = lambda: \
+            self.swap_active((self.active + 1) % self.box.size()))
+        down.grid(row = 1, column = 3, sticky = 'e')
+        # Save the widget.
         values['Widgets'] = widget
 
         # Clear the existing selection.
@@ -314,17 +328,6 @@ class ItemList(ttk.Frame):
         # Update the active element.
         self.update_active()
 
-    def find_item(self, var):
-        """ Return the index of the item with the given variable for it's
-            name.
-        """
-        index = None
-        for i, item in enumerate(self.items):
-            if item['Name'] == var:
-                index = i
-        return index
-        
-        
     def delete_item(self, index):
         """ Remove the item at the given index from the listbox """
         
@@ -337,11 +340,10 @@ class ItemList(ttk.Frame):
         del(self.items[index])
         self.box.delete(index)
         
-    def rename_item(self, index):
-        """ Rename the item with the given text variable """
+    def rename_item(self, index, name):
+        """ Rename the given item """
         
         # Only rename if required.
-        name = self.items[index]['Name'].get().strip()
         if name != self.box.get(index):
             if name == "":
                 raise ValueError("Invalid blank name!")
@@ -353,6 +355,23 @@ class ItemList(ttk.Frame):
             # Remove the old item.
             self.box.delete(index)
 
+    def swap_active(self, second):
+        """ Swap the active item with the one at the given index """
+
+        # Rename the two boxes.
+        active_name = self.box.get(self.active)
+        self.rename_item(self.active, self.box.get(second))
+        self.rename_item(second, active_name)
+        # Swap the two item lists.
+        active_items = self.items[self.active]
+        self.items[self.active] = self.items[second]
+        self.items[second] = active_items
+        # Update the active and selected item.
+        self.active = second
+        for selected in self.box.curselection():
+            self.box.selection_clear(selected)
+        self.box.selection_set(first = self.active)
+            
     def delete_selected(self):
         """ Delete any currently selected items """
         
