@@ -206,14 +206,6 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render, sf):
         # Render the widgets.
         dirty += render_widgets(surface, widgets, surf_w, surf_h, index, \
             label_rect)
-    
-        # Check for intersections, and print a warning if any are found.
-        for index, rect in enumerate(dirty):
-            intersects = rect.collidelistall(dirty[index + 1:])
-            for collision in intersects:
-                # TODO: This is not very useful...
-                print("WARNING: Widgets intersect! ({}, {})".format(index, \
-                    collision + index + 1))
             
     return render_frame, len(frame_map)
 
