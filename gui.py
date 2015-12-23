@@ -1,10 +1,6 @@
 #!/usr/bin/env python2
 """ User interface code for the animation renderer.
 
-    Current TODO's:
-    - We currently happily overwrite existing videos without any kind of
-      warning.
-
     Future:
     - Hanging without any indications is still broken.
     - There is at least one hard-to-reproduce threading-related bug...
@@ -579,6 +575,11 @@ class Main(ttk.Frame):
             self.pretty_error(e)
             return False
 
+        # Check that the user *really* wants to overwrite the existing movie.
+        movie = self.options.get('Movie filename')
+        if os.path.exists(movie):
+            return tkMessageBox.askokcancel("Confirm movie filename", \
+                "Are you sure that you want to overwrite {}?".format(movie))
         return True
 
     def create_panels(self):
