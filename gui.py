@@ -505,7 +505,8 @@ class Main(ttk.Frame):
                 render_frame, frames = gen_render_frame(panels, \
                     (None, self.options.get('Text size')), \
                     self.options.get('Title'), self.options.get('Timewarp'), \
-                    self.options.get('Edge render') == "True")
+                    self.options.get('Edge render') == "True", \
+                    self.options.get('Significant figures'))
                     
                 # Create a job wrapper to hold the lock.
                 def wrap_render(*args, **kargs):
@@ -557,6 +558,7 @@ class Main(ttk.Frame):
             wrap_get('Dimensions')
             wrap_get('Text size')
             wrap_get('FPS')
+            wrap_get('Significant figures')
         except ValueError:
             return False
 
@@ -716,6 +718,8 @@ class Main(ttk.Frame):
             tk.StringVar(value = "1280x1024"), check_size)
         self.options.add_entry("Text size", tk.IntVar(value = 25), \
             lambda x: check_int(x, MIN_TEXT_HEIGHT, MAX_TEXT_HEIGHT))
+        self.options.add_entry("Significant figures", tk.IntVar(value = 2), \
+            lambda x: check_int(x, 1, 8))
         # Add the listbox options.
         self.options.add_combobox("Timewarp", \
             tk.StringVar(value = 'basic'), times.keys())

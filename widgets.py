@@ -19,8 +19,8 @@
 
 from constants import ANCHOR_FORCE, BROKEN_COLOUR, EDGE_COLOUR, \
     EDGE_THICKNESS, GRAPH_ALPHA, GRAPH_COLOUR_LIST, ITERATION_MULTIPLIER, \
-    PLACEMENT_CONSTANT, OVERLAP_FORCE, SCALE_SF, SCALE_MARKER_SIZE, \
-    SCALE_SPACING, SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
+    PLACEMENT_CONSTANT, OVERLAP_FORCE, SCALE_MARKER_SIZE, SCALE_SPACING, \
+    SCALE_TEXT_OFFSET, SCALE_WIDTH, TEXT_AA, TEXT_COLOUR
 
 import pygame, pygame.draw # We currently render using pygame...
 import shapefile # For the shape constants
@@ -107,7 +107,7 @@ class DynamicTextWidget(TextWidget):
 class ScaleWidget():
     """ A dynamically sized widget representing a scale """
     
-    def __init__(self, domain, font, labelling = None, row2value = None):
+    def __init__(self, domain, sf, font, labelling = None, row2value = None):
         """ Initialise self.
         
             The given scale labelling function is assumed to take a height, and
@@ -137,8 +137,7 @@ class ScaleWidget():
                 labels = {} # rows: values
                 for row in markers:
                     # Calculate the value for that row.
-                    value = str(round_sf(self.row2value(row, height), \
-                        SCALE_SF))
+                    value = str(round_sf(self.row2value(row, height), sf))
                     # Add it to the map.
                     labels[row] = value
 
@@ -350,7 +349,7 @@ class ValuesWidget():
 class GraphWidget():
     """ Widget for realtime graphs of a list of given Graphables """
     
-    def __init__(self, graph, dates, font):
+    def __init__(self, graph, dates, sf, font):
         """ Initialise self """
         
         # Check that we have enough colours defined.
@@ -363,6 +362,7 @@ class GraphWidget():
         self.dates = dates
         self.font = font
         self.size = None
+        self.sf = sf
         
         # The 'global' minimum and maximum.
         self.min = graph.domain.min
@@ -419,7 +419,7 @@ class GraphWidget():
         for row in anchors:
             # Render and save.
             value = str(round_sf((float(row) / height) * \
-                (self.max - self.min) + self.min, SCALE_SF))
+                (self.max - self.min) + self.min, self.sf))
             rows[row] = self.font.render(value, TEXT_AA, TEXT_COLOUR)
             # Update the maximum text width.
             max_text_width = max(rows[row].get_width(), max_text_width)

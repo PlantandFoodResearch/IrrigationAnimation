@@ -52,7 +52,7 @@ def combined_dates(date_list):
             raise ValueError("All models must have the same set of dates!")
     return dates
 
-def gen_widgets(panels, dates, font, edge_render):
+def gen_widgets(panels, dates, font, edge_render, sf):
     """ Generate the widgets from the given panels """
 
     widgets = []
@@ -64,13 +64,13 @@ def gen_widgets(panels, dates, font, edge_render):
         widget_dict['map'] = ValuesWidget(value, edge_render)
         if 'scale' not in dir(value.domain):
             # Add a scale, as required.
-            value.domain.scale = ScaleWidget(value.domain, font)
+            value.domain.scale = ScaleWidget(value.domain, sf, font)
             widget_dict['scale'] = value.domain.scale
         widget_dict['desc'] = TextWidget(panel.get('desc', ""), font)
         
         # Add the graph.
         if 'graphs' in panel:
-            widget_dict['graph'] = GraphWidget(panel['graphs'], dates, font)
+            widget_dict['graph'] = GraphWidget(panel['graphs'], dates, sf, font)
 
         # Save the widgets.
         widgets.append(widget_dict)
@@ -162,7 +162,7 @@ def render_widgets(surface, widgets, surf_w, surf_h, index, label_rect):
 
     return dirty
 
-def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
+def gen_render_frame(panels, font_desc, header, timewarp, edge_render, sf):
     """ Given a list of panels, return a render_frame function showing them,
         and the number of frames.
     """
@@ -175,7 +175,7 @@ def gen_render_frame(panels, font_desc, header, timewarp, edge_render):
     dates = combined_dates([panel['values'].model.dates for panel in panels])
     
     # Init the widgets.
-    widgets = gen_widgets(panels, dates, font, edge_render)
+    widgets = gen_widgets(panels, dates, font, edge_render, sf)
     label = TextWidget(header, font)
     date = DynamicTextWidget(lambda time: dates[time], font)
     
@@ -262,9 +262,10 @@ Transform: {transform}""".format(field = value.field, \
     timewarp = 'basic' # Time warp method used
     edge_render = True # Whether or not to render edges (plot edges, terrain).
     font = (None, 25) # A (name, size) tuple for the font.
+    sf = 2 # The number of significant figures for the scales.
     # Actually run gen_render_frame.
     render_frame, frames = gen_render_frame(panels, font, header, timewarp, \
-        edge_render)
+        edge_render, sf)
     
     # Play the animation.
     fps = 4 # Frames per second
