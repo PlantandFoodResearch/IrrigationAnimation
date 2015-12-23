@@ -2,7 +2,6 @@
 """ User interface code for the animation renderer.
 
     Current TODO's:
-    - The open file/dir dialogs do not have any customisation.
     - We currently happily overwrite existing videos without any kind of
       warning.
 
@@ -34,6 +33,9 @@ import ttk
 
 # traceback is used for formatting tracebacks nicely.
 import traceback
+
+# os.path is used for checking whether a movie already exists.
+import os.path
 
 # Threading imports.
 from threading import Thread, Lock
@@ -162,11 +164,10 @@ class Options(ttk.Frame):
         # Add the option to the options array.
         self.options[name] = var.get
         
-    def add_file(self, name, filevar, \
-        function = tkFileDialog.asksaveasfilename):
+    def add_file(self, name, filevar, function):
         """ Add a file selection option.
             filevar is the current selection (a string variable).
-            Function is the Tk chooser function to call.
+            function is a function returning the new filename.
         """
         
         row = self.grid_size()[1]
@@ -722,7 +723,11 @@ class Main(ttk.Frame):
             tk.StringVar(value = "True"), ["True", "False"])
         # Add the file option.
         movie_filename = tk.StringVar(value = "movies/movie.mp4")
-        self.options.add_file("Movie filename", movie_filename)
+        self.options.add_file("Movie filename", movie_filename, \
+            lambda: tkFileDialog.asksaveasfilename( \
+                title = 'Choose the movie filename', \
+                filetypes = [('MP4', '.mp4')], defaultextension = '.mp4', \
+                initialfile = 'movie'))
 
     def transform_options(self, master, values):
         """ Helper for panel_options that creates the options for some
@@ -787,8 +792,12 @@ class Main(ttk.Frame):
 
         # Add the Value options.
         add_file("GIS files", "gis/SmallPatches.shp", \
-            tkFileDialog.askopenfilename)
-        add_file("CSV directory", "csv/small", tkFileDialog.askdirectory)
+            lambda: tkFileDialog.askopenfilename( \
+                filetypes = [('ESRI shapefile', '.shp')], \
+                title = 'Choose a GIS file'))
+        add_file("CSV directory", "csv/small", \
+            lambda: tkFileDialog.askdirectory( \
+                title = 'Choose the CSV directory'))
         cache_model()
         add_combo("Field", [], "", postcommand = post_field)
         add_entry("Same scales (map)", "")
