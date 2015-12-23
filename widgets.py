@@ -303,7 +303,7 @@ class ValuesWidget():
         # Polygons are made of different "parts", which are ordered sets of
         # points that are assumed to join up, so we render them part-by-part.
         for num, part in enumerate(shape.parts):
-            if num > len(shape.parts):
+            if num + 1 >= len(shape.parts):
                 end = len(shape.points)
             else:
                 end = shape.parts[num + 1]
@@ -528,7 +528,7 @@ def place(size, labels):
     
     # Init the forces.
     forces = {anchor: PLACEMENT_CONSTANT for anchor in labels.keys()}
-    iter = 1 # The current iteration.
+    iteration = 1 # The current iteration.
     # Iterate until things settle.
     while sum((abs(int(v)) for v in forces.values())) >= PLACEMENT_CONSTANT:
         # Generate the forces for each label.
@@ -557,14 +557,14 @@ def place(size, labels):
                         
         # Decrease the forces as appropriate.
         for anchor in forces:
-            forces[anchor] = forces[anchor] / iter
+            forces[anchor] = forces[anchor] / iteration
         
         # Apply the forces to the labels.
         for anchor in placements:
             placements[anchor] += forces[anchor]
             
         # Increment the iteration.
-        iter *= ITERATION_MULTIPLIER
+        iteration *= ITERATION_MULTIPLIER
     
     return placements
 
