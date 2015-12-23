@@ -2,13 +2,13 @@
 """ User interface code for the animation renderer.
 
     Current TODO's:
-    - Hanging without any indications is still broken.
     - The open file/dir dialogs do not have any customisation.
     - We currently happily overwrite existing videos without any kind of
       warning.
-    - There is at least one hard-to-reproduce threading-related bug...
 
     Future:
+    - Hanging without any indications is still broken.
+    - There is at least one hard-to-reproduce threading-related bug...
     - Rendering tab/pane for controlling running render jobs.
     - Saving existing setups.
     - Custom code integration.
@@ -106,7 +106,6 @@ class Options(ttk.Frame):
         label.grid(row = row, column = 1, sticky = 'w')
         
         # Create an entry.
-        # TODO: Add validation support?
         entry = ttk.Entry(self, textvariable = var)
         entry.grid(row = row, column = 2, sticky = 'e')
         entry.bind('<Return>', wrapper)
