@@ -527,16 +527,17 @@ class Main(ttk.Frame):
         # TODO: Currently, this hangs the UI (something to do with the
         #       interaction between pygame and tkinter?), so we set it to
         #       disabled by default.
-        preview_button = ttk.Button(lower, text='Preview', state='disabled', \
-            command=lambda: render_wrapper(preview_button, preview, 'FPS', \
-                'Dimensions', 'Title'))
-        preview_button.pack(side='left')
+        preview_button = ttk.Button(lower, text = 'Preview', \
+            state = 'disabled', command = lambda: \
+                render_wrapper(preview_button, preview, 'FPS', 'Dimensions', \
+                'Title'))
+        preview_button.pack(side = 'left')
         
         # Render button.
-        render_button = ttk.Button(lower, text='Render', \
-            command=lambda: render_wrapper(render_button, render, 'FPS', \
+        render_button = ttk.Button(lower, text = 'Render', \
+            command = lambda: render_wrapper(render_button, render, 'FPS', \
                 'Dimensions', 'Movie filename'))
-        render_button.pack(side='right')
+        render_button.pack(side = 'right')
         
         # Create the progress bar (shares the same frame).
         self.create_progressbar(lower)
@@ -567,14 +568,31 @@ class Main(ttk.Frame):
             raise ValueError("There must be something to render!")
         for i, item in enumerate(self.panel_list.items):
             if item['Field'].get() == "":
-                self.pretty_error("Panel {} has no field set!".format(i))
+                self.pretty_error("Panel {} has no field set!".format(i + 1))
                 return False
-        try:
-            self.models[(item['GIS files'].get(), \
-                item['CSV directory'].get())]
-        except ValueError as e:
-            self.pretty_error(e)
-            return False
+
+            try:
+                self.models[(item['GIS files'].get(), \
+                    item['CSV directory'].get())]
+            except ValueError as e:
+                self.pretty_error(e)
+                return False
+
+            format_strings = ['name',
+                'field',
+                'csv',
+                'gis',
+                'transform'
+            ]
+            try:
+                item["Description string"].get().format( \
+                    **{format_string: '' for format_string in format_strings})
+            except KeyError as e:
+                raise e
+                args = ["{" + arg + "}" for arg in format_strings]
+                self.pretty_error("""Invalid format string: {}
+Valid fields are {}.""".format(e, ", ".join(args[:-1]) + ", and " + args[-1]))
+                return False
 
         # Check that the user *really* wants to overwrite the existing movie.
         movie = self.options.get('Movie filename')
@@ -656,6 +674,7 @@ class Main(ttk.Frame):
             panel['desc'] = config["Description string"].get().format(\
                 name = name, field = field, csv = csv, gis = gis, \
                 transform = " + ".join(value_tran_names))
+
             # Add the map to the domains.
             domains[map_domain_id] = (domains.get(map_domain_id, \
                 ([], True))[0] + [value], True)
