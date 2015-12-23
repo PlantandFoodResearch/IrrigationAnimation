@@ -183,8 +183,7 @@ class Options(ttk.Frame):
         # Create a button to change the file.
         def set_file():
             filename = function()
-            # Ignore blank filenames.
-            # TODO: Add better sanity checking.
+            # Ignore blank filenames; anything else is assumed to be valid.
             if filename != '':
                 filevar.set(filename)
         # Make and grid the button.
