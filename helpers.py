@@ -70,8 +70,6 @@ class ThreadedDict(object):
     def __init__(self, load_func):
         """ Initialise self.
             load_func is the function to call to try to load a value.
-            start and end are callbacks passed to the lock wrapper to provide
-            a means of giving user feedback.
         """
         
         # The dict of loading jobs. (name: job)
@@ -79,12 +77,12 @@ class ThreadedDict(object):
         # The lock protecting self's dict.
         self.lock = Lock()
         # Self's dict.
-        self.dict = {}
+        self.value_dict = {}
         # The load function takes a name, and returns the corresponding value.
         def wrapper(name):
             value = load_func(name)
             with self.lock:
-                self.dict[name] = value
+                self.value_dict[name] = value
         self.load_func = wrapper
         
     def __getitem__(self, name):
@@ -92,9 +90,9 @@ class ThreadedDict(object):
         
         # See whether the value is cached.
         with self.lock:
-            if name in self.dict:
+            if name in self.value_dict:
                 # It is cached; return it!
-                return self.dict[name]
+                return self.value_dict[name]
         
         # Otherwise, cache it, wait for the job to finish, and then return.
         self.cache(name)
@@ -102,7 +100,7 @@ class ThreadedDict(object):
         self.job_dict[name].join()
         # Now we lock, retrieve the value, and return.
         with self.lock:
-            return self.dict[name]
+            return self.value_dict[name]
         
     def cache(self, name):
         """ Cache the given item, if required """

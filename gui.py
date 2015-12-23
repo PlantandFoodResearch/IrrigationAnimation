@@ -2,17 +2,14 @@
 """ User interface code for the animation renderer.
 
     Current TODO's:
-    - There is no validation before trying to render, so no nice error
-      messages.
-    - Hanging without any indications is still broken
-    - We should clear any invalid fields at render time
+    - Hanging without any indications is still broken.
     - The open file/dir dialogs do not have any customisation.
     - We currently happily overwrite existing videos without any kind of
       warning.
-    - There are *lots* of bugs...
-    - Rendering tab/pane for controlling running render jobs.
+    - There is at least one hard-to-reproduce threading-related bug...
 
     Future:
+    - Rendering tab/pane for controlling running render jobs.
     - Saving existing setups.
     - Custom code integration.
 
@@ -442,7 +439,7 @@ class Main(ttk.Frame):
         ttk.Frame.__init__(self, master, *args, **kargs)
         self.pack(expand = True, fill = 'both')
 
-        # Add the exception handler.
+        # Add the general exception handler.
         master.report_callback_exception = lambda *args: \
             self.pretty_error(traceback.format_exception(*args))
         
@@ -565,13 +562,23 @@ class Main(ttk.Frame):
             wrap_get('Dimensions')
             wrap_get('Text size')
             wrap_get('FPS')
-
-            if len(self.panel_list.items) == 0:
-                self.pretty_error("No panels defined!")
-                raise ValueError("There must be something to render!")
-
         except ValueError:
             return False
+
+        if len(self.panel_list.items) == 0:
+            self.pretty_error("No panels defined!")
+            raise ValueError("There must be something to render!")
+        for i, item in enumerate(self.panel_list.items):
+            if item['Field'].get() == "":
+                self.pretty_error("Panel {} has no field set!".format(i))
+                return False
+        try:
+            self.models[(item['GIS files'].get(), \
+                item['CSV directory'].get())]
+        except ValueError as e:
+            self.pretty_error(e)
+            return False
+
         return True
 
     def create_panels(self):
@@ -764,7 +771,8 @@ class Main(ttk.Frame):
             try:
                 fields = self.models[(values['GIS files'].get(), \
                     values['CSV directory'].get())].fields()
-            except KeyError:
+            except ValueError as e:
+                self.pretty_error(e)
                 fields = []
             box['values'] = sorted(list(fields))
 

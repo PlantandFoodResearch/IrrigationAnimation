@@ -121,6 +121,10 @@ def find_patch_files(dir):
             patches[int(match.group(2))] = os.path.join(dir, file)
         else:
             print("Ignoring file in patch directory '%s'!" %file)
+
+    # Do a sanity check; raise an error if nothing was loaded.
+    if len(patches) == 0:
+        raise ValueError("No patches found in the given dir '{}'!".format(dir))
     
     return patches
 
@@ -163,7 +167,10 @@ def load_shapes(shape_file):
         the patches.
     """
     
-    sf = shapefile.Reader(shape_file)
+    try:
+        sf = shapefile.Reader(shape_file)
+    except shapefile.ShapefileException as e:
+        raise ValueError(e)
     
     # Map for patches
     patches = {} # patch: {key: value}
