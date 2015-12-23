@@ -498,14 +498,8 @@ def gen_labelling(size, label_size, spacing, label_count=float('inf')):
 
     # Calculate the number of markers required.
     # We always render at least two markers.
-    markers = max(int(size / (label_size + spacing)) + 1, 2)
-    
-    # Calculate the number of markers required.
     # TODO: Do something special for the discrete case.
     markers = max(int(size / (label_size + spacing)) + 1, 2)
-    
-    # We always render at least two markers.
-    markers = max(markers, 2)
     
     # Return an evenly spaced set of marks.
     return ((float(size) / (markers-1)) * mark for mark in range(markers))
@@ -570,12 +564,12 @@ def place(size, labels):
 
 def merge_rects(dirty):
     """ Merges a list of rects into a single rect """
-    
-    # Ignore empty lists.
-    if len(dirty) == 0:
-        return None
-    
+
     # Merge the remaining rects.
-    first = dirty[0]
-    return first.unionall(dirty[1:])
+    while len(dirty) > 1:
+        dirty[0].union_ip(dirty.pop())
+
+    # Ignore empty lists, and return.
+    if len(dirty) == 0: return None
+    else: return dirty[0]
     
