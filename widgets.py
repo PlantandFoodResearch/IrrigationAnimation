@@ -107,43 +107,36 @@ class DynamicTextWidget(TextWidget):
 class ScaleWidget():
     """ A dynamically sized widget representing a scale """
     
-    def __init__(self, domain, sf, font, labelling = None, row2value = None):
-        """ Initialise self.
-        
-            The given scale labelling function is assumed to take a height, and
-            return a map from rows to string values.
-            
-            The given row2value function is assumed to take a row and height,
-            and return the value at that row.
-            
-            If None is passed for either functions, the default will be used.
-        """
+    def __init__(self, domain, sf, font):
+        """ Initialise self """
         # TODO: We currently do not always render '0.0'. Unfortunately, this
         #       is fairly difficult to remedy; we would really need a value2row
         #       function as well, and gen_labelling would have to be adjusted
         #       to handle being given a list of extra labels to always add.
         
-        if row2value == None:
-            row2value = lambda row, height: (float(row) / height) * \
-                (domain.max - domain.min) + domain.min
-        if labelling == None:
-            def labelling(height):
-                # Generate a labelling (list of rows to put the marker on)
-                # We use the font linespace as the minimum gap between markers.
-                label_size = font.get_linesize()
-                markers = gen_labelling(height, label_size, label_size)
-                
-                # Add the values to a map of labels.
-                labels = {} # rows: values
-                for row in markers:
-                    # Calculate the value for that row.
-                    value = str(round_sf(self.row2value(row, height), sf))
-                    # Add it to the map.
-                    labels[row] = value
+        # Create the row2value conversion function.
+        row2value = lambda row, height: (float(row) / height) * \
+            (domain.max - domain.min) + domain.min
 
-                return labels
+        # Create a labelling generation function.
+        def labelling(height):
+            # Generate a labelling (list of rows to put the marker on)
+            # We use the font linespace as the minimum gap between markers.
+            label_size = font.get_linesize()
+            markers = gen_labelling(height, label_size, label_size)
+            
+            # Add the values to a map of labels.
+            labels = {} # rows: values
+            for row in markers:
+                # Calculate the value for that row.
+                value = str(round_sf(self.row2value(row, height), sf))
+                # Add it to the map.
+                labels[row] = value
+
+            return labels
         
-        self.font = font
+        # Save the values.
+        self.font = font # The font to use.
         self.value2colour = domain.value2colour
         self.labelling = labelling # Scale labelling function.
         self.row2value = row2value # Row to value conversion function.
@@ -219,7 +212,6 @@ class ValuesWidget():
 
         self.size = None # This widget is dynamically sized.
         self.values = values
-        self.value2colour = values.domain.value2colour
         self.model = values.model
         self.edge_render = edge_render
         
@@ -263,13 +255,14 @@ class ValuesWidget():
         # Render patches.
         for patch in self.model.patches:
             try:
-                value = self.value2colour(self.values.values[time][patch])
+                value = self.values.values[time][patch]
+                colour = self.values.domain.value2colour(value)
             except KeyError:
                 # We currently ignore this, to avoid spamming the console.
-                value = BROKEN_COLOUR
+                colour = BROKEN_COLOUR
             # Render the filled patch.
             dirty += self.render_shape(surface, trans, \
-                self.model.patches[patch]['shape'], value, 0)
+                self.model.patches[patch]['shape'], colour, 0)
             # Render edges as required (not filled, just for the outlines).
             if self.edge_render:
                 self.render_shape(surface, trans, \
@@ -298,28 +291,30 @@ class ValuesWidget():
             # Also, pygame has some helpful routines for rendering shapes which
             # might come in handy.
             # Hopefully this never stops working!
-            raise ValueError("Unknown shape type %s" %shape.shapeType)
+            raise ValueError("Unknown shape type {}!".format(shape.shapeType))
+
+        dirty = [] # List of dirty rects.
             
         if shape.shapeType == shapefile.NULL:
             # Nothing to render...
-            return []
+            return dirty
         
         # We have a polygon!
-        # Polygons are made of different "parts", which are ordered sets of points
-        # that are assumed to join up, so we render them part-by-part.
-        dirty = [] # List of 'dirty' rects.
+        # Polygons are made of different "parts", which are ordered sets of
+        # points that are assumed to join up, so we render them part-by-part.
         for num, part in enumerate(shape.parts):
             if num + 1 >= len(shape.parts):
                 end = len(shape.points)
             else:
                 end = shape.parts[num + 1]
+            points = [transform(point) for point in shape.points[part:end]]
             if width != 1:
-                dirty.append(pygame.draw.polygon(surface, colour,
-                    [transform(point) for point in shape.points[part:end]], width))
+                dirty.append(pygame.draw.polygon(surface, colour, points, \
+                    width))
             else:
                 # Use aalines instead (smoothed lines).
-                dirty.append(pygame.draw.aalines(surface, colour, True,
-                    [transform(point) for point in shape.points[part:end]], width))
+                dirty.append(pygame.draw.aalines(surface, colour, True, \
+                    points, width))
                 
         return dirty
         
