@@ -223,53 +223,30 @@ class ValuesWidget():
         self.model = values.model
         self.edge_render = edge_render
         
-        # Find the bounding box, center, and size for the patches.
-        bbox = self.bounding_box()
-        self.center = [((bbox[i] + bbox[i+2]) / 2) for i in range(2)]
-        self.actual_size = [(bbox[i+2] - bbox[i]) for i in range(2)]
-        
-    def bounding_box(self):
-        """ Return the bounding box of self's patches """
-        
-        # TODO: This should potentially be moved in Model, as it is only
-        #       dependent on the model in use.
-        
-        mins = [float('inf'), float('inf')]
-        maxs = [-float('inf'), -float('inf')]
-
-        for patch in self.model.patches:
-            shape = self.model.patches[patch]['shape']
-            min_pos = [min(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
-            max_pos = [max(shape.bbox[i], shape.bbox[i+2]) for i in range(2)]
-            for i in range(2):
-                if min_pos[i] < mins[i]:
-                    mins[i] = min_pos[i]
-                if max_pos[i] > maxs[i]:
-                    maxs[i] = max_pos[i]
-
-        return [mins[0], mins[1], maxs[0], maxs[1]]
-        
     def gen_transform(self, pos_func, size):
         """ Generate a transformation function to adjust the points in the
             model.
         """
+
+        # Save the shorter name for the model...
+        model = self.values.model
         
         # The scaling factor required to scale the image to fit nicely in
         # the given size.
         # This is the minimum of the x and y scaling to avoid clipping.
-        scale = min([float(size[i])/self.actual_size[i] for i in range(2)])
+        scale = min([float(size[i]) / model.size[i] for i in range(2)])
         
         # Calculate the offset with the *real* size.
-        real_size = [self.actual_size[i]*scale for i in range(2)]
+        real_size = [model.size[i] * scale for i in range(2)]
         offset = pos_func(real_size)
         
         def transform(vert):
             # Calculate a scaled and recentered vertex.
-            point = [(vert[i] - self.center[i])*scale for i in range(2)]
+            point = [(vert[i] - model.center[i]) * scale for i in range(2)]
             
             # Transform the recentered vertex into offset pygame coordinates.
-            return ((real_size[0]/2) + point[0] + offset[0], \
-                (real_size[1]/2) - point[1] + offset[1])
+            return ((real_size[0] / 2) + point[0] + offset[0], \
+                (real_size[1] / 2) - point[1] + offset[1])
             
         return transform
         
