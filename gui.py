@@ -441,7 +441,7 @@ class Main(ttk.Frame):
 
         # Add the general exception handler.
         master.report_callback_exception = lambda *args: \
-            self.pretty_error(traceback.format_exception(*args))
+            self.pretty_error("\n".join(traceback.format_exception(*args)))
         
         # Models.
         self.models = ThreadedDict(lambda name: Model(*name))
