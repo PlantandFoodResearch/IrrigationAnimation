@@ -346,8 +346,6 @@ class GraphWidget():
         topleft = pos_func(size)
         dirty = pygame.Rect(topleft, size)
         
-        # TODO: We need a label of some kind somewhere.
-
         # We start by rendering a scale...
         scale_size = [0, 0]
         row2date, scale_size[0], scale_size[1] = \
@@ -357,15 +355,10 @@ class GraphWidget():
         
         # We render the lines.
         # Render the line.
-        # TODO: We need some kind of text saying what the line is.
         for index, graph in enumerate(self.graphable):
             self.render_line(surface, graph, GRAPH_COLOUR_LIST[index], \
                 topleft, size, row2date)
         
-        # TODO: It would be nice to be able to *see* the actual value at 
-        #       that time for each line.
-        # TODO: The offset is not calculated accurately at the moment
-        #       (slightly off).
         offset = ((float(time) / (len(self.dates) - 1)) * size[0]) + \
             topleft[0]
         pygame.draw.line(surface, TEXT_COLOUR, (offset, topleft[1]), \
