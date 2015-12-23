@@ -3,9 +3,8 @@
     a semi-elegant form.
 
     Future improvements:
-    - GUI tweaking (1)
-    - Code cleanups (2)
-    - Removing all of the TODO's... (2)
+    - Code cleanups
+    - Removing all of the TODO's...
     - Speed ups + profiling
     - Render the description text using 'place'
     - Labels on existing widgets (eg units for a scale)
