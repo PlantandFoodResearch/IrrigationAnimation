@@ -412,7 +412,8 @@ class GraphWidget():
         
         # Generate a row2date function (reused elsewhere).
         graph_width = size[0] - width
-        row2date = lambda row: int(float(row * (len(self.dates) - 1)) / graph_width)
+        row2date = lambda row: int(float(row * (len(self.dates) - 1)) / \
+            graph_width)
                 
         # Render the dates.
         # First, generate the anchor locations.
@@ -441,8 +442,7 @@ class GraphWidget():
         # We don't want to draw right off the end, so we take one off the given
         # size.
         pygame.draw.lines(surface, TEXT_COLOUR, False, \
-            [(x_offset, topleft[1]), \
-                (x_offset, topleft[1] + (height - 1)), \
+            [(x_offset, topleft[1]), (x_offset, topleft[1] + (height - 1)), \
                 (topleft[0] + (size[0] - 1), topleft[1] + (height - 1))])
                 
         # Draw the key underneath, if required.
@@ -502,7 +502,7 @@ def gen_labelling(size, label_size, spacing, label_count=float('inf')):
     markers = max(int(size / (label_size + spacing)) + 1, 2)
     
     # Return an evenly spaced set of marks.
-    return ((float(size) / (markers-1)) * mark for mark in range(markers))
+    return ((float(size) / (markers - 1)) * mark for mark in range(markers))
     
 def place(size, labels):
     """ Try to optimise the placement of a given set of labels so that they
