@@ -303,7 +303,7 @@ class ValuesWidget():
         # Polygons are made of different "parts", which are ordered sets of
         # points that are assumed to join up, so we render them part-by-part.
         for num, part in enumerate(shape.parts):
-            if num + 1 >= len(shape.parts):
+            if num > len(shape.parts):
                 end = len(shape.points)
             else:
                 end = shape.parts[num + 1]
